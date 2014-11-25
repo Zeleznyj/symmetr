@@ -1,35 +1,45 @@
 import sys
+import re
 
 data = open('sym.dat')
 
+#matrices 3x3 are stored in the following 1d form
+#note that python starts numbering from 0, so the following represents a matrix:
+# 00 01 02
+# 10 11 12
+# 20 21 22
 matrix = ['00','01','02','10','11','12','20','21','22']
 
+#converts the matrix index to a matrix stored in the 1d form 
 def convert_index(i,j):
   n = i*3+j
   return n
 
+# converts from 1d form index to a 3x3 matrix indeces
 def inconvert_index(n):
   i=int(matrix[n][0])
   j=int(matrix[n][1])
   return [i,j]
 
+#this transforms a space transormation into more appropriate form
+#we ignore translations as they have no effect on commutation relations
 def convert_space(s):
-  if s == 'x':
+  if re.match('x((\+|-)[0-9]+(\.[0-9]+)*/[0-9]+(\.[0-9]+)*)*\Z',s):
     index = 0
     minus = 1
-  if s == '-x':
+  if re.match('-x((\+|-)[0-9]+(\.[0-9]+)*/[0-9]+(\.[0-9]+)*)*\Z',s):
     index = 0
     minus = -1
-  if s == 'y':
+  if re.match('y((\+|-)[0-9]+(\.[0-9]+)*/[0-9]+(\.[0-9]+)*)*\Z',s):
     index = 1
     minus = 1
-  if s == '-y':
+  if re.match('-y((\+|-)[0-9]+(\.[0-9]+)*/[0-9]+(\.[0-9]+)*)*\Z',s):
     index = 1
     minus = -1
-  if s == 'z':
+  if re.match('z((\+|-)[0-9]+(\.[0-9]+)*/[0-9]+(\.[0-9]+)*)*\Z',s):
     index = 2
     minus = 1
-  if s == '-z':
+  if re.match('-z((\+|-)[0-9]+(\.[0-9]+)*/[0-9]+(\.[0-9]+)*)*\Z',s):
     index = 2
     minus = -1
 
@@ -56,6 +66,7 @@ def convert_spin(s):
     minus = -1
   return [index,minus]
 
+#used for printing matrices nicely
 def print_matrix(matrix):
   for n in range(9):
     if matrix[n][2] == -1:
@@ -74,6 +85,8 @@ def print_matrix(matrix):
       sys.stdout.write('\n')
   print ''
 
+#this defines starting response matrix
+#we repeat it twice, once for intraband term and once for the interband term
 matrix_current = []
 sub1 = []
 sub2 = []
@@ -88,13 +101,18 @@ for n in range(9):
 matrix_current.append(list(sub1))
 matrix_current.append(list(sub2))
 
+#we do a loop over all symmetry, for each symmetry, we find what form the response matrix can have, when the system has this symmetry
+#for next symmetry we take the symmetrized matrix from the previous symmetry as a starting point
 for sym in data:
 
+  #this just splits the symmetry information into more practical form
   sym_split = sym.split()
+  #this is a type of information, so far A means consider the operation and anything else means skip it
   op_type=sym_split[1]
   sym_split2 = sym_split[2].split(',')
-  #space transformation
+  #space transformation: 
   sym1 = sym_split2[0:3]
+  #-1 if the symmetry contains time reversal, 1 otherwise
   time_reversal = sym_split2[3]
   #spin transformation
   sym2 = sym_split[3].split(',')
@@ -102,9 +120,13 @@ for sym in data:
   if op_type == 'A':
     print 'Symmetry operation: ', sym_split
     #we do everything separately for the intra and inter band terms
+    #most things are the same, the only difference in the physics is that when time-reversal is present, interband transformation has
+    #minus compared to the intraband transformation
     for l in range(2):
       #for all of the components of the matrix we look at how they will be transformed by the symmetry operation
+
       matrix_trans = []
+
       for n in range(9):
 
         index = inconvert_index(n)
@@ -123,14 +145,20 @@ for sym in data:
         if v_trans[1] * s_trans[1] < 0:
           comp_trans[2] = -1
 
-        #matrix_trans is the transformed matrix - for example, if component 00 of matrix_trans is 11 it means the 00 component of the response
-        #matrix transforms to the 11 component
-        #the last number is the sign
+
+        #if time-reversal is present, interband has additional minus
         if l == 1:
           if time_reversal == '-1':
             comp_trans[2] = -1 * comp_trans[2]
+
+        #matrix_trans is the transformed matrix - for example, if component 00 of matrix_trans is 11 it means the 00 component of the response matrix transforms to the 11 component
+        #the last number is the sign
         matrix_trans.append(list(comp_trans))
 
+      #the response matrix can have a form that is already constrained from a previous symmetry operation, we take this into consideration
+      #and store the information in matrix_trans_current
+      #for example under symmetry operation R, chi_00, may transform to chi_11, but we may already know that chi_11 must be equal to
+      #-chi_00, then matrix_current[0] will be 00, matrix_current[4]=-00, matrix_trans[0]=11 and matrix_trans_current[0]=-00
       matrix_trans_current = []
       for n in range(9):
         if matrix_trans[n][2] == 1 or matrix_trans[n][2] == 0:
@@ -144,25 +172,40 @@ for sym in data:
       else:
         print 'Transformed matrix interband term'
       print_matrix(matrix_trans)
-      #now we go through the matrix and look at what must hold for it due to symmetry
+
+      #now we go through the response matrix and look at what must hold for it due to symmetry
+      #only simple rules are implemented, but these should be sufficient if no hexagonal symmetries are present
+      #if there are hexagonal symmetries, the program breaks anyway
+      #we look at transformation and modify the response matrix according to the rules, if something changes we look at the transformation
+      # again and we repeat until nothing changes
+
       changed = 1
+
       while changed == 1:
+
         changed = 0
+
         for n in range(9):
-          #if the transofmed mcomponent is the same we do nothing
+          #if the transformed component is the same we do nothing
           if matrix_current[l][n] != matrix_trans_current[n]:
             #if they only differ in sign, the component must be zero
             if matrix_current[l][n][0] == matrix_trans_current[n][0] and matrix_current[l][n][1] == matrix_trans_current[n][1]:
               matrix_current[l][n][2] = 0
               changed = 1
             else:
+              #if the component is equal to another component we set it equal to that
+              #however if we did that for each component, we wouldn't get any information
+              #therefore if two components are equal we keep the one that ha lower index in the 1d matrix form and the  other one set equal
+              #to the first one
               index_current = convert_index(matrix_current[l][n][0],matrix_current[l][n][1])
               index_trans = convert_index(matrix_trans_current[n][0],matrix_trans_current[n][1])
               if index_current > index_trans:
                 changed = 1
                 matrix_current[l][n] = list(matrix_trans_current[n])
 
+        #since the response matrix may have changed we also have to modify the matrix matrix_trans_current
         matrix_trans_current = []
+
         for i in range(9):
           if matrix_trans[i][2] == 1 or matrix_trans[i][2] == 0:
             matrix_trans_current.append(list(matrix_current[l][convert_index(matrix_trans[i][0],matrix_trans[i][1])]))
