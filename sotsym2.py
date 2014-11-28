@@ -1,5 +1,6 @@
 import sys
 import re
+import copy
 
 data = open('sym.dat')
 
@@ -66,7 +67,6 @@ def convert_spin(s):
     minus = -1
   return [index,minus]
 
-#used for printing matrices nicely
 def print_matrix(matrix):
   for n in range(9):
     if matrix[n][2] == -1:
@@ -85,6 +85,80 @@ def print_matrix(matrix):
       sys.stdout.write('\n')
   print ''
 
+#used for printing matrices nicely
+def print_matrix2(matrix):
+
+  for n in range(9):
+
+    length = len(matrix[n])
+
+    if length == 1 and matrix[n][0][2] == 0:
+      sys.stdout.write('x')
+      sys.stdout.write('x')
+      sys.stdout.write('x')
+    else:
+      for l in range(length): 
+        if matrix[n][l][2] == -1:
+          sys.stdout.write('-')
+          sys.stdout.write(str(matrix[n][l][0]))
+          sys.stdout.write(str(matrix[n][l][1]))
+        elif matrix[n][l][2] == 1:
+          sys.stdout.write('+')
+          sys.stdout.write(str(matrix[n][l][0]))
+          sys.stdout.write(str(matrix[n][l][1]))
+      
+
+    if n == 2 or n == 5 or n == 8:
+      sys.stdout.write('\n')
+    else:
+      sys.stdout.write(', ')
+
+  print ''
+
+
+def update_trans_current(matrix_current,matrix_trans):
+
+  trans_current = []
+
+  for n in range(9):
+    if matrix_trans[n][2] == 1 or matrix_trans[n][2] == 0:
+      trans_current.append(copy.deepcopy(matrix_current[convert_index(matrix_trans[n][0],matrix_trans[n][1])]))
+    elif matrix_trans[n][2] == -1:
+      trans_current.append(copy.deepcopy(matrix_current[convert_index(matrix_trans[n][0],matrix_trans[n][1])]))
+      for l in range(len(trans_current[n])):
+        trans_current[n][l][2] = -1 * trans_current[n][l][2]  
+
+  return trans_current
+
+
+def compare_sign(comp1,comp2):
+  
+  a = True
+
+  if len(comp1) != len(comp2):
+    a = False
+  else:
+    for l in range(len(comp1)):
+      if comp1[l][0] != comp2[l][0] or comp1[l][1] != comp2[l][1] or comp1[l][2] != -1 * comp2[l][2]:
+        a =False
+
+  return a
+
+
+def compare_equal(comp1,comp2):
+
+  a = True
+
+  if len(comp1) != len(comp2):
+    a = False
+  else:
+    for l in range(len(comp1)):
+      if comp1[l][0] != comp2[l][0] or comp1[l][1] != comp2[l][1] or comp1[l][2] != comp2[l][2]:
+        a =False
+
+  return a
+
+
 #this defines starting response matrix
 #we repeat it twice, once for intraband term and once for the interband term
 matrix_current = []
@@ -95,11 +169,25 @@ for n in range(9):
   comp[0]=inconvert_index(n)[0]
   comp[1]=inconvert_index(n)[1]
   comp[2]=1
-  sub1.append(list(comp))
-  sub2.append(list(comp))
+  sub1.append([list(comp)])
+  sub2.append([list(comp)])
 
 matrix_current.append(list(sub1))
 matrix_current.append(list(sub2))
+
+print_matrix2(matrix_current[0])
+
+test_matrix=[]
+test_matrix.append([[1,1,1],[1,2,-1]])
+test_matrix.append([[0,0,0]])
+test_matrix.append([[0,0,0]])
+test_matrix.append([[0,2,-1]])
+test_matrix.append([[2,0,-1],[0,1,1]])
+test_matrix.append([[2,0,-1],[0,1,1],[3,0,-1]])
+test_matrix.append([[2,0,-1],[0,1,-1],[3,0,-1]])
+test_matrix.append([[2,0,1],[0,1,1],[3,0,1]])
+test_matrix.append([[0,0,0]])
+
 
 #we do a loop over all symmetry, for each symmetry, we find what form the response matrix can have, when the system has this symmetry
 #for next symmetry we take the symmetrized matrix from the previous symmetry as a starting point
@@ -159,19 +247,19 @@ for sym in data:
       #and store the information in matrix_trans_current
       #for example under symmetry operation R, chi_00, may transform to chi_11, but we may already know that chi_11 must be equal to
       #-chi_00, then matrix_current[0] will be 00, matrix_current[4]=-00, matrix_trans[0]=11 and matrix_trans_current[0]=-00
-      matrix_trans_current = []
-      for n in range(9):
-        if matrix_trans[n][2] == 1 or matrix_trans[n][2] == 0:
-          matrix_trans_current.append(list(matrix_current[l][convert_index(matrix_trans[n][0],matrix_trans[n][1])]))
-        elif matrix_trans[n][2] == -1:
-          matrix_trans_current.append(list(matrix_current[l][convert_index(matrix_trans[n][0],matrix_trans[n][1])]))
-          matrix_trans_current[n][2] = -1 * matrix_trans_current[n][2]  
-
+      matrix_trans_current = copy.deepcopy(update_trans_current(matrix_current[l],matrix_trans))
+      print 'current state:'
+      print_matrix2(matrix_current[l])
+      print_matrix(matrix_trans)
+      print_matrix2(matrix_trans_current)
+      
+      
       if l == 0:
         print 'Transformed matrix intraband term'
       else:
         print 'Transformed matrix interband term'
       print_matrix(matrix_trans)
+
 
       #now we go through the response matrix and look at what must hold for it due to symmetry
       #only simple rules are implemented, but these should be sufficient if no hexagonal symmetries are present
@@ -189,47 +277,33 @@ for sym in data:
           #if the transformed component is the same we do nothing
           if matrix_current[l][n] != matrix_trans_current[n]:
             #if they only differ in sign, the component must be zero
-            if matrix_current[l][n][0] == matrix_trans_current[n][0] and matrix_current[l][n][1] == matrix_trans_current[n][1]:
-              matrix_current[l][n][2] = 0
+            if compare_sign(matrix_current[l][n],matrix_trans_current[n]):
+              matrix_current[l][n] = [[0,0,0]]
               changed = 1
-            else:
+            elif compare_equal(matrix_current[l][n],matrix_trans_current[n]):
               #if the component is equal to another component we set it equal to that
               #however if we did that for each component, we wouldn't get any information
               #therefore if two components are equal we keep the one that ha lower index in the 1d matrix form and the  other one set equal
               #to the first one
-              index_current = convert_index(matrix_current[l][n][0],matrix_current[l][n][1])
-              index_trans = convert_index(matrix_trans_current[n][0],matrix_trans_current[n][1])
+              #index_current = convert_index(matrix_current[l][n][0],matrix_current[l][n][1])
+              index_current = n
+              index_trans = convert_index(matrix_trans[n][0],matrix_trans[n][1])
               if index_current > index_trans:
                 changed = 1
                 matrix_current[l][n] = copy.deepcopy(matrix_trans_current[n])
 
         #since the response matrix may have changed we also have to modify the matrix matrix_trans_current
-        matrix_trans_current = []
+        matrix_trans_current = copy.deepcopy(update_trans_current(matrix_current[l],matrix_trans))
+        print 'current state:'
+        print_matrix2(matrix_current[l])
+        print_matrix(matrix_trans)
+        print_matrix2(matrix_trans_current)
 
-        for i in range(9):
-          if matrix_trans[i][2] == 1 or matrix_trans[i][2] == 0:
-            matrix_trans_current.append(list(matrix_current[l][convert_index(matrix_trans[i][0],matrix_trans[i][1])]))
-          elif matrix_trans[i][2] == -1:
-            matrix_trans_current.append(list(matrix_current[l][convert_index(matrix_trans[i][0],matrix_trans[i][1])]))
-            matrix_trans_current[i][2] = -1 * matrix_trans_current[i][2] 
+
 
     print 'Symmetrized matrix intraband term:'
-    print_matrix(matrix_current[0])
+    print matrix_current[0]
+    print_matrix2(matrix_current[0])
     print 'Symmetrized matrix interband term:'
-    print_matrix(matrix_current[1])
-  
-
-
-
-
-
-
-
-
-
-
-      
-
-
-
-
+    print matrix_current[1]
+    print_matrix2(matrix_current[1])
