@@ -2,7 +2,7 @@ import sys
 import re
 import copy
 
-data = open('sym.dat')
+symmetries = open('sym.dat')
 
 #matrices 3x3 are stored in the following 1d form
 #note that python starts numbering from 0, so the following represents a matrix:
@@ -175,23 +175,10 @@ for n in range(9):
 matrix_current.append(list(sub1))
 matrix_current.append(list(sub2))
 
-print_matrix2(matrix_current[0])
-
-test_matrix=[]
-test_matrix.append([[1,1,1],[1,2,-1]])
-test_matrix.append([[0,0,0]])
-test_matrix.append([[0,0,0]])
-test_matrix.append([[0,2,-1]])
-test_matrix.append([[2,0,-1],[0,1,1]])
-test_matrix.append([[2,0,-1],[0,1,1],[3,0,-1]])
-test_matrix.append([[2,0,-1],[0,1,-1],[3,0,-1]])
-test_matrix.append([[2,0,1],[0,1,1],[3,0,1]])
-test_matrix.append([[0,0,0]])
-
 
 #we do a loop over all symmetry, for each symmetry, we find what form the response matrix can have, when the system has this symmetry
 #for next symmetry we take the symmetrized matrix from the previous symmetry as a starting point
-for sym in data:
+for sym in symmetries:
 
   #this just splits the symmetry information into more practical form
   sym_split = sym.split()
@@ -206,7 +193,7 @@ for sym in data:
   sym2 = sym_split[3].split(',')
 
   if op_type == 'A':
-    print 'Symmetry operation: ', sym_split
+    #print 'Symmetry operation: ', sym_split
     #we do everything separately for the intra and inter band terms
     #most things are the same, the only difference in the physics is that when time-reversal is present, interband transformation has
     #minus compared to the intraband transformation
@@ -248,17 +235,12 @@ for sym in data:
       #for example under symmetry operation R, chi_00, may transform to chi_11, but we may already know that chi_11 must be equal to
       #-chi_00, then matrix_current[0] will be 00, matrix_current[4]=-00, matrix_trans[0]=11 and matrix_trans_current[0]=-00
       matrix_trans_current = copy.deepcopy(update_trans_current(matrix_current[l],matrix_trans))
-      print 'current state:'
-      print_matrix2(matrix_current[l])
-      print_matrix(matrix_trans)
-      print_matrix2(matrix_trans_current)
       
-      
-      if l == 0:
-        print 'Transformed matrix intraband term'
-      else:
-        print 'Transformed matrix interband term'
-      print_matrix(matrix_trans)
+      #if l == 0:
+      #  print 'Transformed matrix intraband term'
+      #else:
+      #  print 'Transformed matrix interband term'
+      #print_matrix(matrix_trans)
 
 
       #now we go through the response matrix and look at what must hold for it due to symmetry
@@ -294,16 +276,10 @@ for sym in data:
 
         #since the response matrix may have changed we also have to modify the matrix matrix_trans_current
         matrix_trans_current = copy.deepcopy(update_trans_current(matrix_current[l],matrix_trans))
-        print 'current state:'
-        print_matrix2(matrix_current[l])
-        print_matrix(matrix_trans)
-        print_matrix2(matrix_trans_current)
 
 
 
-    print 'Symmetrized matrix intraband term:'
-    print matrix_current[0]
-    print_matrix2(matrix_current[0])
-    print 'Symmetrized matrix interband term:'
-    print matrix_current[1]
-    print_matrix2(matrix_current[1])
+print 'Symmetrized matrix intraband term:'
+print_matrix2(matrix_current[0])
+print 'Symmetrized matrix interband term:'
+print_matrix2(matrix_current[1])

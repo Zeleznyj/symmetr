@@ -1,5 +1,6 @@
 import sys
 import re
+import copy
 
 data = open('sym.dat')
 
