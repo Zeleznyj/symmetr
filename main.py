@@ -10,7 +10,7 @@ import math
 
 def equal_vectors(vec1,vec2,prec):
   if len(vec1) != len(vec2):
-    sysexit('Comparing two vectors of unequal size:(')
+    sys.exit('Comparing two vectors of unequal size:(')
   a = True
   for i in range(len(vec1)):
     if abs(vec1[i] - vec2[i]) > prec:
@@ -184,13 +184,12 @@ for i in range(len(syms)):
   syms[i][1] = syms[i][1][0:3]
 
     
-print syms
 for l in range(len(syms)):
   sym_trans = []
   for i in range(len(positions)):
     trans = transform_position(positions[i],syms[l])
     for j in range(len(positions)):
-      if trans == positions[j]:
+      if equal_vectors(trans,positions[j],0.001):
         sym_trans.append((i,j))
       else:
         for k in range(len(shifts)):
@@ -200,28 +199,12 @@ for l in range(len(syms)):
             pos_shift[ind] = pos_shift[ind] - math.floor(pos_shift[ind])
           for ind in range(3):
             pos_shift.append(positions[j][ind+3])
-          print ''
-          print positions[i]
-          print syms[l]
-          print trans
-          print pos_shift
           if equal_vectors(trans,pos_shift,0.001):
-            print 'rovna se'
             sym_trans.append((i,j))
-          else:
-            print 'nerovna se'
 
   if len(sym_trans) != len(positions):
-    sysexit('Wrong number of transformed atoms. Something\'s wrong')
+    sys.exit('Wrong number of transformed atoms. Something\'s wrong')
   syms[l].append(list(sym_trans))
-
-print ''
-for pos in positions:
-  print pos
-
-print ''
-for sym in syms:
-  print sym
 
 
 matrix = symmetrize_sympy.symmetr(syms,0)

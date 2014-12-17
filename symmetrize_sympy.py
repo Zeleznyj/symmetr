@@ -74,7 +74,7 @@ def sym_type(atom,sym):
     if i[0] == atom:
         a = i[1]
   if a == -1:
-    sysexit('Could not find the symmetry type.')
+    sys.exit('Could not find the symmetry type.')
   else:
     return a
 
@@ -102,7 +102,6 @@ def symmetr(symmetries,atom):
     sym2 = sym[2]
 
     if sym_type(atom,sym) == atom:
-      print 'considering symmetry: ',sym
       #print 'Symmetry operation: ', sym_split
       #we do everything separately for the intra and inter band terms
       #most things are the same, the only difference in the physics is that when time-reversal is present, interband transformation has
