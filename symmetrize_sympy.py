@@ -67,9 +67,20 @@ def update_trans_current(matrix_current,matrix_trans):
 
   return trans_current
 
+def sym_type(atom,sym):
+  #returns the index of atom transformed by sym
+  a = -1
+  for i in sym[4]:
+    if i[0] == atom:
+        a = i[1]
+  if a == -1:
+    sysexit('Could not find the symmetry type.')
+  else:
+    return a
+
 
 #returns a symmetrical form of a spin-orbit torque response matrix given list of symmetries
-def symmetr(symmetries):
+def symmetr(symmetries,atom):
 
   #this defines starting response matrix
   #we repeat it twice, once for intraband term and once for the interband term
@@ -83,19 +94,15 @@ def symmetr(symmetries):
   #for next symmetry we take the symmetrized matrix from the previous symmetry as a starting point
   for sym in symmetries:
 
-    #this just splits the symmetry information into more practical form
-    sym_split = sym.split()
-    #this is a type of information, so far A means consider the operation and anything else means skip it
-    op_type=sym_split[1]
-    sym_split2 = sym_split[2].split(',')
     #space transformation: 
-    sym1 = sym_split2[0:3]
+    sym1 = sym[1]
     #-1 if the symmetry contains time reversal, 1 otherwise
-    time_reversal = sym_split2[3]
+    time_reversal = sym[3]
     #spin transformation
-    sym2 = sym_split[3].split(',')
+    sym2 = sym[2]
 
-    if op_type == 'A':
+    if sym_type(atom,sym) == atom:
+      print 'considering symmetry: ',sym
       #print 'Symmetry operation: ', sym_split
       #we do everything separately for the intra and inter band terms
       #most things are the same, the only difference in the physics is that when time-reversal is present, interband transformation has
