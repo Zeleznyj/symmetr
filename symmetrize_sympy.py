@@ -66,6 +66,62 @@ def convert_spin(s):
     minus = -1
   return [index,minus]
 
+def convert_space2(s):
+  op = re.sub('-','+-',s)
+  op = re.split('\+',op)
+  op = filter(None,op) #remove empty strings from the list  
+  out = []
+  for j in range(len(op)):
+    if re.match('^x',op[j]):
+      t = (0,1)
+      out.append(t)
+    if re.match('^-x',op[j]):
+      t = (0,-1)
+      out.append(t)
+    if re.match('^y',op[j]):
+      t = (1,1)
+      out.append(t)
+    if re.match('^-y',op[j]):
+      t = (1,-1)
+      out.append(t)
+    if re.match('^z',op[j]):
+      t = (2,1)
+      out.append(t)
+    if re.match('^-z',op[j]):
+      t = (2,-1)
+      out.append(t)
+
+  return out
+
+
+def convert_spin2(s):
+  op = re.sub('-','+-',s)
+  op = re.split('\+',op)
+  op = filter(None,op) #remove empty strings from the list  
+  out = []
+  for j in range(len(op)):
+    if re.match('^mx',op[j]):
+      t = (0,1)
+      out.append(t)
+    if re.match('^-mx',op[j]):
+      t = (0,-1)
+      out.append(t)
+    if re.match('^my',op[j]):
+      t = (1,1)
+      out.append(t)
+    if re.match('^-my',op[j]):
+      t = (1,-1)
+      out.append(t)
+    if re.match('^mz',op[j]):
+      t = (2,1)
+      out.append(t)
+    if re.match('^-mz',op[j]):
+      t = (2,-1)
+      out.append(t)
+
+  return out
+
+
 def create_matrix_trans(sym,l):
   #creates matrix_trans, which is a matric that contains information about transformation of the matrix under symmetry sym
   #format: matrix_trans[i][j] is a list with three components, first two are indices of the transformed component
@@ -128,6 +184,49 @@ def update_trans_current(matrix_current,matrix_trans):
 
   return trans_current
 
+def update_trans_current2(matrix_current,sym,l):
+
+  trans_current = sympy.zeros(3,3)
+
+  for i in range(3):
+    for j in range(3):
+
+      v_trans = list(convert_space2(sym[1][j]))
+      s_trans = list(convert_spin2(sym[2][i]))
+
+      if sym[3] == '-1':
+        for k in range(len(v_trans)):
+          v_trans[k] = (v_trans[k][0], -1 * v_trans[k][1])
+
+      for v in v_trans:
+        for s in s_trans:
+          if sym[3] == '-1' and l == 1:
+            trans_current[i,j] = trans_current[i,j] - v[1] * s[1] * matrix_current[s[0],v[0]]
+          else:
+            trans_current[i,j] = trans_current[i,j] + v[1] * s[1] * matrix_current[s[0],v[0]]
+
+  return trans_current
+
+def should_rename(X,X_t):
+  #looks at the element and the transformation of the element and decides if the element should be renamed
+
+  if X - X_t == 0:
+    return False
+  else: 
+    inds = re.findall("\[([0-9]), ([0-9])\]",str(X))
+    if len(inds) > 1:
+      return False
+    elif len(inds) == 0:
+      sys.exit('error in should_rename')
+    else:
+      ret = True
+      inds_t = re.findall("\[([0-9]), ([0-9])\]",str(X_t))
+      for ind in inds_t:
+        if convert_index(inds[0][0],inds[0][1]) < convert_index(ind[0],ind[1]):
+          ret = False
+      return ret
+
+
 def sym_type(atom,sym):
   #returns the index of atom transformed by sym
   a = -1
@@ -147,11 +246,11 @@ def symmetr(symmetries,atom):
   #we repeat it twice, once for intraband term and once for the interband term
   #sympy is a symbolic toolbox
   #the matrices are symbolic matrices
-  Xo = sympy.Matrix(sympy.MatrixSymbol('Xo',3,3))
-  Xx = sympy.Matrix(sympy.MatrixSymbol('Xx',3,3))
+  X1 = sympy.Matrix(sympy.MatrixSymbol('Xo',3,3))
+  X2 = sympy.Matrix(sympy.MatrixSymbol('Xx',3,3))
   X = []
-  X.append(Xo)
-  X.append(Xx)
+  X.append(X1)
+  X.append(X2)
 
   #we do a loop over all symmetry, for each symmetry, we find what form the response matrix can have, when the system has this symmetry
   #for next symmetry we take the symmetrized matrix from the previous symmetry as a starting point
@@ -166,13 +265,13 @@ def symmetr(symmetries,atom):
       for l in range(2):
         #for all of the components of the matrix we look at how they will be transformed by the symmetry operation
 
-        matrix_trans = create_matrix_trans(sym,l)
+        #matrix_trans = create_matrix_trans(sym,l)
 
         #the response matrix can have a form that is already constrained from a previous symmetry operation, we take this into consideration
         #and store the information in matrix_trans_current
         #for example under symmetry operation R, chi_00, may transform to chi_11, but we may already know that chi_11 must be equal to
         #-chi_00, then matrix_current[0] will be 00, matrix_current[4]=-00, matrix_trans[0]=11 and matrix_trans_current[0]=-00
-        matrix_trans_current = update_trans_current(X[l],matrix_trans)
+        matrix_trans_current = update_trans_current2(X[l],sym,l)
 
 
         #now we go through the response matrix and look at what must hold for it due to symmetry
@@ -195,19 +294,24 @@ def symmetr(symmetries,atom):
               #if boht the matrix and the transformed matrix are zero we do nothing, otherwise the code would loop forever
               if X[l][i,j] != 0 and matrix_trans_current[i,j] !=0:
                 #if the component and the transformed component are opposite we set the component to zero
-                if sympy.simplify(X[l][i,j]+matrix_trans_current[i,j]) == 0:
+                #if sympy.simplify(X[l][i,j]+matrix_trans_current[i,j]) == 0:
+                if (X[l][i,j]+matrix_trans_current[i,j]) == 0:
                   X[l][i,j] = 0
                   changed = 1
                 #if the component is equal to another component we set it equal to that
                 #however if we did that for each component, we wouldn't get any information
                 #therefore if two components are equal we keep the one that has lower index in the 1d matrix form and the other one set
                 #equal to the first one
-                elif convert_index(matrix_trans[i][j][0],matrix_trans[i][j][1]) < n and sympy.simplify(X[l][i,j]-matrix_trans_current[i,j]) != 0:
+                #elif convert_index(matrix_trans[i][j][0],matrix_trans[i][j][1]) < n and sympy.simplify(X[l][i,j]-matrix_trans_current[i,j]) != 0:
+                #  changed = 1
+                #  X[l][i,j] = matrix_trans_current[i,j]
+                elif should_rename(X[l][i,j],matrix_trans_current[i,j]):
                   changed = 1
                   X[l][i,j] = matrix_trans_current[i,j]
 
             #since the response matrix may have changed we also have to modify the matrix matrix_trans_current
-          matrix_trans_current = update_trans_current(X[l],matrix_trans)
+          matrix_trans_current = update_trans_current2(X[l],sym,l)
+          #matrix_trans_current = update_trans_current(X[l],matrix_trans)
 
 
   return X
@@ -234,10 +338,12 @@ def rename(X,name):
           changed = False
           for n in range(pos):
             [l,k] = inconvert_index(n)
-            if sympy.simplify(X[l,k]-X[i,j]) == 0 and X[l,k] !=0 :
+            #if sympy.simplify(X[l,k]-X[i,j]) == 0 and X[l,k] !=0 :
+            if (X[l,k]-X[i,j]) == 0 and X[l,k] !=0 :
               Y[i,j] = Y[l,k]
               changed=True
-            if sympy.simplify(X[l,k]+X[i,j]) == 0 and X[l,k] !=0:
+            #if sympy.simplify(X[l,k]+X[i,j]) == 0 and X[l,k] !=0:
+            if (X[l,k]+X[i,j]) == 0 and X[l,k] !=0:
               Y[i,j] = -Y[l,k]
               changed=True
           if not changed:

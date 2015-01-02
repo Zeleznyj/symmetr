@@ -7,6 +7,7 @@ import read
 import sympy
 from scipy import linalg
 
+sympy.init_printing()
 
 #opens the output from findsym
 data = open('sym.out')
@@ -31,9 +32,9 @@ atom=int(sys.argv[1])
 matrix = symmetrize_sympy.symmetr(syms,atom)
 
 print 'Symmetrized matrix in the abc basis intraband term:'
-print matrix[0]
+sympy.pprint(matrix[0])
 print 'Symmetrized matrix in the abc basis interband term:'
-print matrix[1]
+sympy.pprint(matrix[1])
 
 #transformation matrix from the original basis to the abc basis:
 T = sympy.zeros(3,3)
@@ -50,20 +51,17 @@ T[0,2] = vec_a[2]
 T[1,2] = vec_b[2]
 T[2,2] = vec_c[2]
 
-Ti = sympy.Matrix(linalg.inv(T))
-
 #transforms the response matrix back to the original basis
 matrix_T = []
-matrix_T.append(Ti*matrix[0]*T)
-matrix_T.append(Ti*matrix[1]*T)
+matrix_T.append(T**-1*matrix[0]*T)
+matrix_T.append(T**-1*matrix[1]*T)
 
+matrix_T_n = []
+matrix_T_n.append(symmetrize_sympy.rename(matrix_T[0],'Xo'))
+matrix_T_n.append(symmetrize_sympy.rename(matrix_T[1],'Xx'))
+
+print ''
 print 'Symmetrized matrix in the original basis intraband term:'
-print matrix_T[0]
+sympy.pprint(matrix_T_n[0])
 print 'Symmetrized matrix in the original basis interband term:'
-print matrix_T[1]
-
-mTo_rename = symmetrize_sympy.rename(matrix_T[0],'Xo')
-mTx_rename = symmetrize_sympy.rename(matrix_T[1],'Xx')
-
-print mTo_rename
-print mTx_rename
+sympy.pprint(matrix_T_n[1])
