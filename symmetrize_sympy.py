@@ -12,12 +12,26 @@ import sys
 #matrix = ['00','01','02','10','11','12','20','21','22']
 
 def convert_index(i,j):
+  matrix = ['00','01','02','10','11','12','20','21','22']
   n = i*3+j
   return n
 
+
 # converts from 1d form index to a 3x3 matrix indeces
 def inconvert_index(n):
-  matrix = ['00','01','02','10','11','12','20','21','22']
+  i=int(matrix[n][0])
+  j=int(matrix[n][1])
+  return [i,j]
+
+
+def convert_index_rev(i,j):
+  n = 8 - (i*3+j)
+  return n
+
+
+# converts from 1d form index to a 3x3 matrix indeces in a reversed order
+def inconvert_index_rev(n):
+  matrix = list(reversed(['00','01','02','10','11','12','20','21','22']))
   i=int(matrix[n][0])
   j=int(matrix[n][1])
   return [i,j]
@@ -316,10 +330,122 @@ def symmetr(symmetries,atom):
 
   return X
 
+
+def create_lineq_matrix(X):
+  
+  Y = sympy.zeros(9,9)
+
+  for i in range(3):
+    for j in range(3):
+
+      m = convert_index(i,j)
+      for k in range(3):
+        for l in range(3):
+
+          n = convert_index(k,l)
+
+          Y_p = X[i,j]
+          for o in range(3):
+            for p in range(3):
+              if o == k and p == l:
+                Y_p.subs(x[o,p],1)
+              else:
+                Y_p.subs(x[o,p],0)
+
+          Y[m,n] = Y_p
+
+  return Y
+
+
+
+#returns a symmetrical form of a spin-orbit torque response matrix for a given atom and given list of symmetries
+def symmetr2(symmetries,atom):
+
+  #this defines starting response matrix
+  #we repeat it twice, once for intraband term and once for the interband term
+  #sympy is a symbolic toolbox
+  #the matrices are symbolic matrices
+  x = sympy.MatrixSymbol('x',3,3)
+  X1 = sympy.Matrix(x)
+  X2 = sympy.Matrix(x)
+  X = []
+  X.append(X1)
+  X.append(X2)
+
+  #we do a loop over all symmetry, for each symmetry, we find what form the response matrix can have, when the system has this symmetry
+  #for next symmetry we take the symmetrized matrix from the previous symmetry as a starting point
+  for sym in symmetries:
+
+    
+    #we only consider symmetries that keep the atom invariant
+    if sym_type(atom,sym) == atom:
+      #we do everything separately for the intra and inter band terms
+      #most things are the same, the only difference in the physics is that when time-reversal is present, interband transformation has
+      #minus compared to the intraband transformation
+      for l in range(2):
+        #for all of the components of the matrix we look at how they will be transformed by the symmetry operation
+
+        #matrix_trans = create_matrix_trans(sym,l)
+
+        #the response matrix can have a form that is already constrained from a previous symmetry operation, we take this into consideration
+        #and store the information in matrix_trans_current
+        #for example under symmetry operation R, chi_00, may transform to chi_11, but we may already know that chi_11 must be equal to
+        #-chi_00, then matrix_current[0] will be 00, matrix_current[4]=-00, matrix_trans[0]=11 and matrix_trans_current[0]=-00
+        matrix_trans_current = update_trans_current2(X[l],sym,l)
+        print sym
+        sympy.pprint(X[l])
+        sympy.pprint(matrix_trans_current)
+
+        Y = sympy.zeros(9,9)
+
+        for i in range(3):
+          for j in range(3):
+
+            m = convert_index(i,j)
+            for k in range(3):
+              for ll in range(3):
+
+                n = convert_index_rev(k,ll)
+
+                Y_p = X[l][i,j]-matrix_trans_current[i,j]
+                for o in range(3):
+                  for p in range(3):
+                    if o == k and p == ll:
+                      Y_p = Y_p.subs(x[o,p],1)
+                    else:
+                      Y_p = Y_p.subs(x[o,p],0)
+
+                Y[m,n] = Y_p
+
+        sympy.pprint(Y)
+        [rref,piv] = Y.rref()        
+        sympy.pprint([rref,piv])
+
+        for j in list(reversed(piv)):
+
+          found = False
+          i = 8
+          #find the position of pivot 1
+          while found == False:
+            if rref[i,j] == 1:
+              found = True
+            else:
+              i = i-1
+
+          tmp = 0
+          for ll in range(j+1,9):
+            tmp = tmp - rref[i,ll]*x[inconvert_index_rev(ll)[0],inconvert_index_rev(ll)[1]]
+          X[l] = X[l].subs(x[inconvert_index_rev(j)[0],inconvert_index_rev(j)[1]],tmp)
+
+        sympy.pprint(X[l])
+
+  return X
+
+
 def rename(X,name):
-  #takes a matrix and renames the components so that there is no redundancy
+  #takes a matrix and _renames the components so that there is no redundancy
   #for example if there is a component equal to X_11+ X22 and a component X_11-X_22, we can rename first one to X_11 and the other to X_22
-  #this is useful when we transform a matrix to a different basis and will also be useful for hexagonal transformations probably
+  #this is useful when we transform a matrix to a different basis
 
   Y = sympy.zeros(3,3)
   Xname = sympy.Matrix(sympy.MatrixSymbol(name,3,3))
@@ -351,6 +477,29 @@ def rename(X,name):
 
   return Y
 
+
+def rename2(X):
+
+  x = sympy.MatrixSymbol('x',3,3)
+  Y = sympy.zeros(3,3)
+
+  for i in range(3):
+    for j in range(3):
+
+      if X[i,j] == 0:   #if it's zero we do nothing
+        Y[i,j] = 0
+      else:
+        pos = convert_index(i,j)
+        if pos == 0:
+          Y[i,j] = x[i,j]
+        else:
+          for n in range(pos):
+            [l,k] = inconvert_index(n)
+
+
+
+  
+  
 
         
 
