@@ -57,8 +57,8 @@ matrix_T.append(T**-1*matrix[0]*T)
 matrix_T.append(T**-1*matrix[1]*T)
 
 matrix_T_n = []
-matrix_T_n.append(symmetrize_sympy.rename(matrix_T[0],'Xo'))
-matrix_T_n.append(symmetrize_sympy.rename(matrix_T[1],'Xx'))
+matrix_T_n.append(symmetrize_sympy.rename(matrix_T[0]))
+matrix_T_n.append(symmetrize_sympy.rename(matrix_T[1]))
 
 print ''
 print 'Symmetrized matrix in the original basis intraband term:'
