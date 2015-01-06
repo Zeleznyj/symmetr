@@ -10,8 +10,8 @@ from scipy import linalg
 sympy.init_printing()
 
 #opens the output from findsym
-data = open('sym.out')
-lines = data.readlines()
+#data = open('sym.out')
+lines = sys.stdin.readlines()
 
 #reads the input
 #vec_a,b,c are needed to know the basis transformation
