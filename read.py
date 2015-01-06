@@ -185,10 +185,10 @@ def r_sym(lines):
           shift_sep[i] = float(shift_sep[i])
       shifts[l] = shift_sep
 
-  if shifts[0] != [0,0,0]:
-    sys.exit('First shift is not zero')
-  else:
-    shifts.pop(0)
+    if shifts[0] != [0,0,0]:
+      sys.exit('First shift is not zero')
+    else:
+      shifts.pop(0)
   
 
   #this adds the information about transformation of sublattices 
