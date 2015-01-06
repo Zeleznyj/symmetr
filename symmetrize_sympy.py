@@ -38,79 +38,92 @@ def inconvert_index_rev(n):
   return [i,j]
 
 
-def convert_space(s):
-  op = re.sub('-','+-',s)
-  op = re.split('\+',op)
-  op = filter(None,op) #remove empty strings from the list  
-  out = []
-  for j in range(len(op)):
-    if re.match('^x',op[j]):
-      t = (0,1)
-      out.append(t)
-    if re.match('^-x',op[j]):
-      t = (0,-1)
-      out.append(t)
-    if re.match('^y',op[j]):
-      t = (1,1)
-      out.append(t)
-    if re.match('^-y',op[j]):
-      t = (1,-1)
-      out.append(t)
-    if re.match('^z',op[j]):
-      t = (2,1)
-      out.append(t)
-    if re.match('^-z',op[j]):
-      t = (2,-1)
-      out.append(t)
+#transforms operator component by a symmetry operation
+#op_type = [operator type,component index(0,1 or 2)]
+#sym is the symmetry operation
+def convert_op(sym,op_type):
 
-  return out
+  if op_type[0] == 'v':
+
+    s = sym[1][op_type[1]]
+
+    op = re.sub('-','+-',s)
+    op = re.split('\+',op)
+    op = filter(None,op) #remove empty strings from the list  
+    out = []
+    for j in range(len(op)):
+      match = False
+      if re.match('^x',op[j]):
+        t = (0,1)
+        match = True
+      if re.match('^-x',op[j]):
+        t = (0,-1)
+        match = True
+      if re.match('^y',op[j]):
+        t = (1,1)
+        match = True
+      if re.match('^-y',op[j]):
+        t = (1,-1)
+        match = True
+      if re.match('^z',op[j]):
+        t = (2,1)
+        match = True
+      if re.match('^-z',op[j]):
+        t = (2,-1)
+        match = True
+      #if there is a time-reversal, v has a minus compared to space transformation
+      if match:
+        if sym[3] == '-1':
+          t = (t[0],-1*t[1])
+        out.append(t)
+
+    return out
+
+  if op_type[0] == 's':
+
+    s = sym[2][op_type[1]]
+
+    op = re.sub('-','+-',s)
+    op = re.split('\+',op)
+    op = filter(None,op) #remove empty strings from the list  
+    out = []
+    for j in range(len(op)):
+      if re.match('^mx',op[j]):
+        t = (0,1)
+        out.append(t)
+      if re.match('^-mx',op[j]):
+        t = (0,-1)
+        out.append(t)
+      if re.match('^my',op[j]):
+        t = (1,1)
+        out.append(t)
+      if re.match('^-my',op[j]):
+        t = (1,-1)
+        out.append(t)
+      if re.match('^mz',op[j]):
+        t = (2,1)
+        out.append(t)
+      if re.match('^-mz',op[j]):
+        t = (2,-1)
+        out.append(t)
+
+    return out
 
 
-def convert_spin(s):
-  op = re.sub('-','+-',s)
-  op = re.split('\+',op)
-  op = filter(None,op) #remove empty strings from the list  
-  out = []
-  for j in range(len(op)):
-    if re.match('^mx',op[j]):
-      t = (0,1)
-      out.append(t)
-    if re.match('^-mx',op[j]):
-      t = (0,-1)
-      out.append(t)
-    if re.match('^my',op[j]):
-      t = (1,1)
-      out.append(t)
-    if re.match('^-my',op[j]):
-      t = (1,-1)
-      out.append(t)
-    if re.match('^mz',op[j]):
-      t = (2,1)
-      out.append(t)
-    if re.match('^-mz',op[j]):
-      t = (2,-1)
-      out.append(t)
-
-  return out
-
-
-
-def transform_matrix(matrix_current,sym,l):
+#transforms matrix of linear response
+#matrix_current is the current form of the matrix
+def transform_matrix(matrix_current,sym,op1,op2,l):
 
   trans_current = sympy.zeros(3,3)
 
   for i in range(3):
     for j in range(3):
 
-      v_trans = list(convert_space(sym[1][j]))
-      s_trans = list(convert_spin(sym[2][i]))
+      op1_trans = list(convert_op(sym,[op1,i]))
+      op2_trans = list(convert_op(sym,[op2,j]))
 
-      if sym[3] == '-1':
-        for k in range(len(v_trans)):
-          v_trans[k] = (v_trans[k][0], -1 * v_trans[k][1])
-
-      for v in v_trans:
-        for s in s_trans:
+      for v in op2_trans:
+        for s in op1_trans:
           if sym[3] == '-1' and l == 1:
             trans_current[i,j] = trans_current[i,j] - v[1] * s[1] * matrix_current[s[0],v[0]]
           else:
@@ -214,8 +227,12 @@ def solve_lin(Z):
 
 
 #returns a symmetrical form of a spin-orbit torque response matrix for a given atom and given list of symmetries
+#op1 is the type of first operator in the linear response formula, op2 is the second one
+#can be set to either 's', which means spin or 'v' which means velocity
+#if proj is set to -1 (default) then no projections are taken so all symmetry operations are considered
+#if proj is set to atom index then only the symmetry operations that transform this atom into itself are considered
 #debug is an optional parameter, if it's true, then the routine outputs lots of information
-def symmetr(symmetries,atom,debug=False):
+def symmetr(symmetries,op1,op2,proj=-1,debug=False):
 
   #this defines starting response matrix
   #we repeat it twice, once for intraband term and once for the interband term
@@ -241,13 +258,21 @@ def symmetr(symmetries,atom,debug=False):
       print 'Symmetry:' 
       print sym
       print ''
-      print 'Symmetry transforms the atom ', atom, ' into atom ', sym_type(atom,sym)
-      if sym_type(atom,sym) != atom:
-        print 'Skipping symmetry'
-        print ''
+      if proj != -1:
+        print 'Symmetry transforms the atom ', proj, ' into atom ', sym_type(atom,sym)
+        if sym_type(proj,sym) != proj:
+          print 'Skipping symmetry'
+          print ''
 
-    #we only consider symmetries that keep the atom invariant
-    if sym_type(atom,sym) == atom:
+    #if there is a projection set up we only consider symmetries that keep the atom invariant
+    if proj == -1 :
+      take_sym = True
+    elif sym_type(proj,sym) == proj:
+      take_sym = True
+    else:
+      take_sym = False
+
+    if take_sym:
       #we do everything separately for the intra and inter band terms
       #most things are the same, the only difference in the physics is that when time-reversal is present, interband transformation has
       #minus compared to the intraband transformation
@@ -263,7 +288,7 @@ def symmetr(symmetries,atom,debug=False):
             print ''
 
         #this transforms the matrix by the symmetry operation
-        X_trans = transform_matrix(X[l],sym,l)
+        X_trans = transform_matrix(X[l],sym,op1,op2,l)
         
         if debug:
           print ''

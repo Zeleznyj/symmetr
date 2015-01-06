@@ -27,9 +27,17 @@ print 'c = ', vec_c[0], '* x + ', vec_c[1], '* y + ', vec_c[2], '* z'
 print ''
 
 
-#this returns the symmetrical form of spin-response tensor for sublattice with index atom
-atom=int(sys.argv[1])
-matrix = symmetrize_sympy.symmetr(syms,atom)
+op1 = str(sys.argv[1])
+op2 = str(sys.argv[2])
+if len(sys.argv) > 3:
+  atom=int(sys.argv[3])
+else:
+  atom = -1
+
+#this returns the symmetrical form of spin-response tensor for atom with index atom
+#if atom is -1 no projections are done
+#operator types are given by op1 and op2
+matrix = symmetrize_sympy.symmetr(syms,op1,op2,atom)
 
 print 'Symmetrized matrix in the abc basis intraband term:'
 sympy.pprint(matrix[0])
