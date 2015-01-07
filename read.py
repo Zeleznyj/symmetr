@@ -157,7 +157,7 @@ def r_sym(lines):
 
   #magnetic group tables
   #needs a file 'magnetic_table_bns.txt'
-  tables=open('magnetic_table_bns.txt')
+  tables=open('tables_wyckoff.txt')
 
   #read shifts of wickoff positions
   #this is neccessary to obtain all positions
