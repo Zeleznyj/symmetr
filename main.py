@@ -1,5 +1,6 @@
 import re
 import sys
+import os
 
 import symmetrize_sympy
 import read
@@ -8,6 +9,11 @@ import sympy
 from scipy import linalg
 
 sympy.init_printing()
+
+#this finds the location of the main.py file and ads this location to the path where modules are searched
+#this way the modules have to be present only in the install directory and not in the run directory
+dirname, filename = os.path.split(os.path.abspath(__file__))
+sys.path.append(str(dirname))
 
 #opens the output from findsym
 #data = open('sym.out')

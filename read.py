@@ -3,6 +3,7 @@
 import re
 import math
 import sys
+import os
 
 
 #tests if two vectors are equal with precision prec
@@ -156,8 +157,10 @@ def r_sym(lines):
   positions = r_pos(lines)
 
   #magnetic group tables
-  #needs a file 'magnetic_table_bns.txt'
-  tables=open('tables_wyckoff.txt')
+  #needs a file 'tables_wyckoff.txt' which are magnetic tables with all unneccessary information deleted
+  dirname, filename = os.path.split(os.path.abspath(__file__))
+  tables_loc = str(dirname)+'/tables_wyckoff.txt'
+  tables=open(tables_loc)
 
   #read shifts of wickoff positions
   #this is neccessary to obtain all positions
