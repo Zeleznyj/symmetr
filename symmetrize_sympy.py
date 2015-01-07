@@ -1,6 +1,5 @@
 import re
 import copy
-import mat
 import sympy
 import sys
 
