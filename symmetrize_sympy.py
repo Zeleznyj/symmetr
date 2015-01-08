@@ -258,7 +258,7 @@ def symmetr(symmetries,op1,op2,proj=-1,debug=False):
       print sym
       print ''
       if proj != -1:
-        print 'Symmetry transforms the atom ', proj, ' into atom ', sym_type(atom,sym)
+        print 'Symmetry transforms the atom ', proj, ' into atom ', sym_type(proj,sym)
         if sym_type(proj,sym) != proj:
           print 'Skipping symmetry'
           print ''
