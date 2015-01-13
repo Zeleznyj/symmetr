@@ -29,16 +29,26 @@ findsym < findsym.in > findsym.out
 Main executable is called main.py. It takes as input the type of operators, use v v for conductivity tensor, s v for non-equilibrium spin-polarization:
 
 ```
-#!python
+#!bash
 
 main.py v v < findsym.out
 main.py s v < findsym.out
 
 ```
+
+You can also do:
+
+```
+#!bash
+
+findsym < findsym.in | main.py v v
+```
+
+
 Non-equilibrium spin-polarization can also be calculated projected on a particular atom, run with s v atom_number. Atom numbers start from 0!. For example for atom with number 0 run:
 
 ```
-#!python
+#!bash
 
 main.py s v 0 < findsym.out
 
