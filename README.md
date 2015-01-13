@@ -45,7 +45,7 @@ findsym < findsym.in | main.py v v
 ```
 
 
-Non-equilibrium spin-polarization can also be calculated projected on a particular atom, run with s v atom_number. Atom numbers start from 0!. For example for atom with number 0 run:
+Non-equilibrium spin-polarization can also be calculated projected on a particular atom, run with s v atom_number. Atom numbers start from 0. For example for atom with number 0 run:
 
 ```
 #!bash
