@@ -4,7 +4,7 @@
 
 Download the findsym code from the [isotropy suite](http://stokes.byu.edu/iso/isolinux.php). This is used for determining the symmetry. See the findsym.txt file for info on the input format for findsym.
 
-Install python and sympy. Sympy is a symbolic library for python. Sympy is in the repositories of most distributions or you can download latest version from [github](https://github.com/sympy/sympy).
+Install python and sympy. Sympy is a symbolic library for python. Sympy is in the repositories of most distributions or you can download the latest version from [github](https://github.com/sympy/sympy).
 
 Download the latest version of the code using git:
 
@@ -32,7 +32,14 @@ Main executable is called main.py. It takes as input the type of operators, use 
 #!python
 
 main.py v v < findsym.out
+main.py s v < findsym.out
 
 ```
+Non-equilibrium spin-polarization can also be calculated projected on a particular atom, run with s v atom_number. Atom numbers start from 0!. For example for atom with number 0 run:
 
+```
+#!python
 
+main.py s v 0 < findsym.out
+
+```
