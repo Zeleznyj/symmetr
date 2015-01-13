@@ -43,3 +43,9 @@ Non-equilibrium spin-polarization can also be calculated projected on a particul
 main.py s v 0 < findsym.out
 
 ```
+
+The code outputs symmetrized linear response matrix in three different coordinate systems:
+
+1. Conventional unit cell - this is the unit cell used in crystallographic tables. Vectors a,b,c.
+2. Input cell - this is the cell that was used for the findsym input.
+3. Orthogonalized cell - this is an orthogonal coordinate system (not a unit cell in general) that has always z in direction of c, y in the plane bc and x orthogonal to z and y. This is an orthogonal coordinate system that is closest to the conventional unit cell. Not properly tested.
