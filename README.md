@@ -11,7 +11,7 @@ Download the latest version of the code using git:
 ```
 #!bash
 
-git clone git@bitbucket.org:zeleznyj/linear-response-symmetry.git
+git clone https://zeleznyj@bitbucket.org/zeleznyj/linear-response-symmetry.git
 ```
 
 This will create a folder called linear-response-symmetry.
