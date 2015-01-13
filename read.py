@@ -19,7 +19,7 @@ def equal_vectors(vec1,vec2,prec):
 #takes  a position (which includes a magnetic moment,) and symmetry and trasforms the position under the symmetry operation
 #it transforms the magnetic moment too
 #transformation of the magnetic moment is in principle not neccessary
-def transform_position(pos,sym):
+def transform_position(pos,sym,prec):
 
   #transforms the position
   transd = []
@@ -47,9 +47,14 @@ def transform_position(pos,sym):
           op[j] = float(op_s[0]) / float(op_s[1])
         transd[i] = transd[i] + float(op[j])
 
+  #we want all positions to be in the first unit cell, ie they must lie between 0 and 1
+  #if they are not we tranform it there
   for i in range(3):
-    if math.floor(transd[i]) != 0:
-      transd[i] = transd[i] - math.floor(transd[i])
+    transd[i] = transd[i] - math.floor(transd[i])
+    #due to rounding error it may happen that the vector still lies outside of the unit cell
+    #we have to take this into account
+    if math.floor(transd[i]+prec) != 0: #if this occurs it means trands[i] lies within prec to 1 so we can se it to 0
+      transd[i] = 0
 
   #transforms the momentum
   transd_m = []
@@ -123,7 +128,7 @@ def  r_pos(lines):
   return positions
 
 
-def r_sym(lines):
+def r_sym(lines,debug=False):
 #read symmetries 
 #format: number of symmetry, space transformation, time transformation, switch controlling
 #if there is time-reversal, list of tuples which show to which position each position transforms
@@ -148,6 +153,11 @@ def r_sym(lines):
     syms[i][2] = syms[i][2].split(',')
     syms[i].append(syms[i][1][3])
     syms[i][1] = syms[i][1][0:3]
+
+  if debug:
+    print 'found symmetries:'
+    for sym in syms:
+      print sym
 
   #read space group number
   for i in range(len(lines)):
@@ -192,30 +202,57 @@ def r_sym(lines):
       sys.exit('First shift is not zero')
     else:
       shifts.pop(0)
+
+      if debug:
+        print 'found wyckoff shifts:'
+        for shift in shifts:
+          print shift
   
 
+  if debug:
+    print 'finding info about sublattice transformations'
   #this adds the information about transformation of sublattices 
   for l in range(len(syms)):
+    if debug:
+      print ''
+      print 'taking symmetry', syms[l]
     sym_trans = []
     for i in range(len(positions)):
-      trans = transform_position(positions[i],syms[l])
+      trans = transform_position(positions[i],syms[l],0.001)
+      if debug:
+        print 'taking position:', positions[i]
+        print 'transformed to:', trans
       for j in range(len(positions)):
         if equal_vectors(trans,positions[j],0.001):
           sym_trans.append((i,j))
+          if debug:
+            print 'transformed atom identified as atom ', j, ' with position ', positions[j]
         else:
           for k in range(len(shifts)):
-            pos_shift = []
-            for ind in range(3):
-              pos_shift.append(positions[j][ind]+shifts[k][ind])
-              pos_shift[ind] = pos_shift[ind] - math.floor(pos_shift[ind])
-            for ind in range(3):
-              pos_shift.append(positions[j][ind+3])
+            sym_temp =['',['x+'+str(shifts[k][0]),'y+'+str(shifts[k][1]),'z+'+str(shifts[k][2])],['mx','my','mz']]
+            pos_shift = transform_position(positions[j],sym_temp,0.001)
             if equal_vectors(trans,pos_shift,0.001):
               sym_trans.append((i,j))
+              if debug:
+                print 'transformed atom identified as atom ', j, ' with position ', positions[j]
 
     if len(sym_trans) != len(positions):
+      print syms[l]
+      print sym_trans
       sys.exit('Wrong number of transformed atoms. Something\'s wrong')
     syms[l].append(list(sym_trans))
 
   return syms
+
+
+def r_abc(lines):
+
+  for i in range(len(lines)):
+    if "Values of a,b,c,alpha,beta,gamma" in lines[i]:
+      pos_abc = i
+
+  abc = lines[pos_abc+1].split()
+
+  return abc
+
 

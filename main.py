@@ -7,9 +7,10 @@ import symmetrize_sympy
 import read
 
 import sympy
-from scipy import linalg
-
-sympy.init_printing()
+from mpmath import cos as mcos
+from mpmath import sin as msin
+from mpmath import acos as macos
+from mpmath import radians as mradians
 
 #this finds the location of the main.py file and ads this location to the path where modules are searched
 #this way the modules have to be present only in the install directory and not in the run directory
@@ -19,6 +20,7 @@ sys.path.append(str(dirname))
 #opens the output from findsym
 #data = open('sym.out')
 lines = sys.stdin.readlines()
+
 
 #reads the input
 #vec_a,b,c are needed to know the basis transformation
@@ -55,21 +57,23 @@ sympy.pprint(matrix[1])
 T = sympy.zeros(3,3)
 
 T[0,0] = vec_a[0]
-T[1,0] = vec_b[0]
-T[2,0] = vec_c[0]
+T[1,0] = vec_a[1]
+T[2,0] = vec_a[2]
 
-T[0,1] = vec_a[1]
+T[0,1] = vec_b[0]
 T[1,1] = vec_b[1]
-T[2,1] = vec_c[1]
+T[2,1] = vec_b[2]
 
-T[0,2] = vec_a[2]
-T[1,2] = vec_b[2]
+T[0,2] = vec_c[0]
+T[1,2] = vec_c[1]
 T[2,2] = vec_c[2]
+
+
 
 #transforms the response matrix back to the original basis
 matrix_T = []
-matrix_T.append(T**-1*matrix[0]*T)
-matrix_T.append(T**-1*matrix[1]*T)
+matrix_T.append(T*matrix[0]*T.T)
+matrix_T.append(T*matrix[1]*T.T)
 
 matrix_T_n = []
 matrix_T_n.append(symmetrize_sympy.rename(matrix_T[0]))
@@ -80,3 +84,42 @@ print 'Symmetrized matrix in the original basis intraband term:'
 sympy.pprint(matrix_T_n[0])
 print 'Symmetrized matrix in the original basis interband term:'
 sympy.pprint(matrix_T_n[1])
+
+#transform to cubic
+#this transforms the results to an orthogonal basis defined in the following way:
+#vector z=c
+#vector y lies in the bc plane and is ortogonal to z
+#vector x is ortogonal to y and z and they form a right-handed system
+#length of x is a, of y is b and of z is c
+
+T2 = sympy.zeros(3,3)
+
+abc = read.r_abc(lines)
+
+al = mradians(float(abc[3]))
+bet = mradians(float(abc[4]))
+gam = mradians(float(abc[5]))
+gam2 = macos((mcos(gam)-mcos(bet)*mcos(al))/(msin(al)*msin(bet)))
+
+T2[0,0] = msin(gam2)*msin(bet)
+T2[1,0] = mcos(gam2)*msin(bet)
+T2[2,0] = mcos(bet)
+
+T2[0,1] = 0
+T2[1,1] = msin(al)
+T2[2,1] = mcos(al)
+
+T2[0,2] = 0
+T2[1,2] = 0
+T2[2,2] = 1
+
+matrix_T2 = []
+matrix_T2.append(symmetrize_sympy.rename(T2*matrix[0]*T2.T))
+matrix_T2.append(symmetrize_sympy.rename(T2*matrix[1]*T2.T))
+
+print ''
+print 'EXPERIMENTAL: Symmetrized matrix in the orthogonalized basis intraband term:'
+sympy.pprint(matrix_T2[0])
+print 'EXPERIMENTAL: Symmetrized matrix in the orthogonalized basis interband term:'
+sympy.pprint(matrix_T2[1])
+

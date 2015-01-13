@@ -251,14 +251,13 @@ def symmetr(symmetries,op1,op2,proj=-1,debug=False):
   #we do a loop over all symmetry operations, for each symmetry, we find what form the response matrix can have, when the system has this symmetry
   #for next symmetry we take the symmetrized matrix from the previous symmetry as a starting point
   for sym in symmetries:
-
     
     if debug:
       print 'Symmetry:' 
       print sym
       print ''
       if proj != -1:
-        print 'Symmetry transforms the atom ', proj, ' into atom ', sym_type(atom,sym)
+        print 'Symmetry transforms the atom ', proj, ' into atom ', sym_type(proj,sym)
         if sym_type(proj,sym) != proj:
           print 'Skipping symmetry'
           print ''
@@ -283,7 +282,7 @@ def symmetr(symmetries,op1,op2,proj=-1,debug=False):
             print ''
           if l == 1:
             print ''
-            print 'Intraband term:'
+            print 'Interband term:'
             print ''
 
         #this transforms the matrix by the symmetry operation
@@ -297,6 +296,7 @@ def symmetr(symmetries,op1,op2,proj=-1,debug=False):
           print ''
           print 'Transformed matrix:'
           print ''
+          print X_trans
           sympy.pprint(X_trans)
 
         #the matrix must be equal to the transformed matrix, this give us a system of 9 linear equations
