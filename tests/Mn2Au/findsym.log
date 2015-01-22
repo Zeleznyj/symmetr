@@ -1,0 +1,32 @@
+FINDSYM, Version 4.2, June 2014
+Written by Harold T. Stokes, Branton J. Campbell, and Dorian M. Hatch
+Brigham Young University
+ 
+Mn2Au
+Tolerance:    0.00100
+Lattice parameters, a,b,c,alpha,beta,gamma:
+   3.00000   3.00000   8.00000  90.00000  90.00000  90.00000
+Centering: I
+Number of atoms in unit cell:
+  3
+Type of each atom:
+2*Mn Au 
+Position and magnetic moment of each atom (dimensionless coordinates)
+   1   0.00000   0.00000   0.33333     1.00000   1.00000   0.00000
+   2   0.00000   0.00000   0.66667    -1.00000  -1.00000   0.00000
+   3   0.00000   0.00000   0.00000     0.00000   0.00000   0.00000
+------------------------------------------
+Space Group 69.523  Fm'mm               
+Origin at    0.00000   0.00000   0.00000
+Vectors a,b,c:
+  -1.00000   1.00000   0.00000
+  -1.00000  -1.00000   0.00000
+   0.00000   0.00000   1.00000
+Values of a,b,c,alpha,beta,gamma:
+   4.24264   4.24264   8.00000  90.00000  90.00000  90.00000
+Atomic positions and magnetic moments in terms of a,b,c:
+Wyckoff position i, z =  0.33333, my = -1.41421
+   1   0.50000   0.50000   0.33333     0.00000  -1.41421   0.00000
+   2   0.50000   0.50000   0.66667     0.00000   1.41421   0.00000
+Wyckoff position a
+   3   0.00000   0.00000   0.00000     0.00000   0.00000   0.00000

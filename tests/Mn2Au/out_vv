@@ -1,0 +1,43 @@
+using basis:
+a =  -1.00000 * x +  1.00000 * y +  0.00000 * z
+b =  -1.00000 * x +  -1.00000 * y +  0.00000 * z
+c =  0.00000 * x +  0.00000 * y +  1.00000 * z
+
+Symmetrized matrix in the abc basis intraband term:
+[x_00   0     0  ]
+[                ]
+[ 0    x_11   0  ]
+[                ]
+[ 0     0    x_22]
+Symmetrized matrix in the abc basis interband term:
+[0  0  0]
+[       ]
+[0  0  0]
+[       ]
+[0  0  0]
+
+Symmetrized matrix in the original basis intraband term:
+[  x_00      x_01     0  ]
+[                        ]
+[1.0*x_01  1.0*x_00   0  ]
+[                        ]
+[   0         0      x_22]
+Symmetrized matrix in the original basis interband term:
+[0  0  0]
+[       ]
+[0  0  0]
+[       ]
+[0  0  0]
+
+EXPERIMENTAL: Symmetrized matrix in the orthogonalized basis intraband term:
+[x_00  6.12323399573677e-17*x_00              0            ]
+[                                                          ]
+[ 0              x_11             6.12323399573677e-17*x_11]
+[                                                          ]
+[ 0                0                        x_22           ]
+EXPERIMENTAL: Symmetrized matrix in the orthogonalized basis interband term:
+[0  0  0]
+[       ]
+[0  0  0]
+[       ]
+[0  0  0]
