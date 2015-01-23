@@ -234,7 +234,7 @@ def solve_lin(Z):
 def symmetr(symmetries,op1,op2,proj=-1,debug=False):
 
   #this defines starting response matrix
-  #we repeat it twice, once for intraband term and once for the interband term
+  #we repeat it twice, once for the even part and once for the odd part
   #sympy is a symbolic toolbox
   #the matrices are symbolic matrices
   x = sympy.MatrixSymbol('x',3,3)
@@ -272,8 +272,8 @@ def symmetr(symmetries,op1,op2,proj=-1,debug=False):
 
     if take_sym:
       #we do everything separately for the intra and inter band terms
-      #most things are the same, the only difference in the physics is that when time-reversal is present, interband transformation has
-      #minus compared to the intraband transformation
+      #most things are the same, the only difference in the physics is that when time-reversal is present, odd part  transformation has
+      #minus compared to the even part transformation
       for l in range(2):
         if debug:
           if l == 0:
@@ -382,13 +382,19 @@ def symmetr(symmetries,op1,op2,proj=-1,debug=False):
 
   if debug:
     print ''
-    print 'Symmetrized matrix intraband term:'
+    print 'Symmetrized matrix even part:'
     sympy.pprint(X[0])
     print ''
-    print 'Symmetrized matrix interband term:'
+    print 'Symmetrized matrix odd part:'
     sympy.pprint(X[1])
     print ''
     print '======= End symmetrizing ======='
+
+  if op1 == op2:
+    #if operators are the same then the even part has to be symmetrical and odd part antisymetrical
+
+    X[0] = sym_part(X[0])
+    X[1] = asym_part(X[1])
 
   return X
 
@@ -493,6 +499,19 @@ def rename(X,debug=False):
 
   return Y
 
+
+def sym_part(X):
+  #takes  a 3x3 matrix and returns its symmetrical part
+  Y  = X + X.T
+  return Y
+
+def asym_part(X):
+  Y = X - X.T
+  return Y
+      
+      
+      
+
 def rename_old(X,name):
   #takes a matrix and _renames the components so that there is no redundancy
   #for example if there is a component equal to X_11+ X22 and a component X_11-X_22, we can rename first one to X_11 and the other to X_22
@@ -529,11 +548,13 @@ def rename_old(X,name):
   return Y
 
 
+
+
 #returns a symmetrical form of a spin-orbit torque response matrix for a given atom and given list of symmetries
 def symmetr_old(symmetries,atom):
 
   #this defines starting response matrix
-  #we repeat it twice, once for intraband term and once for the interband term
+  #we repeat it twice, once for the even part and once for the odd part
   #sympy is a symbolic toolbox
   #the matrices are symbolic matrices
   X1 = sympy.Matrix(sympy.MatrixSymbol('Xo',3,3))
@@ -550,8 +571,8 @@ def symmetr_old(symmetries,atom):
     #we only consider symmetries that keep the atom invariant
     if sym_type(atom,sym) == atom:
       #we do everything separately for the intra and inter band terms
-      #most things are the same, the only difference in the physics is that when time-reversal is present, interband transformation has
-      #minus compared to the intraband transformation
+      #most things are the same, the only difference in the physics is that when time-reversal is present, odd part transformation has
+      #minus compared to the even part transformation
       for l in range(2):
         #for all of the components of the matrix we look at how they will be transformed by the symmetry operation
 

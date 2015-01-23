@@ -48,9 +48,9 @@ else:
 #operator types are given by op1 and op2
 matrix = symmetrize_sympy.symmetr(syms,op1,op2,atom)
 
-print 'Symmetrized matrix in the abc basis intraband term:'
+print 'Symmetrized matrix in the abc basis even part:'
 sympy.pprint(matrix[0])
-print 'Symmetrized matrix in the abc basis interband term:'
+print 'Symmetrized matrix in the abc basis odd part:'
 sympy.pprint(matrix[1])
 
 #transformation matrix from the original basis to the abc basis:
@@ -80,9 +80,9 @@ matrix_T_n.append(symmetrize_sympy.rename(matrix_T[0]))
 matrix_T_n.append(symmetrize_sympy.rename(matrix_T[1]))
 
 print ''
-print 'Symmetrized matrix in the original basis intraband term:'
+print 'Symmetrized matrix in the original basis even part:'
 sympy.pprint(matrix_T_n[0])
-print 'Symmetrized matrix in the original basis interband term:'
+print 'Symmetrized matrix in the original basis odd part:'
 sympy.pprint(matrix_T_n[1])
 
 #transform to cubic
@@ -118,8 +118,8 @@ matrix_T2.append(symmetrize_sympy.rename(T2*matrix[0]*T2.T))
 matrix_T2.append(symmetrize_sympy.rename(T2*matrix[1]*T2.T))
 
 print ''
-print 'EXPERIMENTAL: Symmetrized matrix in the orthogonalized basis intraband term:'
+print 'EXPERIMENTAL: Symmetrized matrix in the orthogonalized basis even part:'
 sympy.pprint(matrix_T2[0])
-print 'EXPERIMENTAL: Symmetrized matrix in the orthogonalized basis interband term:'
+print 'EXPERIMENTAL: Symmetrized matrix in the orthogonalized basis odd part:'
 sympy.pprint(matrix_T2[1])
 
