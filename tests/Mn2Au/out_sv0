@@ -3,39 +3,39 @@ a =  -1.00000 * x +  1.00000 * y +  0.00000 * z
 b =  -1.00000 * x +  -1.00000 * y +  0.00000 * z
 c =  0.00000 * x +  0.00000 * y +  1.00000 * z
 
-Symmetrized matrix in the abc basis intraband term:
+Symmetrized matrix in the abc basis even part:
 [ 0    x_01  0]
 [             ]
 [x_10   0    0]
 [             ]
 [ 0     0    0]
-Symmetrized matrix in the abc basis interband term:
+Symmetrized matrix in the abc basis odd part:
 [0   0     0  ]
 [             ]
 [0   0    x_12]
 [             ]
 [0  x_21   0  ]
 
-Symmetrized matrix in the original basis intraband term:
+Symmetrized matrix in the original basis even part:
 [  x_00       x_01     0]
 [                       ]
 [-1.0*x_01  -1.0*x_00  0]
 [                       ]
 [    0          0      0]
-Symmetrized matrix in the original basis interband term:
+Symmetrized matrix in the original basis odd part:
 [ 0       0        x_02  ]
 [                        ]
 [ 0       0      1.0*x_02]
 [                        ]
 [x_20  1.0*x_20     0    ]
 
-EXPERIMENTAL: Symmetrized matrix in the orthogonalized basis intraband term:
+EXPERIMENTAL: Symmetrized matrix in the orthogonalized basis even part:
 [ 0              x_01             6.12323399573677e-17*x_01]
 [                                                          ]
 [x_10  6.12323399573677e-17*x_10              0            ]
 [                                                          ]
 [ 0                0                          0            ]
-EXPERIMENTAL: Symmetrized matrix in the orthogonalized basis interband term:
+EXPERIMENTAL: Symmetrized matrix in the orthogonalized basis odd part:
 [0   0                              0                          ]
 [                                                              ]
 [0   0                            x_12                         ]
