@@ -33,7 +33,7 @@ class tensor:
       self.v = {}
       for ind in self.inds:
 
-        s_tot = var_name(name,ind)
+        s_tot = var_name(name,ind,self.dim1)
         self.v[s_tot] = sympy.symbols(s_tot)
 
     #self.t contains the tensor itself, stored as a dictionary
@@ -44,7 +44,7 @@ class tensor:
       if kind == 0:
         self.t[ind] = 0
       if kind == 's':
-        n_ind = var_name(name,ind)
+        n_ind = var_name(name,ind,self.dim1)
         self.t[ind] = self.v[n_ind]
         self.x[ind] = self.v[n_ind]
 
@@ -130,7 +130,19 @@ class tensor:
       return False
     else:
       return True
-    
+
+  def __type__(self):
+    return 'tensor'
+
+  def mat(self):
+    if self.dim2 != 2:
+      raise TypeError
+    out = sympy.zeros(self.dim1,self.dim1)
+    for i in range(self.dim1):
+      for j in range(self.dim1):
+        out[i,j] = self[i,j]
+    return out
+
 
 def makeinds(dim1,dim2):
 
@@ -152,12 +164,29 @@ def makeinds(dim1,dim2):
   return num
 
 
-def var_name(name,num):
+def var_name(name,num,dim):
 
   s_ind = ''
   for i in num:
-    s_ind = s_ind + str(i)
+    if dim < 11:
+      s_ind = s_ind + str(i)
+    else:
+      s_ind = s_ind + '_' + str(i)
 
-  s_tot = '%s%s' % (name,s_ind)
+  if dim <11:
+    s_tot = '%s%s' % (name,s_ind)
+  else:
+    s_tot = '%s%s' % (name,s_ind)
+
   return s_tot 
+
+def mat2ten(mat):
+  if mat.cols != mat.rows:
+    raise TypeError
+  else:
+    out = tensor(0,mat.cols,2)
+    for i in range(mat.cols):
+      for j in range(mat.cols):
+        out[i,j] = mat[i,j]
+    return out
   
