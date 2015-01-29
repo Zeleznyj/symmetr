@@ -16,6 +16,15 @@ git clone https://zeleznyj@bitbucket.org/zeleznyj/linear-response-symmetry.git
 
 This will create a folder called linear-response-symmetry.
 
+If you want to later update the code, run:
+
+```
+#!bash
+
+git pull origin master
+```
+from the folder where the code is located.
+
 ## How to use ##
 
 Create input file for findsym and run findsym:
