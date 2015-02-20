@@ -80,9 +80,9 @@ if 'abc' in basis or 'all' in basis:
   print ''
 
   print 'Symmetrized matrix in the abc basis even part:'
-  sympy.pprint(mat[0].mat())
+  X[0].pprint()
   print 'Symmetrized matrix in the abc basis odd part:'
-  sympy.pprint(mat[1].mat())
+  X[1].pprint()
 
 
 if 'i' in basis or 'all' in basis:
@@ -205,4 +205,6 @@ if equiv:
   
   C = symmetrize_sympy.find_equiv(X_I,op1,op2,atom,syms_nm,pos_t,T_nm,shift,debug_equiv)
   C.pprint()
+
+
   
