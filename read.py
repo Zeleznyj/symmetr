@@ -102,6 +102,21 @@ def r_basis(lines):
   return [vec_a,vec_b,vec_c]
 
 
+def r_origin(lines):
+  out = False
+  #finds the origin
+  for i in range(len(lines)):
+    if "Origin at" in lines[i]:
+      out = lines[i].split()[2:5]
+  for i in range(3):
+    out[i] = float(out[i])
+  #if we don't find the origin, we assum it's at 0,0,0    
+  if not out:
+    out = [0,0,0]
+  return out
+        
+
+
 def  r_pos(lines):
 #read atomic positions
 #format: list containing six floats for each position first three are the positions the other three magnetic moment

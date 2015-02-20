@@ -1,7 +1,13 @@
 import re
 import copy
-import sympy
 import sys
+import math
+
+import sympy
+import numpy as np
+
+from tensors import matrix, mat2ten
+from read import transform_position
 
 #matrices 3x3 are stored in the following 1d form
 #note that python starts numbering from 0, so the following represents a matrix:
@@ -42,6 +48,7 @@ def inconvert_index_rev(n):
 #sym is the symmetry operation
 def convert_op(sym,op_type):
 
+  #velocity operator
   if op_type[0] == 'v':
 
     s = sym[1][op_type[1]]
@@ -78,6 +85,7 @@ def convert_op(sym,op_type):
 
     return out
 
+  #spin operator
   if op_type[0] == 's':
 
     s = sym[2][op_type[1]]
@@ -108,12 +116,102 @@ def convert_op(sym,op_type):
 
     return out
 
+  #torque operator
+  if op_type[0] == 't':
+
+    s = sym[2][op_type[1]]
+
+    op = re.sub('-','+-',s)
+    op = re.split('\+',op)
+    op = filter(None,op) #remove empty strings from the list  
+    out = []
+    for j in range(len(op)):
+      match = False
+      if re.match('^mx',op[j]):
+        t = (0,1)
+        out.append(t)
+      if re.match('^-mx',op[j]):
+        t = (0,-1)
+        out.append(t)
+      if re.match('^my',op[j]):
+        t = (1,1)
+        out.append(t)
+      if re.match('^-my',op[j]):
+        t = (1,-1)
+        out.append(t)
+      if re.match('^mz',op[j]):
+        t = (2,1)
+        out.append(t)
+      if re.match('^-mz',op[j]):
+        t = (2,-1)
+        out.append(t)
+      if match:
+        if sym[3] == '-1':
+          t = (t[0],-1*t[1])
+        out.append(t)
+
+    return out
+  
+  #transformation of a position operator
+  if op_type[0] == 'x':
+
+    s = sym[1][op_type[1]]
+
+    op = re.sub('-','+-',s)
+    op = re.split('\+',op)
+    op = filter(None,op) #remove empty strings from the list  
+    out = []
+    for j in range(len(op)):
+      match = False
+      if re.match('^x',op[j]):
+        t = (0,1)
+        match = True
+      if re.match('^-x',op[j]):
+        t = (0,-1)
+        match = True
+      if re.match('^y',op[j]):
+        t = (1,1)
+        match = True
+      if re.match('^-y',op[j]):
+        t = (1,-1)
+        match = True
+      if re.match('^z',op[j]):
+        t = (2,1)
+        match = True
+      if re.match('^-z',op[j]):
+        t = (2,-1)
+        match = True
+      if match:
+        out.append(t)
+
+    return out
+  
+  #finds a translational component of a transformation
+  if op_type[0] == 'translation':
+    
+    s = sym[1][op_type[1]]
+
+    op = re.sub('-','+-',s)
+    op = re.split('\+',op)
+    op = filter(None,op) #remove empty strings from the list  
+    out = []
+    for j in range(len(op)):
+      match = False
+      if re.match('-?[0-9]*[./]?[0-9]+',op[j]):
+        if re.match('-?[0-9.]+/[0-9.]+',op[j]):
+          op_s = op[j].split('/')
+          op[j] = float(op_s[0]) / float(op_s[1])
+          match = True
+      if match:
+        out.append(op[j])
+
+    return out
 
 #transforms matrix of linear response
 #matrix_current is the current form of the matrix
 def transform_matrix(matrix_current,sym,op1,op2,l):
 
-  trans_current = sympy.zeros(3,3)
+  trans_current = matrix(0,3)
 
   for i in range(3):
     for j in range(3):
@@ -161,6 +259,15 @@ def sym_type(atom,sym):
   else:
     return a
 
+def sym_part(X):
+  #takes  a 3x3 matrix and returns its symmetrical part
+  Y  = ( X + X.T() ) / 2
+  return Y
+
+def asym_part(X):
+  Y = ( X - X.T() ) / 2
+  return Y
+      
 
 #outputs a solution to the linear equation system represented by matrix Z
 #last column of Z is the right hand side
@@ -225,7 +332,321 @@ def solve_lin(Z):
   return out
 
 
-#returns a symmetrical form of a spin-orbit torque response matrix for a given atom and given list of symmetries
+def convert_X(X,T,ren=True,debug=False):
+  #converts a matrix of linear response by matrix T
+  X_T = []
+
+  if not isinstance(T,matrix):
+    T = mat2ten(T)
+
+  if ren:
+    X_T.append(rename(T*X[0]*T.T(),'x',debug))
+    X_T.append(rename(T*X[1]*T.T(),'x',debug))
+  else:
+    X_T.append(T*X[0]*T.T())
+    X_T.append(T*X[1]*T.T())
+
+  return X_T
+
+
+def convert_pos(poss,T,shift):
+
+  poss_T = []
+  for pos in poss:
+    pos_s = np.array(pos[0:3])
+    pos_m = np.array(pos[3:6])
+
+    pos_s_t = np.dot(T,pos_s) + shift
+    #shift to first unit cell
+    for i in range(3):
+      pos_s_t[i] = pos_s_t[i] - math.floor(pos_s_t[i])
+      if np.allclose(pos_s_t[i],1):
+        pos_s_t[i] = 0
+      if np.allclose(pos_s_t[i],0):
+        pos_s_t[i] = 0
+
+
+    pos_m_t = np.dot(T,pos_m)
+
+    poss_T.append(list(pos_s_t)+list(pos_m_t))
+
+  return poss_T
+
+
+#returns the matrix form of the symmetry operation both for the space and the magnetic part
+def sym2mat(sym):
+  #space part
+  sym_s = np.zeros((3,3))
+  for i in range(3):
+    trans = convert_op(sym,['x',i])
+    for t in trans:
+      for l in range(3):
+        if t[0] == l:
+          sym_s[i,l] = t[1]
+
+  #translation
+  sym_sv = np.zeros((3))
+  for i in range(3):
+    trans = convert_op(sym,['translation',i])
+    for t in trans:
+      sym_sv[i] = sym_sv[i] + t
+
+  #magnetic part
+  sym_m = np.zeros((3,3))
+  for i in range(3):
+    trans = convert_op(sym,['s',i])
+    for t in trans:
+      for l in range(3):
+        if t[0] == l:
+          sym_m[i,l] = t[1]
+
+  return [sym_s,sym_sv,sym_m]
+
+#converts the matrix represenation of the symmetry operation back to the original form
+def mat2sym(msym):
+
+  sym = []
+  sym.append('')
+
+  prec = 1.e-14
+
+  sym_s = msym[0]
+  sym_sv = msym[1]
+  sym_m = msym[2]
+
+  #space part  
+  sym1 = []
+  for i in range(3):
+    t = ''
+    for j in range(3):
+      if j == 0:
+        symb = 'x'
+      if j == 1:
+        symb = 'y'
+      if j == 2:
+        symb = 'z'
+      if abs(sym_s[i,j]-1) < prec:
+        if t == '':
+          t = t + symb
+        else:
+          t = t + '+' + symb
+      elif abs(sym_s[i,j]+1) < prec:
+        t = t + '-'+symb
+      elif abs(sym_s[i,j]) > prec:
+        t = t + str(sym_s[i,j])+symb
+    sym1.append(t)
+
+  for i in range(3):
+    if sym_sv[i] > prec:
+      if abs(sym_sv[i]-0.5) < prec:
+        sym1[i] = sym1[i] + '+1/2'
+      elif abs(sym_sv[i]-1./3.) < prec:
+        sym1[i] = sym1[i] + '+1/3'
+      elif abs(sym_sv[i]-2./3.) < prec:
+        sym1[i] = sym1[i] + '+2/3'
+      else:
+        sym1[i] = sym1[i] + '+' + str(sym_sv[i])
+    elif sym_sv[i] < -prec:
+      if abs(sym_sv[i]+0.5) < prec:
+        sym1[i] = sym1[i] + '-1/2'
+      elif abs(sym_sv[i]+1./3.) < prec:
+        sym1[i] = sym1[i] + '-1/3'
+      elif abs(sym_sv[i]+2./3.) < prec:
+        sym1[i] = sym1[i] + '-2/3'
+      else:
+        sym1[i] = sym1[i] + str(sym_sv[i])
+
+  #magnetic part  
+  sym2 = []
+  for i in range(3):
+    t = ''
+    for j in range(3):
+      if j == 0:
+        symb = 'mx'
+      if j == 1:
+        symb = 'my'
+      if j == 2:
+        symb = 'mz'
+      if abs(sym_m[i,j]-1) < prec:
+        if t == '':
+          t = t + symb
+        else:
+          t = t + '+' + symb
+      elif abs(sym_m[i,j]+1) < prec:
+        t = t + '-'+symb
+      elif abs(sym_m[i,j]) > prec:
+        t = t + str(sym_m[i,j])+symb
+    sym2.append(t)
+
+  sym.append(sym1)
+  sym.append(sym2)
+
+  return sym
+
+#takes a symmetry operation and transforms it to a different coordinate system, represented by T and shift
+def convert_sym(sym,T,shift,debug=False):
+
+  prec = 1.e-13
+
+  Ti = np.linalg.inv(T)
+
+  sym_mat = sym2mat(sym)
+
+  trans1 = np.dot(T,np.dot(sym_mat[0],Ti))
+  trans2 = np.dot(T,np.dot(sym_mat[2],Ti))
+
+  trans_v1 = np.dot(T,np.array(sym_mat[1])) 
+  trans_v2 = np.dot(sym_mat[0],shift)-shift
+  trans_v2 = np.dot(T,trans_v2)
+  trans_v = trans_v1 + trans_v2
+
+  for i in range(3):
+    if math.floor(trans_v[i] + prec) > 0:
+      trans_v[i] -= math.floor(trans_v[i])
+    if math.floor(trans_v[i]-prec) < -1:
+      trans_v[i] -= math.floor(trans_v[i])
+
+  sym_trans = mat2sym([trans1,trans_v,trans2])
+  sym_trans[0] = sym[0]
+  sym_trans.append(sym[3])
+  sym_trans.append(sym[4])
+
+  return sym_trans
+
+
+#class to store information about different magnetic configurations
+class confs:
+
+  def __init__(self):
+
+    self.confs = {}
+    self.Xs = {}
+    self.nconfs = 0
+
+  def add(self,conf,X):
+
+    self.confs[self.nconfs] = conf
+    self.Xs[self.nconfs] = X
+    self.nconfs += 1
+    
+  def is_in(self,conf):
+      
+    out = False
+    for i in range(self.nconfs):
+      out_t = True
+      for j in self.confs[i]:
+        if not np.allclose(self.confs[i][j],conf[j]):
+          out_t = False
+      if out_t:
+        out = True
+
+    return out
+
+  def pprint(self,m=-1):
+
+    if m == -1:
+      ran = range(self.nconfs)
+    else:
+      ran = [m]
+    
+    for n in ran:
+      if n== 0:
+        print 'starting configuration:'
+      else:
+        print 'configuration %s' %n
+      for p in self.confs[n]:
+        print 'atom %s, m = %s, %s, %s' %(p,self.confs[n][p][0],self.confs[n][p][1],self.confs[n][p][2])
+      print 'even part:'
+      self.Xs[n][0].pprint()
+      print 'odd part:\n'
+      self.Xs[n][1].pprint()
+      print ''
+
+  def convert(self,T,shift):
+    #converts to a different coordinate system
+
+    Tt = mat2ten(T)    
+
+    confs_t = confs()
+    for n in range(self.nconfs):
+
+      conf_t = {}
+      for j in self.confs[n]:
+        pos = self.confs[n][j]
+        pos_t = np.dot(T,pos) + np.array(shift)
+        conf_t[j] = pos_t
+
+      X = self.Xs[n]
+      X_t = []
+      X_t.append(Tt*X[0]*Tt.T())
+      X_t.append(Tt*X[1]*Tt.T())
+
+      confs_t.add(conf_t,X_t)
+
+    return confs_t
+
+
+#takes a tensor and a list of nonmagnetic symmetries and find the form of the tensor for all equivalent configurations
+def find_equiv(X,op1,op2,atom,syms,pos,T,shift,debug=False):
+  
+  if debug:
+    print 'starting find_equiv'
+
+  start_conf = {}
+  for i in range(len(pos)):
+    a = round(float(pos[i][3]),5)
+    b = round(float(pos[i][4]),5)
+    c = round(float(pos[i][5]),5)
+    if a!=0 or b !=0 or c != 0:
+      start_conf[i] = np.array([a,b,c])
+
+  C = confs()
+  C.add(start_conf,X)
+
+  if debug:
+    C.pprint(0)
+
+  for sym in syms:
+
+    if atom == -1 or atom == sym_type(atom,sym):
+
+      if debug:
+        print 'taking sym: '
+        print sym
+
+      sym_mag = convert_sym(sym,T,shift)
+
+      if debug:
+        print 'symmetry in the magnetic basis:'
+        print sym_mag
+
+      conf_t = {}
+      for p in start_conf:
+        pos_t = [0,0,0,start_conf[p][0],start_conf[p][1],start_conf[p][2]]
+        pos_t = transform_position(pos_t,sym_mag,1.e-13)
+        conf_t[sym_type(p,sym)] = np.array([round(pos_t[3],5),round(pos_t[4],5),round(pos_t[5],5)])
+
+      if debug:
+        print 'symmetry transforms starting configuration to configuration:'
+        for p in conf_t:
+          print 'atom %s, m = %s, %s, %s' %(p,conf_t[p][0],conf_t[p][1],conf_t[p][2])
+      
+      if not C.is_in(conf_t):
+        if debug:
+          print 'configuration has not been found before'
+        Xt = []
+        for l in range(2):
+          Xt.append(transform_matrix(X[l],sym_mag,op1,op2,l))
+        if debug:
+          print 'even part converted to:'
+          Xt[0].pprint()
+          Xt[1].pprint()
+        C.add(conf_t,Xt)
+  
+  return C
+
+
+#returns a symmetrical form of a response matrix for a given atom and given list of symmetries
 #op1 is the type of first operator in the linear response formula, op2 is the second one
 #can be set to either 's', which means spin or 'v' which means velocity
 #if proj is set to -1 (default) then no projections are taken so all symmetry operations are considered
@@ -237,9 +658,9 @@ def symmetr(symmetries,op1,op2,proj=-1,debug=False):
   #we repeat it twice, once for the even part and once for the odd part
   #sympy is a symbolic toolbox
   #the matrices are symbolic matrices
-  x = sympy.MatrixSymbol('x',3,3)
-  X1 = sympy.Matrix(x)
-  X2 = sympy.Matrix(x)
+  
+  X1 = matrix('s',3)
+  X2 = matrix('s',3)
   X = []
   X.append(X1)
   X.append(X2)
@@ -292,18 +713,17 @@ def symmetr(symmetries,op1,op2,proj=-1,debug=False):
           print ''
           print 'Current form of the matrix:'
           print ''
-          sympy.pprint(X[l])
+          sympy.pprint(X[l].mat())
           print ''
           print 'Transformed matrix:'
           print ''
-          print X_trans
-          sympy.pprint(X_trans)
+          sympy.pprint(X_trans.mat())
 
         #the matrix must be equal to the transformed matrix, this give us a system of 9 linear equations
         #matrix Y is a matrix that represents this system, ie the system X-X_trans = 0
         #we reverse the order of the rows - ie the first row corresponds to x[2,2] and last to x[0,0]
         # it doesn't really matter but the results are more natural this way
-        Y = sympy.zeros(9,9)
+        Y = matrix(0,9)
 
         #we do a loop over all rows of the matrix Y - ie over all linear equations
         for i in range(3):
@@ -324,20 +744,20 @@ def symmetr(symmetries,op1,op2,proj=-1,debug=False):
                 for o in range(3):
                   for p in range(3):
                     if o == k and p == ll:
-                      Y_p = Y_p.subs(x[o,p],1)
+                      Y_p = Y_p.subs(X[l].x[o,p],1)
                     else:
-                      Y_p = Y_p.subs(x[o,p],0)
+                      Y_p = Y_p.subs(X[l].x[o,p],0)
 
                 Y[m,n] = Y_p
 
         #this transforms the matrix into the Reduced row echelon form
         #piv are the indeces o the pivot columns
-        [rref,piv] = Y.rref()        
+        [rref,piv] = Y.mat().rref()        
 
         if debug:
           print ''
           print 'Matrix representing the linear equation system that has to be satisfied: (right hand side is zero)'
-          sympy.pprint(Y)
+          sympy.pprint(Y.mat())
           print ''
           print 'Reduced row echelon form and indeces of the pivot columns:'
           sympy.pprint([rref,piv])
@@ -364,12 +784,12 @@ def symmetr(symmetries,op1,op2,proj=-1,debug=False):
           #now we just make use of the linear equation that holds for this pivot
           #keep in mind that the rows are in reversed order
           for ll in range(j+1,9):
-            tmp = tmp - rref[i,ll]*x[inconvert_index_rev(ll)[0],inconvert_index_rev(ll)[1]]
-          X[l] = X[l].subs(x[inconvert_index_rev(j)[0],inconvert_index_rev(j)[1]],tmp)
+            tmp = tmp - rref[i,ll]*X[l].x[inconvert_index_rev(ll)[0],inconvert_index_rev(ll)[1]]
+          X[l] = X[l].subs(X[l].x[inconvert_index_rev(j)[0],inconvert_index_rev(j)[1]],tmp)
 
           if debug:
             print 'substituting ',
-            sympy.pprint(x[inconvert_index_rev(j)[0],inconvert_index_rev(j)[1]],)
+            sympy.pprint(X[l].x[inconvert_index_rev(j)[0],inconvert_index_rev(j)[1]])
             print ' for ',
             sympy.pprint(tmp)
             print ''
@@ -377,16 +797,16 @@ def symmetr(symmetries,op1,op2,proj=-1,debug=False):
 
         if debug:
           print 'Current form of the matrix:'
-          sympy.pprint(X[l])
+          sympy.pprint(X[l].mat())
           print ''
 
   if debug:
     print ''
     print 'Symmetrized matrix even part:'
-    sympy.pprint(X[0])
+    sympy.pprint(X[0].mat())
     print ''
     print 'Symmetrized matrix odd part:'
-    sympy.pprint(X[1])
+    sympy.pprint(X[1].mat())
     print ''
     print '======= End symmetrizing ======='
 
@@ -402,18 +822,18 @@ def symmetr(symmetries,op1,op2,proj=-1,debug=False):
 #renames the matrix so that it has the simplest form possible
 #it looks for the relation between components so no information is lost
 #debug is an optional parameter, if it's true, then the routine outputs lots of information
-def rename(X,debug=False):
+def rename(X,name,debug=False):
 
-  #this cretes the neccessary symbolic variables
-  x = sympy.MatrixSymbol('x',3,3)
+  #v contains the symbolic variables:
+  V = matrix('s',3,name)
   #Y will be the renamed matrix
-  Y = sympy.zeros(3,3)
+  Y = matrix(0,3)
 
   if debug:
     print ''
     print '======= Start renaming ======='
     print 'Input matrix:'
-    sympy.pprint(X)
+    sympy.pprint(X.mat())
 
   #a loop over all components of  the input matrix
   for i in range(3):
@@ -431,10 +851,10 @@ def rename(X,debug=False):
 
         pos = convert_index(i,j)
         if pos == 0: #we always rename the first component of the matrix (unless it's zero)
-          Y[i,j] = x[i,j]
+          Y[i,j] = V.x[i,j]
           if debug:
             print 'renaming to:', ' ',
-            sympy.pprint(x[i,j])
+            sympy.pprint(V.x[i,j])
         # if we don't have the first component we try if the component is not a linear combination of the previous
         #components, if it's not we give it a new name, if it is then we set it equal to that combination
         else: 
@@ -449,9 +869,9 @@ def rename(X,debug=False):
               tmp = X[inconvert_index(p)[0],inconvert_index(p)[1]]
               for m in range(9):
                 if m == o:
-                  tmp = tmp.subs(x[inconvert_index(m)[0],inconvert_index(m)[1]],1)
+                  tmp = tmp.subs(V.x[inconvert_index(m)[0],inconvert_index(m)[1]],1)
                 else:
-                  tmp = tmp.subs(x[inconvert_index(m)[0],inconvert_index(m)[1]],0)
+                  tmp = tmp.subs(V.x[inconvert_index(m)[0],inconvert_index(m)[1]],0)
 
               Z[o,p] = tmp
           
@@ -464,6 +884,11 @@ def rename(X,debug=False):
           #there is a sympy routine for this, but it outputs a general solution that may contain parameters
           #solve_lin routines sets all arbitrary parameters to 0, ie if there is infinitely many solutions it outputs just one
           solution = solve_lin(Z)
+          if solution:
+            for ii in range(len(solution)):
+              if abs(solution[ii]) < 1.e-14:
+                solution[ii] = 0
+            sol = False
 
           if debug:
             print 'solution of the system:'
@@ -471,11 +896,11 @@ def rename(X,debug=False):
 
           #if the component is not a linear combination of previous components we rename it
           if not solution:
-            Y[i,j] = x[i,j]
+            Y[i,j] = V.x[i,j]
 
             if debug:
               print 'renaming to:', ' ',
-              sympy.pprint(x[i,j])
+              sympy.pprint(V.x[i,j])
 
           #if it is we set it equal to the linear combination
           else:
@@ -489,159 +914,12 @@ def rename(X,debug=False):
   if debug:
     print ''
     print 'Input matrix:'
-    sympy.pprint(X)
+    sympy.pprint(X.mat())
     print ''
     print 'renamed matrix:'
-    sympy.pprint(Y)
+    sympy.pprint(Y.mat())
     print ''
     print '======= end rename ======='
     print '' 
 
   return Y
-
-
-def sym_part(X):
-  #takes  a 3x3 matrix and returns its symmetrical part
-  Y  = X + X.T
-  return Y
-
-def asym_part(X):
-  Y = X - X.T
-  return Y
-      
-      
-      
-
-def rename_old(X,name):
-  #takes a matrix and _renames the components so that there is no redundancy
-  #for example if there is a component equal to X_11+ X22 and a component X_11-X_22, we can rename first one to X_11 and the other to X_22
-  #this is useful when we transform a matrix to a different basis
-
-  Y = sympy.zeros(3,3)
-  Xname = sympy.Matrix(sympy.MatrixSymbol(name,3,3))
-
-  for i in range(3):
-    for j in range(3):
-
-      if X[i,j] == 0:   #if it's zero we do nothing
-        Y[i,j] = 0
-      else:
-        
-        pos = convert_index(i,j)
-        if pos == 0:
-          Y[i,j] = Xname[i,j]
-        else:
-          changed = False
-          for n in range(pos):
-            [l,k] = inconvert_index(n)
-            #if sympy.simplify(X[l,k]-X[i,j]) == 0 and X[l,k] !=0 :
-            if (X[l,k]-X[i,j]) == 0 and X[l,k] !=0 :
-              Y[i,j] = Y[l,k]
-              changed=True
-            #if sympy.simplify(X[l,k]+X[i,j]) == 0 and X[l,k] !=0:
-            if (X[l,k]+X[i,j]) == 0 and X[l,k] !=0:
-              Y[i,j] = -Y[l,k]
-              changed=True
-          if not changed:
-            Y[i,j] = Xname[i,j]
-
-  return Y
-
-
-
-
-#returns a symmetrical form of a spin-orbit torque response matrix for a given atom and given list of symmetries
-def symmetr_old(symmetries,atom):
-
-  #this defines starting response matrix
-  #we repeat it twice, once for the even part and once for the odd part
-  #sympy is a symbolic toolbox
-  #the matrices are symbolic matrices
-  X1 = sympy.Matrix(sympy.MatrixSymbol('Xo',3,3))
-  X2 = sympy.Matrix(sympy.MatrixSymbol('Xx',3,3))
-  X = []
-  X.append(X1)
-  X.append(X2)
-
-  #we do a loop over all symmetry, for each symmetry, we find what form the response matrix can have, when the system has this symmetry
-  #for next symmetry we take the symmetrized matrix from the previous symmetry as a starting point
-  for sym in symmetries:
-
-    
-    #we only consider symmetries that keep the atom invariant
-    if sym_type(atom,sym) == atom:
-      #we do everything separately for the intra and inter band terms
-      #most things are the same, the only difference in the physics is that when time-reversal is present, odd part transformation has
-      #minus compared to the even part transformation
-      for l in range(2):
-        #for all of the components of the matrix we look at how they will be transformed by the symmetry operation
-
-        #matrix_trans = create_matrix_trans(sym,l)
-
-        #the response matrix can have a form that is already constrained from a previous symmetry operation, we take this into consideration
-        #and store the information in matrix_trans_current
-        #for example under symmetry operation R, chi_00, may transform to chi_11, but we may already know that chi_11 must be equal to
-        #-chi_00, then matrix_current[0] will be 00, matrix_current[4]=-00, matrix_trans[0]=11 and matrix_trans_current[0]=-00
-        matrix_trans_current = transform_matrix(X[l],sym,l)
-
-
-        #now we go through the response matrix and look at what must hold for it due to symmetry
-        #only simple rules are implemented, but these should be sufficient if no hexagonal symmetries are present
-        #if there are hexagonal symmetries, the program breaks anyway
-        #we look at transformation and modify the response matrix according to the rules, if something changes we look at the transformation
-        # again and we repeat until nothing changes
-
-        changed = 1
-
-        while changed == 1:
-
-          changed = 0
-
-          for i in range(3):
-            for j in range(3):
-
-              n = convert_index(i,j)
-
-              #if boht the matrix and the transformed matrix are zero we do nothing, otherwise the code would loop forever
-              if X[l][i,j] != 0 and matrix_trans_current[i,j] !=0:
-                #if the component and the transformed component are opposite we set the component to zero
-                #if sympy.simplify(X[l][i,j]+matrix_trans_current[i,j]) == 0:
-                if (X[l][i,j]+matrix_trans_current[i,j]) == 0:
-                  X[l][i,j] = 0
-                  changed = 1
-                #if the component is equal to another component we set it equal to that
-                #however if we did that for each component, we wouldn't get any information
-                #therefore if two components are equal we keep the one that has lower index in the 1d matrix form and the other one set
-                #equal to the first one
-                #elif convert_index(matrix_trans[i][j][0],matrix_trans[i][j][1]) < n and sympy.simplify(X[l][i,j]-matrix_trans_current[i,j]) != 0:
-                #  changed = 1
-                #  X[l][i,j] = matrix_trans_current[i,j]
-                elif should_rename(X[l][i,j],matrix_trans_current[i,j]):
-                  changed = 1
-                  X[l][i,j] = matrix_trans_current[i,j]
-
-            #since the response matrix may have changed we also have to modify the matrix matrix_trans_current
-          matrix_trans_current = transform_matrix(X[l],sym,l)
-          #matrix_trans_current = update_trans_current(X[l],matrix_trans)
-
-
-  return X
-
-                
-                
-
-
-
-
-  
-  
-
-        
-
-
-      
-
-
-    
-
-  

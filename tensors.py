@@ -143,6 +143,64 @@ class tensor:
         out[i,j] = self[i,j]
     return out
 
+  def subs(self,old,new='notset'):
+    for ind in self:
+      if new != 'notset':
+        self[ind] = self[ind].subs(old,new)
+      else:
+        self[ind] = self[ind].subs(old)
+    return self
+
+
+
+class matrix(tensor):
+
+  def __init__(self,kind,dim1,name='x'):
+    tensor.__init__(self,kind,dim1,2,name)
+
+  def __mul__(self,other):
+    if isinstance(other, matrix):
+        out = mat2ten(self.mat()*other.mat())
+    else:
+      out = tensor.__mul__(self,other)
+    return out
+
+  def __rmul__(self,other):
+    if isinstance(other, matrix):
+      out = mat2ten(other.mat()*self.mat())
+    else:
+      out = tensor.__mul__(self,other)
+    return out
+
+  def __add__(self,other):
+    out = matrix(0,self.dim1)
+    for ind in self.inds:
+      out[ind] = self[ind] + other[ind]
+    return out
+
+  def __sub__(self,other):
+    out = matrix(0,self.dim1,self.dim2)
+    for ind in self.inds:
+      out[ind] = self[ind] - other[ind]
+    return out
+
+  def __div__(self,num):
+    out = matrix(0,self.dim1,self.dim2)
+    for ind in self.inds:
+      out[ind] = self[ind] / num
+    return out
+
+  def __radd__(self,other):
+    return self + other
+
+  def __rsub__(self,other):
+    return self - other
+
+  def T(self):
+    return mat2ten(self.mat().T)
+
+  def pprint(self):
+    sympy.pprint(self.mat())
 
 def makeinds(dim1,dim2):
 
@@ -181,12 +239,18 @@ def var_name(name,num,dim):
   return s_tot 
 
 def mat2ten(mat):
-  if mat.cols != mat.rows:
+  try:
+    ncols = mat.cols
+    nrows = mat.rows
+  except AttributeError:
+    ncols = mat.shape[0]
+    nrows = mat.shape[1]
+  if ncols != nrows:
     raise TypeError
   else:
-    out = tensor(0,mat.cols,2)
-    for i in range(mat.cols):
-      for j in range(mat.cols):
+    out = matrix(0,ncols,2)
+    for i in range(ncols):
+      for j in range(ncols):
         out[i,j] = mat[i,j]
     return out
   
