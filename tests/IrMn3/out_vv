@@ -1,13 +1,13 @@
-
-Symmetrized matrix in the input basis even part:
+Symmetrized matrix in the input basis even part, atom -1
 [  x00      x01    1.0*x01]
 [                         ]
 [1.0*x01  1.0*x00  1.0*x01]
 [                         ]
 [1.0*x01  1.0*x01  1.0*x00]
-Symmetrized matrix in the input basis odd part:
+Symmetrized matrix in the input basis odd part, atom -1
 [   0        x01     -1.0*x01]
 [                            ]
 [-1.0*x01     0      1.0*x01 ]
 [                            ]
 [1.0*x01   -1.0*x01     0    ]
+

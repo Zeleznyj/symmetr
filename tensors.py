@@ -1,4 +1,5 @@
 import sympy
+import numpy as np
 import copy
 
 class tensor:
@@ -134,14 +135,22 @@ class tensor:
      def __type__(self):
          return 'tensor'
 
-     def mat(self):
-         if self.dim2 != 2:
-             raise TypeError
-         out = sympy.zeros(self.dim1,self.dim1)
-         for i in range(self.dim1):
-             for j in range(self.dim1):
-                 out[i,j] = self[i,j]
-         return out
+     def mat(self,numpy=False):
+        #outputs a matrix form of itself either in sympy format (default) or numpy format 
+
+        if self.dim2 != 2:
+            raise TypeError
+
+        if not numpy:
+            out = sympy.zeros(self.dim1,self.dim1)
+        if numpy:
+            out = np.zeros((self.dim1,self.dim1))
+
+        for i in range(self.dim1):
+            for j in range(self.dim1):
+                out[i,j] = self[i,j]
+
+        return out
 
      def subs(self,old,new='notset'):
          for ind in self:

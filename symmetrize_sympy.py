@@ -859,6 +859,39 @@ def symmetr(symmetries,op1,op2,proj=-1,debug=False):
     return X
 
 
+def symmetr_AB(syms,X,op1,op2,atom1,atom2,T=None):
+    
+    #tries to transform the tensor projected on one atom to a different atom
+    #syms are the symmmetry operations
+    #X is the input tensor
+    #op1 is the first operator
+    #op2 is the second operator
+    #atom1 is the atom on which X is projected
+    #atom2 is the atom on which X is transformed
+    #if T is set, it determines the transformation used to transform the symmetries
+        #T has to be a numpy matrix
+
+    X_trans = []
+
+    found = False
+    for sym in syms:
+        #there will usually be more symmetries that transform from atom1 to atom2, we need only one, as they all
+        #give the same results
+        if sym_type(atom1,sym) == atom2 and not found:
+            found = True
+            for l in range(2):
+                if T != None: #if T is set, the symmetries are transformed by it
+                    sym_trans = convert_sym(sym,T,np.zeros(3))
+                    X_trans.append(transform_matrix(X[l],sym_trans,op1,op2,l))
+                else:
+                    X_trans.append(transform_matrix(X[l],sym,op1,op2,l))
+
+    if found:
+        return X_trans
+    else:
+        return None
+
+
 #renames the matrix so that it has the simplest form possible
 #it looks for the relation between components so no information is lost
 #debug is an optional parameter, if it's true, then the routine outputs lots of information

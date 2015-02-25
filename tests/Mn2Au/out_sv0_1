@@ -1,0 +1,26 @@
+Symmetrized matrix in the input basis even part, atom 0
+[ 0   x01  0]
+[           ]
+[x10   0   0]
+[           ]
+[ 0    0   0]
+Symmetrized matrix in the input basis odd part, atom 0
+[ 0   0  x02]
+[           ]
+[ 0   0   0 ]
+[           ]
+[x20  0   0 ]
+
+Symmetrized matrix in the input basis even part, atom 1
+[ 0    -x01  0]
+[             ]
+[-x10   0    0]
+[             ]
+[ 0     0    0]
+Symmetrized matrix in the input basis odd part, atom 1
+[ 0   0  x02]
+[           ]
+[ 0   0   0 ]
+[           ]
+[x20  0   0 ]
+

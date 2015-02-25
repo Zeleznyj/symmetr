@@ -1,16 +1,16 @@
-
-Symmetrized matrix in the input basis even part:
+Symmetrized matrix in the input basis even part, atom 0
 [ 0   x01  0]
 [           ]
 [x10   0   0]
 [           ]
 [ 0    0   0]
-Symmetrized matrix in the input basis odd part:
+Symmetrized matrix in the input basis odd part, atom 0
 [ 0   0  x02]
 [           ]
 [ 0   0   0 ]
 [           ]
 [x20  0   0 ]
+
 starting configuration:
 atom 0, m = 1.0, 0.0, 0.0
 atom 1, m = -1.0, 0.0, 0.0

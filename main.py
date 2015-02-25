@@ -28,6 +28,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('op1', help='Type of the first operator')
 parser.add_argument('op2', help='Type of the second operator')
 parser.add_argument('-p','--projection',help='Sets a projection on an atom. Atom numbers start from 0.',default=-1)
+parser.add_argument('-p2','--projection2',help='Sets a projection on a second atom. Tries to find a relation between tensors on the first \
+        atom and on the second atom. Atom numbers start from 0.',default=-1)
 parser.add_argument('-b','--basis',help='Sets a coordinate basis: abc for conventional crystallographic basis, i for the one used in input. \
         abc_o for orthogonalized crystalographic basis. all for outputing all.',default='i')
 parser.add_argument('-e','--equivalent',help='finds response matrices for equivalent magnetic configurations. Needs output of finddsym with\
@@ -42,7 +44,13 @@ lines = sys.stdin.readlines()
 
 op1=args.op1 #type of the first operator
 op2=args.op2 #type of the second operator
+
 atom=int(args.projection) #number of atom on which projection is done, -1 means no projection
+atom2=int(args.projection2)
+if atom2 != -1:
+    if atom == -1:
+        sys.exit('projection2 can be setonly if projection1 is set')
+
 basis=args.basis.split(',') #a list specifying the basis to be used
 equiv = args.equivalent #contains name of the nonmagnetic findsym output
 #debug controls whether debug output is printed
@@ -72,6 +80,7 @@ syms = read.r_sym(lines)
 #operator types are given by op1 and op2
 X = symmetrize_sympy.symmetr(syms,op1,op2,atom,debug_sym)
 
+
 #outputs the tensor in the crystallographic basis used in the findsym output
 #this is the one returned by symmetr
 if 'abc' in basis or 'all' in basis:
@@ -81,11 +90,34 @@ if 'abc' in basis or 'all' in basis:
     print 'c = ', vec_c[0], '* x + ', vec_c[1], '* y + ', vec_c[2], '* z'
     print ''
 
-    print 'Symmetrized matrix in the abc basis even part:'
-    X[0].pprint()
-    print 'Symmetrized matrix in the abc basis odd part:'
-    X[1].pprint()
+    if atom != -1:
 
+        print 'Symmetrized matrix in the abc basis even part, atom %s' % atom
+        X[0].pprint()
+        print 'Symmetrized matrix in the abc basis odd part, atom %s' % atom
+        X[1].pprint()
+        print ''
+
+        if atom2 != -1:
+
+            #tries to transform the tensor X to an atom atom2
+            X_2 = symmetrize_sympy.symmetr_AB(syms,X,op1,op2,atom,atom2)
+
+            if X_2 == None:
+                print 'no relation with atom %s found' % atom2
+            else:
+                print 'Symmetrized matrix in the abc basis even part, atom %s' % atom2
+                X_2[0].pprint()
+                print 'Symmetrized matrix in the abc basis odd part, atom %s' % atom2
+                X_2[1].pprint()
+                print ''
+
+    else:
+
+        print 'Symmetrized matrix in the abc basis even part:'
+        X[0].pprint()
+        print 'Symmetrized matrix in the abc basis odd part:'
+        X[1].pprint()
 
 #outputs the tensor in the input basis
 if 'i' in basis or 'all' in basis:
@@ -104,14 +136,32 @@ if 'i' in basis or 'all' in basis:
     T[0,2] = vec_c[0]
     T[1,2] = vec_c[1]
     T[2,2] = vec_c[2]
+
     #transforms the response matrix back to the input basis
     X_I = symmetrize_sympy.convert_X(X,T,debug=debug_rename)
 
-    print ''
-    print 'Symmetrized matrix in the input basis even part:'
+    print 'Symmetrized matrix in the input basis even part, atom %s' % atom
     X_I[0].pprint()
-    print 'Symmetrized matrix in the input basis odd part:'
+    print 'Symmetrized matrix in the input basis odd part, atom %s' % atom
     X_I[1].pprint()
+    print ''
+
+    if atom2 != -1:
+
+        #tries to transform the tensor X_I to an atom atom2
+        #T is used to transform the symmetries
+        X_I_2 = symmetrize_sympy.symmetr_AB(syms,X_I,op1,op2,atom,atom2,T=T.mat(numpy=True))
+
+        if X_I_2 == None:
+            print 'no relation with atom %s found' % atom2
+        else:
+            print 'Symmetrized matrix in the input basis even part, atom %s' % atom2
+            X_I_2[0].pprint()
+            print 'Symmetrized matrix in the input basis odd part, atom %s' % atom2
+            X_I_2[1].pprint()
+            print ''
+
+
 
 if 'abc_o' in basis or 'all' in basis:
     #transform to cubic
@@ -149,6 +199,21 @@ if 'abc_o' in basis or 'all' in basis:
     X_O[0].pprint()
     print 'EXPERIMENTAL: Symmetrized matrix in the orthogonalized basis odd part:'
     X_O[1].pprint()
+
+    if atom2 != -1:
+
+        #tries to transform the tensor X_O to an atom atom2
+        #T is used to transform the symmetries
+        X_O_2 = symmetrize_sympy.symmetr_AB(syms,X_O,op1,op2,atom,atom2,T=T2.mat(numpy=True))
+
+        if X_O_2 == None:
+            print 'no relation with atom %s found' % atom2
+        else:
+            print 'Symmetrized matrix in the orthogonalized basis even part, atom %s' % atom2
+            X_O_2[0].pprint()
+            print 'Symmetrized matrix in the orthogonalized basis odd part, atom %s' % atom2
+            X_O_2[1].pprint()
+            print ''
 
 if equiv:
     #outputs also the form of the tensor for all equivalent magnetic configurations
