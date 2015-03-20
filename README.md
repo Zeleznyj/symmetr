@@ -99,7 +99,7 @@ The code can try to find a relation between the tensors projected on two sublati
 ```
 #!bash
 
-main.py s v -p 0 -p 1 < findsym.out
+main.py s v -p 0 -p2 1 < findsym.out
 
 ```
 The basis transformations work for this.
