@@ -36,6 +36,7 @@ parser.add_argument('-e','--equivalent',help='finds response matrices for equiva
         zero moments as an input.')
 parser.add_argument('--debug',help='Controls if debug output is printed. all means all debug output is printed, symmetrize means debug\
         output for symmetrizing, rename for renaming, equiv for finding the equivalent configurations',default='')
+parser.add_argument('--latex',action='store_const',const=True,default=False,help='If set, the matrices are printed also in a latex format.')
 args = parser.parse_args()
 
 #opens the output from findsym
@@ -55,6 +56,7 @@ basis=args.basis.split(',') #a list specifying the basis to be used
 equiv = args.equivalent #contains name of the nonmagnetic findsym output
 #debug controls whether debug output is printed
 debug = args.debug.split(',')
+latex = args.latex
 
 debug_sym = False
 debug_rename = False
@@ -94,8 +96,12 @@ if 'abc' in basis or 'all' in basis:
 
         print 'Symmetrized matrix in the abc basis even part, atom %s' % atom
         X[0].pprint()
+        if latex:
+            X[0].pprint(latex=True)
         print 'Symmetrized matrix in the abc basis odd part, atom %s' % atom
         X[1].pprint()
+        if latex:
+            X[1].pprint(latex=True)
         print ''
 
         if atom2 != -1:
@@ -108,16 +114,24 @@ if 'abc' in basis or 'all' in basis:
             else:
                 print 'Symmetrized matrix in the abc basis even part, atom %s' % atom2
                 X_2[0].pprint()
+                if latex:
+                    X_2[0].pprint(latex=True)
                 print 'Symmetrized matrix in the abc basis odd part, atom %s' % atom2
                 X_2[1].pprint()
+                if latex:
+                    X_2[1].pprint(latex=True)
                 print ''
 
     else:
 
         print 'Symmetrized matrix in the abc basis even part:'
         X[0].pprint()
+        if latex:
+            X[0].pprint(latex=True)
         print 'Symmetrized matrix in the abc basis odd part:'
         X[1].pprint()
+        if latex:
+            X[1].pprint(latex=True)
 
 #outputs the tensor in the input basis
 if 'i' in basis or 'all' in basis:
@@ -142,8 +156,12 @@ if 'i' in basis or 'all' in basis:
 
     print 'Symmetrized matrix in the input basis even part, atom %s' % atom
     X_I[0].pprint()
+    if latex:
+        X_I[0].pprint(latex=True)
     print 'Symmetrized matrix in the input basis odd part, atom %s' % atom
     X_I[1].pprint()
+    if latex:
+        X_I[1].pprint(latex=True)
     print ''
 
     if atom2 != -1:
@@ -157,8 +175,12 @@ if 'i' in basis or 'all' in basis:
         else:
             print 'Symmetrized matrix in the input basis even part, atom %s' % atom2
             X_I_2[0].pprint()
+            if latex:
+                X_I_2[0].pprint(latex=True)
             print 'Symmetrized matrix in the input basis odd part, atom %s' % atom2
             X_I_2[1].pprint()
+            if latex:
+                X_I_2[1].pprint(latex=True)
             print ''
 
 
@@ -197,8 +219,12 @@ if 'abc_o' in basis or 'all' in basis:
     print ''
     print 'EXPERIMENTAL: Symmetrized matrix in the orthogonalized basis even part:'
     X_O[0].pprint()
+    if latex:
+        X_O[0].pprint(latex=True)
     print 'EXPERIMENTAL: Symmetrized matrix in the orthogonalized basis odd part:'
     X_O[1].pprint()
+    if latex:
+        X_O[1].pprint(latex=True)
 
     if atom2 != -1:
 
@@ -211,8 +237,12 @@ if 'abc_o' in basis or 'all' in basis:
         else:
             print 'Symmetrized matrix in the orthogonalized basis even part, atom %s' % atom2
             X_O_2[0].pprint()
+            if latex:
+                X_O_2[0].pprint(latex=True)
             print 'Symmetrized matrix in the orthogonalized basis odd part, atom %s' % atom2
             X_O_2[1].pprint()
+            if latex:
+                X_O_2[1].pprint(latex=True)
             print ''
 
 if equiv:
@@ -277,7 +307,7 @@ if equiv:
     #this outputs all the equaivalen configurations
     #C is a conf class, it contains both the configurations and the transformed tensors
     C = symmetrize_sympy.find_equiv(X_I,op1,op2,atom,syms_nm,pos_t,T_nm,shift,debug_equiv)
-    C.pprint()
+    C.pprint(latex=latex)
 
 
 

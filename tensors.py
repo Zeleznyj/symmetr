@@ -208,8 +208,11 @@ class matrix(tensor):
      def T(self):
          return mat2ten(self.mat().T)
 
-     def pprint(self):
+     def pprint(self,latex=False):
          sympy.pprint(self.mat())
+         if latex:
+             print sympy.latex(self.mat())
+            
 
 def makeinds(dim1,dim2):
 
