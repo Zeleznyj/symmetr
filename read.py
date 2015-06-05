@@ -95,9 +95,9 @@ def r_basis(lines):
      vec2 = lines[pos_vectors + 2]
      vec3 = lines[pos_vectors + 3]
 
-     vec_a = vec1.split()
-     vec_b = vec2.split()
-     vec_c = vec3.split()
+     vec_a = [float(x) for x in vec1.split()]
+     vec_b = [float(x) for x in vec2.split()]
+     vec_c = [float(x) for x in vec3.split()]
 
      return [vec_a,vec_b,vec_c]
 
@@ -117,30 +117,41 @@ def r_origin(lines):
                  
 
 
-def  r_pos(lines):
-#read atomic positions
-#format: list containing six floats for each position first three are the positions the other three magnetic moment
-     for i in range(len(lines)):
-         if "Atomic positions and magnetic moments in terms of a,b,c:" in lines[i]:
-             pos_pos = i
+def  r_pos(lines, fix_m=[]):
 
-     cont = 1
-     positions = []
-     i = 0
-     while cont == 1:
-         i = i+1
-         if re.match('\A +[0-9]+ ',lines[pos_pos + i]):
-             positions.append(lines[pos_pos + i])
-         elif re.match('-------',lines[pos_pos + i]):
-             cont = 0
+    #read atomic positions
+    #format: list containing six floats for each position first three are the positions the other three magnetic moment
+    #fix_m: m is not given in basis of a,b,c, but in basis of unit vectrs along these axis:
+        #m = m1*a/|a|+m2*b/|b|+m3*c/|c|
+    #since it is more interesting to have m in terms of a,b,c, this can be changed
+    #needs magnitudes of a,b,c as input: fix_m=[a,b,c]
+    
+    for i in range(len(lines)):
+        if "Atomic positions and magnetic moments in terms of a,b,c:" in lines[i]:
+            pos_pos = i
 
-     for i in range(len(positions)):
-         positions[i] = positions[i].split()
-         positions[i].pop(0)
-         for l in range(len(positions[i])):
-             positions[i][l] = float(positions[i][l])
+    cont = 1
+    positions = []
+    i = 0
+    while cont == 1:
+        i = i+1
+        if re.match('\A +[0-9]+ ',lines[pos_pos + i]):
+            positions.append(lines[pos_pos + i])
+        elif re.match('-------',lines[pos_pos + i]):
+            cont = 0
 
-     return positions
+    for i in range(len(positions)):
+        positions[i] = positions[i].split()
+        positions[i].pop(0)
+        for l in range(len(positions[i])):
+            positions[i][l] = float(positions[i][l])
+
+    if fix_m:
+        for i in range(len(positions)):
+            for l in range(3):
+                positions[i][l+3] = positions[i][l+3]/fix_m[l]
+
+    return positions
 
 
 def r_sym(lines,debug=False):

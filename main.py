@@ -300,7 +300,9 @@ if equiv:
     shift = np.dot(np.linalg.inv(T_nm),o_nm)
 
     #atomic positions including magnetic moments
-    pos = read.r_pos(lines)
+    #we need the moments in the correct basis, for the the length of the vectos a,b,c is needed:
+    fix_m = [np.linalg.norm(vec_a),np.linalg.norm(vec_b),np.linalg.norm(vec_c)]
+    pos = read.r_pos(lines,fix_m)
     #converted positions to the input basis
     pos_t = symmetrize_sympy.convert_pos(pos,T_m,o_m)
 
