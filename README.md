@@ -54,12 +54,12 @@ findsym < findsym.in | main.py v v
 ```
 
 
-Non-equilibrium spin-polarization can also be calculated projected on a particular atom, specify atom number with a switch -p or --projection. Atom numbers start from 0. For example for atom with number 0 run:
+Non-equilibrium spin-polarization can also be calculated projected on a particular atom, specify atom number with a switch -p or --projection. For example for atom with number 1 run:
 
 ```
 #!bash
 
-main.py s v -p 0 < findsym.out
+main.py s v -p 1 < findsym.out
 
 ```
 The atoms are numbered by order in the findsym input file, starting from 1. Note that it may happen that some of the atoms given in the input file are equivalent, then only the first can be used. List of all non-equivalent atoms is in the findsym output, where the positions are printed in the new (abc) basis. The first number is the atom number that the program uses.
@@ -99,10 +99,13 @@ The code can try to find a relation between the tensors projected on two sublati
 ```
 #!bash
 
-main.py s v -p 0 -p2 1 < findsym.out
+main.py s v -p 1 -p2 2 < findsym.out
 
 ```
 The basis transformations work for this.
+
+###Latex output###
+The output can be also given in latex format, use --latex switch.
 
 ### Tests ###
 
