@@ -62,7 +62,7 @@ Non-equilibrium spin-polarization can also be calculated projected on a particul
 main.py s v -p 0 < findsym.out
 
 ```
-Right now, the atoms are numbered according to the the findsym output - first atom in the findsym output will have number 0 etc. This will probably be changed in the future. 
+The atoms are numbered by order in the findsym input file, starting from 1. Note that it may happen that some of the atoms given in the input file are equivalent, then only the first can be used. List of all non-equivalent atoms is in the findsym output, where the positions are printed in the new (abc) basis. The first number is the atom number that the program uses.
 
 The code can output the symmetrized linear response matrix in three different coordinate systems. Specify the basis using switch -b or --basis. Separate by commas (with no spaces!) for more than one basis. If no basis is specified, the input basis is used.
 
