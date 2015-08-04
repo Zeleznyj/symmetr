@@ -255,7 +255,7 @@ def sym_type(atom,sym):
         if i[0] == atom:
                 a = i[1]
     if a == -1:
-        sys.exit('Could not find the symmetry type.')
+        sys.exit('Could not find the symmetry type. atom='+str(atom)+' symmetry='+str(sym))
     else:
         return a
 
@@ -301,7 +301,6 @@ def solve_lin(Z):
             return b6
         if i == 7:
             return b7
-
     #this solves  the system, not all the variabes may be needed, but luckily sympy doesn't complain about that
     solution = sympy.solve_linear_system(Z,b0,b1,b2,b3,b4,b5,b6,b7)
     
@@ -369,7 +368,10 @@ def convert_pos(poss,T,shift):
 
         pos_m_t = np.dot(T,pos_m)
 
-        poss_T.append(list(pos_s_t)+list(pos_m_t))
+        pos_t = list(pos_s_t)+list(pos_m_t)
+        pos_t.append(pos[6])
+
+        poss_T.append(pos_t)
 
     return poss_T
 
@@ -636,7 +638,7 @@ def find_equiv(X,op1,op2,atom,syms,pos,T,shift,debug=False):
         b = round(float(pos[i][4]),5)
         c = round(float(pos[i][5]),5)
         if a!=0 or b !=0 or c != 0:
-            start_conf[i] = np.array([a,b,c])
+            start_conf[pos[i][6]] = np.array([a,b,c])
 
     #creates a conf class, which stores all the configurations and adds the starting one
     C = confs()
