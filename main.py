@@ -27,9 +27,9 @@ sys.path.append(str(dirname))
 parser = argparse.ArgumentParser()
 parser.add_argument('op1', help='Type of the first operator')
 parser.add_argument('op2', help='Type of the second operator')
-parser.add_argument('-p','--projection',help='Sets a projection on an atom. Atom numbers start from 0.',default=-1)
+parser.add_argument('-p','--projection',help='Sets a projection on an atom.',default=-1)
 parser.add_argument('-p2','--projection2',help='Sets a projection on a second atom. Tries to find a relation between tensors on the first \
-        atom and on the second atom. Atom numbers start from 0.',default=-1)
+        atom and on the second atom.',default=-1)
 parser.add_argument('-b','--basis',help='Sets a coordinate basis: abc for conventional crystallographic basis, i for the one used in input. \
         abc_o for orthogonalized crystalographic basis. all for outputing all.',default='i')
 parser.add_argument('-e','--equivalent',help='finds response matrices for equivalent magnetic configurations. Needs output of finddsym with\

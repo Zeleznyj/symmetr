@@ -142,9 +142,10 @@ def  r_pos(lines, fix_m=[]):
 
     for i in range(len(positions)):
         positions[i] = positions[i].split()
-        positions[i].pop(0)
+        at_number = int(positions[i].pop(0))
         for l in range(len(positions[i])):
             positions[i][l] = float(positions[i][l])
+        positions[i].append(at_number)
 
     if fix_m:
         for i in range(len(positions)):
@@ -249,18 +250,18 @@ def r_sym(lines,debug=False):
                  print 'taking position:', positions[i]
                  print 'transformed to:', trans
              for j in range(len(positions)):
-                 if equal_vectors(trans,positions[j],0.001):
-                     sym_trans.append((i,j))
+                 if equal_vectors(trans,positions[j][0:6],0.001):
+                     sym_trans.append((positions[i][6],positions[j][6]))
                      if debug:
-                         print 'transformed atom identified as atom ', j, ' with position ', positions[j]
+                         print 'transformed atom identified as atom ', positions[j][6], ' with position ', positions[j]
                  else:
                      for k in range(len(shifts)):
                          sym_temp =['',['x+'+str(shifts[k][0]),'y+'+str(shifts[k][1]),'z+'+str(shifts[k][2])],['mx','my','mz']]
-                         pos_shift = transform_position(positions[j],sym_temp,0.001)
+                         pos_shift = transform_position(positions[j][0:6],sym_temp,0.001)
                          if equal_vectors(trans,pos_shift,0.001):
-                             sym_trans.append((i,j))
+                             sym_trans.append((positions[i][6],positions[j][6]))
                              if debug:
-                                 print 'transformed atom identified as atom ', j, ' with position ', positions[j]
+                                 print 'transformed atom identified as atom ', positions[j][6], ' with position ', positions[j]
 
          if len(sym_trans) != len(positions):
              print syms[l]
