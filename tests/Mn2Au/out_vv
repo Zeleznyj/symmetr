@@ -1,10 +1,12 @@
 Symmetrized matrix in the input basis even part, atom -1
+WARNING!!! Assuming input basis is orthogonal
 [x00   0    0 ]
 [             ]
 [ 0   x11   0 ]
 [             ]
 [ 0    0   x22]
 Symmetrized matrix in the input basis odd part, atom -1
+WARNING!!! Assuming input basis is orthogonal
 [0  0  0]
 [       ]
 [0  0  0]

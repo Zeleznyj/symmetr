@@ -6,6 +6,10 @@ import os
 import symmetrize_sympy
 import read
 from tensors import matrix, mat2ten
+import funcs
+from rename import rename
+
+import find_eq
 
 import sympy
 import numpy as np
@@ -137,7 +141,7 @@ if 'abc' in basis or 'all' in basis:
 if 'i' in basis or 'all' in basis:
 
     #transformation matrix from the original basis to the abc basis:
-    T = matrix(0,3)
+    T = sympy.zeros(3)
 
     T[0,0] = vec_a[0]
     T[1,0] = vec_a[1]
@@ -151,24 +155,34 @@ if 'i' in basis or 'all' in basis:
     T[1,2] = vec_c[1]
     T[2,2] = vec_c[2]
 
+    T = funcs.make_rational(T)
+
     #transforms the response matrix back to the input basis
     X_I = symmetrize_sympy.convert_X(X,T,debug=debug_rename)
 
     print 'Symmetrized matrix in the input basis even part, atom %s' % atom
-    X_I[0].pprint()
+    if op1 == op2:
+        X_I[0] = funcs.rename(funcs.sym_part(X_I[0]),'x')
+        print 'WARNING!!! Assuming input basis is orthogonal'
     if latex:
         X_I[0].pprint(latex=True)
+    else:
+        X_I[0].pprint()
     print 'Symmetrized matrix in the input basis odd part, atom %s' % atom
-    X_I[1].pprint()
+    if op1 == op2:
+        X_I[1] = funcs.rename(funcs.asym_part(X_I[1]),'x')
+        print 'WARNING!!! Assuming input basis is orthogonal'
     if latex:
         X_I[1].pprint(latex=True)
+    else:
+        X_I[1].pprint()
     print ''
 
     if atom2 != -1:
 
         #tries to transform the tensor X_I to an atom atom2
         #T is used to transform the symmetries
-        X_I_2 = symmetrize_sympy.symmetr_AB(syms,X_I,op1,op2,atom,atom2,T=T.mat(numpy=True))
+        X_I_2 = symmetrize_sympy.symmetr_AB(syms,X_I,op1,op2,atom,atom2,T=T)
 
         if X_I_2 == None:
             print 'no relation with atom %s found' % atom2
@@ -193,7 +207,7 @@ if 'abc_o' in basis or 'all' in basis:
     #vector x is ortogonal to y and z and they form a right-handed system
     #length of x is a, of y is b and of z is c
 
-    T2 = matrix(0,3)
+    T2 = sympy.zeros(3)
 
     abc = read.r_abc(lines)
 
@@ -213,6 +227,8 @@ if 'abc_o' in basis or 'all' in basis:
     T2[0,2] = 0
     T2[1,2] = 0
     T2[2,2] = 1
+
+    T2 = funcs.make_rational(T2)
 
     X_O = symmetrize_sympy.convert_X(X,T2,debug=debug_rename)
 
@@ -272,15 +288,17 @@ if equiv:
     T_m[1,2] = vec_c[1]
     T_m[2,2] = vec_c[2]
 
+    #T_m = funcs.make_rational(T_m)
+
     o_m = np.array(read.r_origin(lines))
 
     try:
         X_I
     except:
-        X_I = symmetrize_sympy.convert_X(X,T_m)
+        X_I = funcs.convert_X(X,T_m)
 
     #transformation matrix from the nonmagnetic basis to the input one
-    T_nm = np.zeros((3,3))
+    T_nm = sympy.zeros(3)
 
     T_nm[0,0] = vec_a_nm[0]
     T_nm[1,0] = vec_a_nm[1]
@@ -294,6 +312,8 @@ if equiv:
     T_nm[1,2] = vec_c_nm[1]
     T_nm[2,2] = vec_c_nm[2]
 
+    T_nm = funcs.make_rational(T_nm)
+
     o_nm = np.array(read.r_origin(lines_nm))
 
     #the shift from the magnetic to the nonmagnetic
@@ -304,11 +324,27 @@ if equiv:
     fix_m = [np.linalg.norm(vec_a),np.linalg.norm(vec_b),np.linalg.norm(vec_c)]
     pos = read.r_pos(lines,fix_m)
     #converted positions to the input basis
-    pos_t = symmetrize_sympy.convert_pos(pos,T_m,o_m)
+    pos_t = funcs.convert_pos(pos,T_m,o_m)
+
+    if debug_equiv:
+        print ''
+        print 'positions in the nonmagnetic basis:'
+        for p in pos:
+            print p
+        print ''
+        print 'transformation matrix from the nonmagnetic to the input basis:'
+        print T_nm
+        print ''
+        print 'positions in the input basis:'
+        for p in pos_t:
+            print p
+        print ''
+        print 'transformation from the magnetic basis to the input basis'
+        print T_m
 
     #this outputs all the equaivalen configurations
     #C is a conf class, it contains both the configurations and the transformed tensors
-    C = symmetrize_sympy.find_equiv(X_I,op1,op2,atom,syms_nm,pos_t,T_nm,shift,debug_equiv)
+    C = find_eq.find_equiv(X_I,op1,op2,atom,syms_nm,pos_t,T_nm,shift,debug_equiv)
     C.pprint(latex=latex)
 
 
