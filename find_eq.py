@@ -52,8 +52,10 @@ class confs:
         for i in range(self.nconfs):
             out_t = True
             for j in self.confs[i]:
-                if not np.allclose(self.confs[i][j],conf[j]):
-                    out_t = False
+                c = self.confs[i][j] - conf[j]
+                for l in range(3):
+                    if c[l].round(4)!= 0:
+                        out_t = False
             if out_t:
                 out = True
 
@@ -74,7 +76,8 @@ class confs:
             else:
                 print 'configuration %s' %n
             for p in self.confs[n]:
-                print 'atom %s, m = %s, %s, %s' %(p,self.confs[n][p][0],self.confs[n][p][1],self.confs[n][p][2])
+                print 'atom %s, m = %s, %s, %s' %(p,self.confs[n][p][0].round(4),self.confs[n][p][1].round(4),self.confs[n][p][2].round(4))
+                #print 'atom %s, m = %s, %s, %s' %(p,self.confs[n][p][0],self.confs[n][p][1],self.confs[n][p][2])
             print 'even part:'
             self.Xs[n][0].pprint()
             if latex:
@@ -111,7 +114,7 @@ class confs:
         return confs_t
 
 
-def find_equiv(X,op1,op2,atom,syms,pos,T,shift,debug=False):
+def find_equiv(X,op1,op2,atom,syms,mag,T,debug=False):
     """
     Takes a tensor and a list of nonmagnetic symmetries and find the form of the tensor for all equivalent configurations.
 
@@ -123,7 +126,7 @@ def find_equiv(X,op1,op2,atom,syms,pos,T,shift,debug=False):
         op2: Second operator type.
         atom: Sets a projection to an atom.
         syms: The nonmagnetic symmetry operations.
-        pos: The positions and magnetic moments - ie the starting configuration.
+        mag: The magnetic moments - ie the starting configuration.
         T: is the transformation matrix from the nonmagnetic basis to the input basis
 
     Returns:
@@ -135,12 +138,12 @@ def find_equiv(X,op1,op2,atom,syms,pos,T,shift,debug=False):
 
     #extracts the starting configuration, only the magnetic moments are needed
     start_conf = {}
-    for i in range(len(pos)):
-        a = round(float(pos[i][3]),5)
-        b = round(float(pos[i][4]),5)
-        c = round(float(pos[i][5]),5)
-        if a!=0 or b !=0 or c != 0:
-            start_conf[pos[i][6]] = np.array([a,b,c])
+    for i in range(len(mag)):
+        a = mag[i][0]
+        b = mag[i][1]
+        c = mag[i][2]
+        if a.round(4) !=0 or b.round(6) !=0 or c.round(6) != 0:
+            start_conf[mag[i][3]] = sympy.Matrix([[a,b,c]])
 
     #creates a conf class, which stores all the configurations and adds the starting one
     C = confs()
@@ -174,7 +177,7 @@ def find_equiv(X,op1,op2,atom,syms,pos,T,shift,debug=False):
                 mom = sympy.Matrix([[start_conf[p][0],start_conf[p][1],start_conf[p][2]]])
                 mom_T = sym_mat_T * mom.T
                 mom_T = mom_T.T
-                conf_t[sym_type(p,sym)] = np.array([round(mom_T[0],5),round(mom_T[1],5),round(mom_T[2],5)])
+                conf_t[sym_type(p,sym)] = sympy.Matrix([[mom_T[0],mom_T[1],mom_T[2]]])
 
             if debug:
                 print 'symmetry transforms starting configuration to configuration:'

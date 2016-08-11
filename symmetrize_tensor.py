@@ -205,20 +205,24 @@ def symmetr_ten(symmetries,op1,op2,order,proj=-1,T=None,debug=False,debug_Y=Fals
 
     return X
 
-def print_tensor(ten):
+def create_rank2(ten,xyz=False):
     """
-    Prints the expansion tensor in a nice form.
+    Creates a rank 2 tensor that includes magnetic moment explicitely.
+    """
 
-    Not tested for higher order than 1!!!
-    """
-    
     X = matrix(0,3)
+    X.x = ten.x
+    X.v = ten.v
 
     if ten.dim2 > 2:
 
         m = {}
         for i in range(3):
-            name = 'm%s' % i
+            if xyz:
+                names = ['m_x','m_y','m_z']
+                name = names[i]
+            else:
+                name = 'm%s' % i
             m[i] = sympy.symbols(name)
 
 
@@ -232,6 +236,107 @@ def print_tensor(ten):
     else:
         for ind in ten:
             X[ind] = ten[ind]
+    return X
 
-    X.pprint()
+def print_tensor(ten,latex=False,xyz=False,no_newline=False):
+    """
+    Prints the expansion tensor in a nice form.
+
+    Not tested for higher order than 1!!!
+    """
+    
+    X = create_rank2(ten,xyz=xyz)
+
+    if not latex:
+        X.pprint()
+    else:
+        X.pprint(latex=True,no_newline=no_newline)
+
+def simplify_tensor(ten,xyz=False,index_from_1=False):
+    """
+    Renames the variables of the tensor and simplifies it.
+    """
+
+    X = create_rank2(ten,xyz=xyz)
+    xinds = list(set(re.findall(r'x[0-9]+',sympy.srepr(X))))
+
+    #contains the new indices
+    xn = {}
+    if not index_from_1:
+        for i in range(len(xinds)):
+            xn[i] = sympy.symbols('x'+str(i))
+    else:
+        for i in range(len(xinds)):
+            xn[i] = sympy.symbols('x'+str(i+1))
+
+    for ind in X:
+        for i in range(len(xinds)):
+            X[ind] = X[ind].subs(xinds[i],xn[i])
+        X[ind] = sympy.simplify(X[ind])
+
+    return X
+
+def index_from_1(X,rank=2):
+    """
+    Takes a rank 3 tensor and rename the indeces so that the numbering starts from 1 and not 0.
+    """
+
+    if rank == 2:
+    
+        xinds = list(set(re.findall(r'x[0-9]+',sympy.srepr(X))))
+        xn = {}
+        xnz = {}
+        for i in range(3):
+            for j in range(3):
+                xnz[(i,j)] = sympy.symbols('z'+str(i+1)+str(j+1))
+
+        for i in range(3):
+            for j in range(3):
+                xn[(i,j)] = sympy.symbols('x'+str(i+1)+str(j+1))
+
+        for ind in X:
+            for i in range(3):
+                for j in range(3):
+                    X[ind] = X[ind].subs(X.x[i,j],xnz[(i,j)])
+
+        for ind in X:
+            for i in range(3):
+                for j in range(3):
+                    X[ind] = X[ind].subs(xnz[(i,j)],xn[(i,j)])
+
+        return X
+
+    if rank == 3:
+
+        xinds = list(set(re.findall(r'x[0-9]+',sympy.srepr(X))))
+        xn = {}
+        xnz = {}
+        for i in range(3):
+            for j in range(3):
+                for k in range(3):
+                    xnz[(i,j,k)] = sympy.symbols('z'+str(i+1)+str(j+1)+str(k+1))
+
+        for i in range(3):
+            for j in range(3):
+                for k in range(3):
+                    xn[(i,j,k)] = sympy.symbols('x'+str(i+1)+str(j+1)+str(k+1))
+
+        for ind in X:
+            for i in range(3):
+                for j in range(3):
+                    for k in range(3):
+                        X[ind] = X[ind].subs(X.x[i,j,k],xnz[(i,j,k)])
+
+        for ind in X:
+            for i in range(3):
+                for j in range(3):
+                    for k in range(3):
+                        X[ind] = X[ind].subs(xnz[(i,j,k)],xn[(i,j,k)])
+
+        return X
+
+
+
+
+
 

@@ -3,6 +3,10 @@ def convert_index(i,j):
     n = i*3+j
     return n
 
+def convert_index_3(i,j,k):
+    n = i*9 + j*3+k
+    return n
+
 
 # converts from 1d form index to a 3x3 matrix indeces
 def inconvert_index(n):
@@ -11,11 +15,15 @@ def inconvert_index(n):
     j=int(matrix[n][1])
     return [i,j]
 
+def inconvert_index_3(n):
+    i = n/9
+    j = (n-i*9)/3
+    k = n-i*9-j*3
+    return i,j,k
 
 def convert_index_rev(i,j):
     n = 8 - (i*3+j)
     return n
-
 
 # converts from 1d form index to a 3x3 matrix indeces in a reversed order
 def inconvert_index_rev(n):
@@ -23,3 +31,12 @@ def inconvert_index_rev(n):
     i=int(matrix[n][0])
     j=int(matrix[n][1])
     return [i,j]
+
+def convert_index_rev_3(i,j,k):
+    n = 26 - convert_index_3(i,j,k)
+    return n
+
+def inconvert_index_rev_3(n):
+    n = 26 - n
+    return inconvert_index_3(n)
+

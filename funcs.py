@@ -21,11 +21,15 @@ def make_rational(mat):
     """
 
     ncols = mat.cols
-    mat_r = sympy.zeros(mat.cols)
+    nrows = mat.rows
+    mat_r = sympy.zeros(mat.rows,mat.cols)
 
-    for i in range(ncols):
+    for i in range(nrows):
         for j in range(ncols):
-            mat_r[i,j] = sympy.sympify(Fraction(float(mat[i,j])))
+            if type(mat[i,j]) == str and '\\' in mat[i,j]:
+                mat_r[i,j] = sympy.sympify(Fraction(mat[i,j]))
+            else:
+                mat_r[i,j] = sympy.sympify(Fraction(float(mat[i,j])))
 
     return mat_r
 
@@ -127,21 +131,27 @@ def convert_op(sym,op_type):
             if re.match('^mx',op[j]):
                 t = (0,1)
                 out.append(t)
+                match = True
             if re.match('^-mx',op[j]):
                 t = (0,-1)
                 out.append(t)
+                match = True
             if re.match('^my',op[j]):
                 t = (1,1)
                 out.append(t)
+                match = True
             if re.match('^-my',op[j]):
                 t = (1,-1)
                 out.append(t)
+                match = True
             if re.match('^mz',op[j]):
                 t = (2,1)
                 out.append(t)
+                match = True
             if re.match('^-mz',op[j]):
                 t = (2,-1)
                 out.append(t)
+                match = True
             if match:
                 if sym[3] == '-1':
                     t = (t[0],-1*t[1])
@@ -277,6 +287,7 @@ def transform_tensor(tensor_current,sym,op1,op2,l,T=None,debug=False):
     Transforms a tensor by a symmetry operation.
 
     The tensor is an expansion term in the expansion of linear response tensor in powers of magnetization.
+    First two indeces are transformed according to op types the rest correspons to expansion in powers of magnetization 
 
     Args:
         tensor_current: The tensor to be transformed.
@@ -284,7 +295,8 @@ def transform_tensor(tensor_current,sym,op1,op2,l,T=None,debug=False):
         op1 (str): First operator type.
         op2 (str): Second operator type.
         l (int): If this is 0, it is transformed as an even part. If it is 1, it is transformed as an odd part.
-        first two indeces are transformed according to op types the rest correspons to expansion in powers of magnetization 
+        T (matrix): Coordinate transformation matrix. If it is set, the symmetry operations will be transformed by this matrix.
+            Symmetry operations are given in basis A. T transforms from A to B, ie Tx_A = x_B.
 
     Returns:
         trans: The transformed tensor.
@@ -358,6 +370,98 @@ def transform_tensor(tensor_current,sym,op1,op2,l,T=None,debug=False):
                     factor *= mat2_iT[ind1[i],ind2[i]]
                 else:
                     factor *= mat3_iT[ind1[i],ind2[i]]
+            if sym[3] == '-1' and l == 1:
+                factor *= -1
+            trans[ind1] += factor*tensor_current[ind2]
+
+    return trans
+
+def transform_tensor_3op(tensor_current,sym,op1,op2,op3,l,T=None,debug=False):
+    """
+    Transforms a tensor by a symmetry operation.
+
+    The tensor is an expansion term in the expansion of linear response tensor in powers of magnetization.
+    First two indeces are transformed according to op types the rest correspons to expansion in powers of magnetization 
+
+    Args:
+        tensor_current: The tensor to be transformed.
+        sym: The symmetry operation. Format as outputted by read.py.
+        op1 (str): First operator type.
+        op2 (str): Second operator type.
+        op3 (str): Second operator type.
+        l (int): If this is 0, it is transformed as an even part. If it is 1, it is transformed as an odd part.
+        T (matrix): Coordinate transformation matrix. If it is set, the symmetry operations will be transformed by this matrix.
+            Symmetry operations are given in basis A. T transforms from A to B, ie Tx_A = x_B.
+
+    Returns:
+        trans: The transformed tensor.
+
+    Notes:
+        This really only works for this particular tensors. However, it could easily be adapted for transformation of different
+            tensor types.
+    """
+
+    mat1 = sym2mat(sym,op_type=op1)
+    mat2 = sym2mat(sym,op_type=op2)
+    mat3 = sym2mat(sym,op_type=op3)
+
+    if T!= None:
+
+        if debug:
+            print ''
+            print 'symmetry matrix 1 (before coordinate transformation):'
+            sympy.pprint(mat1)
+            print ''
+            print 'symmetry matrix 2 (before coordinate transformation):'
+            sympy.pprint(mat2)
+            print ''
+            print 'symmetry matrix 3 (before coordinate transformation):'
+            sympy.pprint(mat3)
+
+        Ti = T.inv()
+        mat1 = T * mat1 * Ti
+        mat2 = T * mat2 * Ti
+        mat3 = T * mat3 * Ti
+
+        if debug:
+            print''
+            print 'The transformation matrix:'
+            sympy.pprint(T)
+            print ''
+            print 'symmetry matrix 1 (after coordinate transformation):'
+            sympy.pprint(mat1)
+            print ''
+            print 'symmetry matrix 2 (after coordinate transformation):'
+            sympy.pprint(mat2)
+            print ''
+            print 'symmetry matrix 3 (after coordinate transformation):'
+            sympy.pprint(mat3)
+
+
+    if debug:
+        print ''
+        print 'transformation matrix 1 (first index transformation):'
+        sympy.pprint(mat1)
+        print '' 
+        print 'transformation matrix 2 (second index transformation):'
+        sympy.pprint(mat2)
+        print '' 
+        print 'transformation matrix 3 (other indeces transformation):'
+        sympy.pprint(mat3)
+        print '' 
+
+    trans = tensor(0,tensor_current.dim1,tensor_current.dim2)
+    
+    for ind1 in trans:
+        for ind2 in tensor_current:
+            factor = 1
+            for i in range(3):
+                if i == 0:
+                    factor *= mat1[ind1[i],ind2[i]]
+                elif i == 1:
+                    factor *= mat2[ind1[i],ind2[i]]
+                elif i == 2:
+                    factor *= mat3[ind1[i],ind2[i]]
             if sym[3] == '-1' and l == 1:
                 factor *= -1
             trans[ind1] += factor*tensor_current[ind2]
@@ -458,7 +562,7 @@ def convert_X(X,T,ren=True,debug=False):
     return X_T
 
 
-def convert_pos(poss,T,shift):
+def convert_pos(poss,T,shift=np.array([0,0,0])):
     #converts a positions by a matrix T and shifts them by shift
 
     poss_T = []
@@ -484,6 +588,19 @@ def convert_pos(poss,T,shift):
         poss_T.append(pos_t)
 
     return poss_T
+
+def convert_mag(mag_conf,T):
+
+    mag_conf_T = []
+    for i in range(len(mag_conf)): 
+        mom = sympy.Matrix([[mag_conf[i][3],mag_conf[i][4],mag_conf[i][5]]])
+        mom_T = T*mom.T 
+        mom_T = mom_T.T
+        mom_T = sympy.Matrix([[mom_T[0],mom_T[1],mom_T[2],mag_conf[i][6]]])
+        mag_conf_T.append(mom_T)
+
+    return mag_conf_T
+
 
 
 def sym2mat(sym,op_type=None):
@@ -669,22 +786,16 @@ def convert_sym_mat(sym,T):
 
     Args:
         sym: Symmetry operation represented by a matrix. In basis A.
-            A numpy matrix.
+            A sympy matrix.
         T: Matrix repr. the transformation from basis A to basis B.
-            That is a matrix such that Tx_A = x_B
+            That is a matrix such that Tx_A = x_B.
+            A sympy matrix.
 
     Returns:
-        sym_B: the symmetry operation in matrix form in basis B.
+        sym_B: the symmetry operation in matrix form in basis B. A sympy matrix.
     """
 
-    #first convert to a tensor, to make sure that all matrices are in the same format
-    #it would be best to stick with one standard, but well who cares
-    T_t = mat2ten(T)
-    T_ti = mat2ten(np.linalg.inv(T))
-    sym_t = mat2ten(sym)
-
-    sym_B_t = T_t * sym_t * T_ti
-    sym_B = sym_B_t.mat(numpy=False) #convert to numpy form 
+    sym_B = T * sym * T.inv()
 
     return sym_B
 

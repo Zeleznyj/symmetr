@@ -147,6 +147,20 @@ class tensor:
             else:
                 self[ind] = self[ind].subs(old)
         return self
+    def reduce(self,comp,value):
+        out = tensor(0,self.dim1,self.dim2-1)
+        for ind in out:
+            ind2 = [0]*self.dim2
+            for i in range(self.dim2):
+                if i < comp:
+                    ind2[i] = ind[i]
+                if i == comp:
+                    ind2[i] = value
+                if i > comp:
+                    ind2[i] = ind[i-1]
+            ind2 = tuple(ind2)
+            out[ind] = self[ind2]
+        return out
 
 
 
@@ -200,9 +214,12 @@ class matrix(tensor):
      def T(self):
          return mat2ten(self.mat().T)
 
-     def pprint(self,latex=False):
+     def pprint(self,latex=False,no_newline=False):
          if latex:
-             print sympy.latex(self.mat())
+             if no_newline:
+                 print sympy.latex(self.mat()),
+             else:
+                 print sympy.latex(self.mat())
          else:
              sympy.pprint(self.mat())
             

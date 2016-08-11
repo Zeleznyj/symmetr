@@ -2,6 +2,7 @@ import re
 import copy
 import sys
 import math
+import itertools
 
 import sympy
 import numpy as np
@@ -12,7 +13,7 @@ from funcs import *
 from conv_index import *
 
 
-def symmetr(symmetries,op1,op2,proj=-1,debug=False,T=None):
+def symmetr_3op(symmetries,op1,op2,op3,proj=-1,debug=False,T=None):
     """
     Returns a symmetrical form of a response matrix for a given atom and given list of symmetries.
 
@@ -41,8 +42,8 @@ def symmetr(symmetries,op1,op2,proj=-1,debug=False,T=None):
     #matrices are stored as tensor class, which is made using sympy
     #matrix is a sublcass of tensor
     
-    X1 = matrix('s',3)
-    X2 = matrix('s',3)
+    X1 = tensor('s',3,3)
+    X2 = tensor('s',3,3)
     X = []
     X.append(X1)
     X.append(X2)
@@ -89,48 +90,45 @@ def symmetr(symmetries,op1,op2,proj=-1,debug=False,T=None):
                         print ''
 
                 #this transforms the matrix by the symmetry operation
-                X_trans = transform_matrix(X[l],sym,op1,op2,l,debug=debug,T=T)
+                X_trans = transform_tensor_3op(X[l],sym,op1,op2,op3,l,debug=debug,T=T)
                 
                 if debug:
                     print ''
-                    print 'Current form of the matrix:'
+                    print 'Current form of the tensor:'
                     print ''
-                    sympy.pprint(X[l].mat())
+                    print X[l]
                     print ''
-                    print 'Transformed matrix:'
+                    print 'Transformed tensor:'
                     print ''
-                    sympy.pprint(X_trans.mat())
+                    print X_trans
 
                 #the matrix must be equal to the transformed matrix, this give us a system of 9 linear equations
                 #matrix Y is a matrix that represents this system, ie the system X-X_trans = 0
                 #we reverse the order of the rows - ie the first row corresponds to x[2,2] and last to x[0,0]
                 # it doesn't really matter but the results are more natural this way
-                Y = matrix(0,9)
+                Y = matrix(0,27)
 
                 #we do a loop over all rows of the matrix Y - ie over all linear equations
-                for i in range(3):
-                    for j in range(3):
+                for i,j,q in itertools.product(range(3),range(3),range(3)):
 
-                        #convert_index transforms an index in a 3x3 matrix into an index in a 1x9 vector form
-                        m = convert_index(i,j)
+                    #convert_index transforms an index in a 3x3 matrix into an index in a 1x9 vector form
+                    m = convert_index_3(i,j,q)
 
-                        #a loop over all columns of matrix Y
-                        for k in range(3):
-                            for ll in range(3):
+                    #a loop over all columns of matrix Y
+                    for k,ll,r in itertools.product(range(3),range(3),range(3)):
 
-                                #again converts an index from 3x3 matrix form to the 1x9 vector form, but in this case in the reversed order
-                                n = convert_index_rev(k,ll)
+                        #again converts an index from 3x3 matrix form to the 1x9 vector form, but in this case in the reversed order
+                        n = convert_index_rev_3(k,ll,r)
 
-                                #now in the equation we substite 1 to the matrix component that correponds to the column and 0 to all others
-                                Y_p = X[l][i,j]-X_trans[i,j]
-                                for o in range(3):
-                                    for p in range(3):
-                                        if o == k and p == ll:
-                                            Y_p = Y_p.subs(X[l].x[o,p],1)
-                                        else:
-                                            Y_p = Y_p.subs(X[l].x[o,p],0)
+                        #now in the equation we substite 1 to the matrix component that correponds to the column and 0 to all others
+                        Y_p = X[l][i,j,q]-X_trans[i,j,q]
+                        for o,p,qq in itertools.product(range(3),range(3),range(3)):
+                                if o == k and p == ll and r == qq:
+                                    Y_p = Y_p.subs(X[l].x[o,p,qq],1)
+                                else:
+                                    Y_p = Y_p.subs(X[l].x[o,p,qq],0)
 
-                                Y[m,n] = Y_p
+                        Y[m,n] = Y_p
 
                 #this transforms the matrix into the Reduced row echelon form
                 #piv are the indeces o the pivot columns
@@ -151,7 +149,7 @@ def symmetr(symmetries,op1,op2,proj=-1,debug=False,T=None):
                     
                     #find the row of pivot j
                     found = False
-                    i = 8
+                    i = 26
                     while found == False:
                         if rref[i,j] == 1:
                             found = True
@@ -165,30 +163,32 @@ def symmetr(symmetries,op1,op2,proj=-1,debug=False,T=None):
                     tmp = 0
                     #now we just make use of the linear equation that holds for this pivot
                     #keep in mind that the rows are in reversed order
-                    for ll in range(j+1,9):
-                        tmp = tmp - rref[i,ll]*X[l].x[inconvert_index_rev(ll)[0],inconvert_index_rev(ll)[1]]
-                    X[l] = X[l].subs(X[l].x[inconvert_index_rev(j)[0],inconvert_index_rev(j)[1]],tmp)
+                    for ll in range(j+1,27):
+                        invindx = inconvert_index_rev_3(ll)
+                        tmp = tmp - rref[i,ll]*X[l].x[invindx[0],invindx[1],invindx[2]]
+                    invindx = inconvert_index_rev_3(j)
+                    X[l] = X[l].subs(X[l].x[invindx[0],invindx[1],invindx[2]],tmp)
 
                     if debug:
                         print 'substituting ',
-                        sympy.pprint(X[l].x[inconvert_index_rev(j)[0],inconvert_index_rev(j)[1]])
+                        sympy.pprint(X[l].x[invindx[0],invindx[1],invindx[2]])
                         print ' for ',
                         sympy.pprint(tmp)
                         print ''
 
 
                 if debug:
-                    print 'Current form of the matrix:'
-                    sympy.pprint(X[l].mat())
+                    print 'Current form of the tensor:'
+                    print X[l]
                     print ''
 
     if debug:
         print ''
-        print 'Symmetrized matrix even part:'
-        sympy.pprint(X[0].mat())
+        print 'Symmetrized tensor even part:'
+        print X[0]
         print ''
-        print 'Symmetrized matrix odd part:'
-        sympy.pprint(X[1].mat())
+        print 'Symmetrized tensor odd part:'
+        print X[1]
         print ''
         print '======= End symmetrizing ======='
 

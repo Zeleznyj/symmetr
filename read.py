@@ -5,6 +5,9 @@ import math
 import sys
 import os
 
+from fractions import Fraction
+import sympy
+
 
 #tests if two vectors are equal with precision prec
 def equal_vectors(vec1,vec2,prec):

@@ -1,4 +1,7 @@
+import re
+
 import sympy
+import numpy
 from tensors import matrix, mat2ten, tensor
 from conv_index import *
 
@@ -28,6 +31,8 @@ def should_rename(X,X_t):
 #debug is an optional parameter, if it's true, then the routine outputs lots of information
 def rename(X,name,debug=False):
 
+    ninds = len(list(set(re.findall(r'x[0-9]+',sympy.srepr(X)))))
+
     #v contains the symbolic variables:
     V = matrix('s',3,name)
     #Y will be the renamed matrix
@@ -44,7 +49,7 @@ def rename(X,name,debug=False):
         for j in range(3):
 
             #if a components is zero we do nothing with it
-            if X[i,j] == 0: 
+            if X[i,j] == 0:
                 Y[i,j] = 0
             else:
 
@@ -126,6 +131,11 @@ def rename(X,name,debug=False):
         print '======= end rename ======='
         print '' 
 
+    ninds_new = len(list(set(re.findall(r'x[0-9]+',sympy.srepr(Y)))))
+
+    if ninds != ninds_new:
+        print '!WARNING! Problem in renaming tensor components. Try --no-rename.' 
+
     return Y
 
 
@@ -161,9 +171,15 @@ def solve_lin(Z):
             return b6
         if i == 7:
             return b7
+
+    Zr = sympy.zeros(Z.rows,Z.cols)
+    for i in range(Z.rows):
+        for j in range(Z.cols):
+            Zr[i,j] = Z[i,j]
+
     #this solves  the system, not all the variabes may be needed, but luckily sympy doesn't complain about that
-    solution = sympy.solve_linear_system(Z,b0,b1,b2,b3,b4,b5,b6,b7)
-    
+    solution = sympy.solve_linear_system(Zr,b0,b1,b2,b3,b4,b5,b6,b7,minimal=True,warn=True)
+
     #number of variables of the linear equation system
     dim = len(Z[1,:])-1
     #the list that will contain the solution

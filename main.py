@@ -2,16 +2,21 @@
 import re
 import sys
 import os
+import subprocess
 
 import symmetrize_sympy
+import symmetrize_she
+import symmetrize_tensor as st
 import read
 from tensors import matrix, mat2ten
 import funcs
 from rename import rename
+from groups import group_sym
 
 import find_eq
 
 import sympy
+from sympy import sympify as spf
 import numpy as np
 
 from mpmath import cos as mcos
@@ -19,128 +24,12 @@ from mpmath import sin as msin
 from mpmath import acos as macos
 from mpmath import radians as mradians
 
+from fractions import Fraction
+
 import argparse
 
-#this finds the location of the main.py file and ads this location to the path where modules are searched
-#this way the modules have to be present only in the install directory and not in the run directory
-dirname, filename = os.path.split(os.path.abspath(__file__))
-sys.path.append(str(dirname))
+def create_Tm(vec_a,vec_b,vec_c):
 
-
-#parses the input arguments
-parser = argparse.ArgumentParser()
-parser.add_argument('op1', help='Type of the first operator')
-parser.add_argument('op2', help='Type of the second operator')
-parser.add_argument('-p','--projection',help='Sets a projection on an atom.',default=-1)
-parser.add_argument('-p2','--projection2',help='Sets a projection on a second atom. Tries to find a relation between tensors on the first \
-        atom and on the second atom.',default=-1)
-parser.add_argument('-b','--basis',help='Sets a coordinate basis: abc for conventional crystallographic basis, i for the one used in input. \
-        abc_o for orthogonalized crystalographic basis. all for outputing all.',default='i')
-parser.add_argument('-e','--equivalent',help='finds response matrices for equivalent magnetic configurations. Needs output of finddsym with\
-        zero moments as an input.')
-parser.add_argument('--debug',help='Controls if debug output is printed. all means all debug output is printed, symmetrize means debug\
-        output for symmetrizing, rename for renaming, equiv for finding the equivalent configurations',default='')
-parser.add_argument('--latex',action='store_const',const=True,default=False,help='If set, the matrices are printed also in a latex format.')
-args = parser.parse_args()
-
-#opens the output from findsym
-#data = open('sym.out')
-lines = sys.stdin.readlines()
-
-op1=args.op1 #type of the first operator
-op2=args.op2 #type of the second operator
-
-atom=int(args.projection) #number of atom on which projection is done, -1 means no projection
-atom2=int(args.projection2)
-if atom2 != -1:
-    if atom == -1:
-        sys.exit('projection2 can be setonly if projection1 is set')
-
-basis=args.basis.split(',') #a list specifying the basis to be used
-equiv = args.equivalent #contains name of the nonmagnetic findsym output
-#debug controls whether debug output is printed
-debug = args.debug.split(',')
-latex = args.latex
-
-debug_sym = False
-debug_rename = False
-debug_equiv = False
-
-if 'symmetrize' in debug or 'all' in debug:
-    debug_sym = True
-if 'rename' in debug or 'all' in debug:
-    debug_rename = True
-if 'equiv' in debug or 'all' in debug:
-    debug_equiv = True
-
-
-#reads the input
-#vec_a,b,c are needed to know the basis transformation
-#syms contain the symmetries in the form that is needed by symmetr
-[vec_a,vec_b,vec_c] = read.r_basis(lines)
-syms = read.r_sym(lines)
-
-
-#this returns the symmetrical form of spin-response tensor for atom with index atom
-#if atom is -1 no projections are done
-#operator types are given by op1 and op2
-X = symmetrize_sympy.symmetr(syms,op1,op2,atom,debug_sym)
-
-
-#outputs the tensor in the crystallographic basis used in the findsym output
-#this is the one returned by symmetr
-if 'abc' in basis or 'all' in basis:
-    print 'using basis:'
-    print 'a = ', vec_a[0], '* x + ', vec_a[1], '* y + ', vec_a[2], '* z'
-    print 'b = ', vec_b[0], '* x + ', vec_b[1], '* y + ', vec_b[2], '* z'
-    print 'c = ', vec_c[0], '* x + ', vec_c[1], '* y + ', vec_c[2], '* z'
-    print ''
-
-    if atom != -1:
-
-        print 'Symmetrized matrix in the abc basis even part, atom %s' % atom
-        X[0].pprint()
-        if latex:
-            X[0].pprint(latex=True)
-        print 'Symmetrized matrix in the abc basis odd part, atom %s' % atom
-        X[1].pprint()
-        if latex:
-            X[1].pprint(latex=True)
-        print ''
-
-        if atom2 != -1:
-
-            #tries to transform the tensor X to an atom atom2
-            X_2 = symmetrize_sympy.symmetr_AB(syms,X,op1,op2,atom,atom2)
-
-            if X_2 == None:
-                print 'no relation with atom %s found' % atom2
-            else:
-                print 'Symmetrized matrix in the abc basis even part, atom %s' % atom2
-                X_2[0].pprint()
-                if latex:
-                    X_2[0].pprint(latex=True)
-                print 'Symmetrized matrix in the abc basis odd part, atom %s' % atom2
-                X_2[1].pprint()
-                if latex:
-                    X_2[1].pprint(latex=True)
-                print ''
-
-    else:
-
-        print 'Symmetrized matrix in the abc basis even part:'
-        X[0].pprint()
-        if latex:
-            X[0].pprint(latex=True)
-        print 'Symmetrized matrix in the abc basis odd part:'
-        X[1].pprint()
-        if latex:
-            X[1].pprint(latex=True)
-
-#outputs the tensor in the input basis
-if 'i' in basis or 'all' in basis:
-
-    #transformation matrix from the original basis to the abc basis:
     T = sympy.zeros(3)
 
     T[0,0] = vec_a[0]
@@ -157,195 +46,432 @@ if 'i' in basis or 'all' in basis:
 
     T = funcs.make_rational(T)
 
-    #transforms the response matrix back to the input basis
-    X_I = symmetrize_sympy.convert_X(X,T,debug=debug_rename)
+    return T
 
-    print 'Symmetrized matrix in the input basis even part, atom %s' % atom
-    if op1 == op2:
-        X_I[0] = funcs.rename(funcs.sym_part(X_I[0]),'x')
-        print 'WARNING!!! Assuming input basis is orthogonal'
-    if latex:
-        X_I[0].pprint(latex=True)
-    else:
-        X_I[0].pprint()
-    print 'Symmetrized matrix in the input basis odd part, atom %s' % atom
-    if op1 == op2:
-        X_I[1] = funcs.rename(funcs.asym_part(X_I[1]),'x')
-        print 'WARNING!!! Assuming input basis is orthogonal'
-    if latex:
-        X_I[1].pprint(latex=True)
-    else:
-        X_I[1].pprint()
-    print ''
+def create_Ti(fin):
 
-    if atom2 != -1:
+    T_i = sympy.zeros(3)
 
-        #tries to transform the tensor X_I to an atom atom2
-        #T is used to transform the symmetries
-        X_I_2 = symmetrize_sympy.symmetr_AB(syms,X_I,op1,op2,atom,atom2,T=T)
+    inp_type = int(fin[2])
 
-        if X_I_2 == None:
-            print 'no relation with atom %s found' % atom2
+    if inp_type == 1:
+
+        vec_1 = fin[3].split()
+        vec_2 = fin[4].split()
+        vec_3 = fin[5].split()
+
+        T_i[0,0] =  spf(vec_1[0])
+        T_i[1,0] =  spf(vec_1[1])
+        T_i[2,0] =  spf(vec_1[2])
+
+        T_i[0,1] =  spf(vec_2[0])
+        T_i[1,1] =  spf(vec_2[1])
+        T_i[2,1] =  spf(vec_2[2])
+
+        T_i[0,2] =  spf(vec_3[0])
+        T_i[1,2] =  spf(vec_3[1])
+        T_i[2,2] =  spf(vec_3[2])
+
+    if inp_type == 2:
+
+        a,b,c,al,bet,gam = fin[3].split()
+        al = al+'*2*pi/360'
+        bet = bet+'*2*pi/360'
+        gam = gam+'*2*pi/360'
+        gam2 = 'acos((cos({gam})-cos({bet})*cos({al}))/(sin({al})*sin({al})))'.format(gam=gam,al=al,bet=bet)        
+
+        
+        T_i[0,0] =  spf('{a}*sin({gam2})*sin({bet})'.format(a=a,gam2=gam2,bet=bet))
+        T_i[1,0] =  spf('{a}*cos({gam2})*sin({bet})'.format(a=a,gam2=gam2,bet=bet))
+        T_i[2,0] =  spf('{a}*cos({bet})'.format(a=a,gam2=gam2,bet=bet))
+
+        T_i[0,1] =  spf(0)
+        T_i[1,1] =  spf('{b}*sin({al})'.format(b=b,al=al))
+        T_i[2,1] =  spf('{b}*cos({al})'.format(b=b,al=al))
+
+        T_i[0,2] =  spf(0)
+        T_i[1,2] =  spf(0)
+        T_i[2,2] =  spf(c)
+    
+    return T_i
+
+def fs_nonmag(fin_c):
+    
+    #replaces the magnetic moments by 0
+    start = False
+    fin_cnm = []
+    for i in range(len(fin_c)):
+        if 'magnetic' in fin_c[i]:
+            start = True
+        if start:
+            fin_cnm.append(re.sub(r'([0-9\.\-]+ +[0-9\.\-]+ +[0-9\.\-]+).+',r'\1 0 0 0',fin_c[i],count=1))
         else:
-            print 'Symmetrized matrix in the input basis even part, atom %s' % atom2
-            X_I_2[0].pprint()
-            if latex:
-                X_I_2[0].pprint(latex=True)
-            print 'Symmetrized matrix in the input basis odd part, atom %s' % atom2
-            X_I_2[1].pprint()
-            if latex:
-                X_I_2[1].pprint(latex=True)
+            fin_cnm.append(fin_c[i])
+    
+    #sends the nonmagnetic input file to findsym
+    fs = subprocess.Popen([dirname+'/findsym'],stdin=subprocess.PIPE,stdout=subprocess.PIPE)
+    out_nm = fs.communicate(input=''.join(fin_cnm))[0]
+    lines_nm = out_nm.split('\n')
+
+    return lines_nm
+
+
+#this finds the location of the main.py file and ads this location to the path where modules are searched
+#this way the modules have to be present only in the install directory and not in the run directory
+dirname, filename = os.path.split(os.path.abspath(__file__))
+sys.path.append(str(dirname))
+
+#parses the input arguments
+parser = argparse.ArgumentParser()
+parser.add_argument('op1', help='Type of the first operator')
+parser.add_argument('op2', help='Type of the second operator')
+parser.add_argument('-p','--projection',help='Sets a projection on an atom.',default=-1)
+parser.add_argument('-p2','--projection2',help='Sets a projection on a second atom. Tries to find a relation between tensors on the first \
+        atom and on the second atom.',default=-1)
+parser.add_argument('-f','--findsym',help='Findsym input file',default=None)
+parser.add_argument('-g','--group',help='group name',default=None)
+parser.add_argument('-op3',help='third operator in the linear response formula',default=None)
+parser.add_argument('-b','--basis',help='Sets a coordinate basis: abc for conventional crystallographic basis, i for the one used in input \
+(default). cart for a cartesian basis in which the input basis is define. \
+        abc_c for orthogonalized crystalographic basis (not tested much).',default='i')
+parser.add_argument('-e','--equivalent',action='store_true',help='finds response matrices for equivalent magnetic configurations. Needs output of finddsym with\
+        zero moments as an input.')
+parser.add_argument('--no-rename',action='store_true')
+parser.add_argument('--debug',help='Controls if debug output is printed. all means all debug output is printed, symmetrize means debug\
+        output for symmetrizing, rename for renaming, equiv for finding the equivalent configurations',default='')
+parser.add_argument('--latex',action='store_const',const=True,default=False,help='If set, the matrices are printed also in a latex format.')
+parser.add_argument('--exp',default=-1)
+parser.add_argument('--print-syms',action='store_const',const=True,default=False,help='Prints all symmetry operations.')
+args = parser.parse_args()
+
+op1=args.op1 #type of the first operator
+op2=args.op2 #type of the second operator
+
+atom=int(args.projection) #number of atom on which projection is done, -1 means no projection
+atom2=int(args.projection2)
+
+basis=args.basis #a list specifying the basis to be used
+equiv = args.equivalent #contains name of the nonmagnetic findsym output
+#debug controls whether debug output is printed
+debug = args.debug.split(',')
+latex = args.latex
+inp = args.findsym
+no_rename = args.no_rename
+exp = int(args.exp)
+print_syms = args.print_syms
+group = args.group
+op3 = args.op3
+
+if atom2 != -1:
+    if atom == -1:
+        sys.exit('projection2 can be setonly if projection1 is set')
+
+if inp and group:
+    sys.exit('You cannot specify both the symmetry group and Findsym input file')
+
+if ( atom != -1 or atom2 !=-1 ) and group:
+    sys.exit('Projections not possible with group name input. Use Findsym input instead.')
+
+if equiv and group:
+    sys.exit('Equivalent configurations are not possible with group name input. Use findsym input file.')
+
+if op3 and equiv:
+    sys.exit('Equivalent configurations not implemented for three operators.')
+
+if op3 and (exp != -1):
+    sys.exit('Expansions are not implemented for three operators.')
+
+debug_sym = False
+debug_rename = False
+debug_equiv = False
+debug_tensor = False
+debug_time = False
+debug_Y = False
+
+if 'symmetrize' in debug or 'all' in debug:
+    debug_sym = True
+if 'rename' in debug or 'all' in debug:
+    debug_rename = True
+if 'equiv' in debug or 'all' in debug:
+    debug_equiv = True
+if 'exp' in debug or 'all' in debug:
+    debug_tensor = True
+if 'time' in debug or 'all' in debug:
+    debug_time = True
+if 'Y' in debug:
+    debug_Y = True
+
+if inp:
+    #runs findsym and reads the output
+    with open(inp,'r') as f:
+
+        fin = f.readlines()
+        
+        #fin_c cleans definition of axes from the findsym input
+        #otherwise findsym crashes
+        fin_c = []
+        found = False
+        i = 0
+        for i in range(len(fin)):
+            if 'axes:' in fin[i]:
+                found = True
+            if not found:
+                fin_c.append(fin[i])
+
+        try:  
+            fs = subprocess.Popen([dirname+'/findsym'],stdin=subprocess.PIPE,stdout=subprocess.PIPE)
+            out = fs.communicate(input=''.join(fin_c))[0]
+            lines = out.split('\n')
+        except:
+            sys.exit('Error in findsym input') 
+
+    #reads the input
+    #vec_a,b,c are needed to know the basis transformation
+    #syms contain the symmetries in the form that is needed by symmetr
+    [vec_a,vec_b,vec_c] = read.r_basis(lines)
+    syms = read.r_sym(lines)
+
+    #construct the transformation matrix from the magnetic basis to the selected basis
+    if 'abc' == basis:
+
+        T = sympy.Matrix(sympy.Identity(3))
+
+    if 'i' == basis:
+
+        T = create_Tm(vec_a,vec_b,vec_c)
+
+    if 'cart' == basis:
+
+        T_m = create_Tm(vec_a,vec_b,vec_c)
+        T_i = create_Ti(fin)
+
+        T = T_i*T_m
+
+    if 'custom' == basis:
+        
+        #T_i is a transformation matrix from the input coordinate system to the cartesian one
+        T_i = create_Ti(fin)
+                
+        for i in range(len(fin)):
+            if 'axes:' in fin[i]:
+                loc = i
+        
+        vec_1 = fin[loc+1].split()
+        vec_2 = fin[loc+2].split()
+        vec_3 = fin[loc+3].split()
+
+        #T_c is the transformation matrix from the used-defined basis to the cartesian one
+        T_c = sympy.zeros(3)
+
+        T_c[0,0] =  spf(vec_1[0])
+        T_c[1,0] =  spf(vec_1[1])
+        T_c[2,0] =  spf(vec_1[2])
+
+        T_c[0,1] =  spf(vec_2[0])
+        T_c[1,1] =  spf(vec_2[1])
+        T_c[2,1] =  spf(vec_2[2])
+
+        T_c[0,2] =  spf(vec_3[0])
+        T_c[1,2] =  spf(vec_3[1])
+        T_c[2,2] =  spf(vec_3[2])
+
+        T_m = create_Tm(vec_a,vec_b,vec_c)
+
+        T = T_c.inv()*T_i*T_m
+
+
+    if 'abc_c' == basis:
+
+        T = sympy.zeros(3)
+
+        abc = read.r_abc(lines)
+
+        a = abc[0]
+        b = abc[1]
+        c = abc[2]
+        al = abc[3]
+        bet = abc[4]
+        gam = abc[5]
+
+        al = al+'*2*pi/360'
+        bet = bet+'*2*pi/360'
+        gam = gam+'*2*pi/360'
+        gam2 = 'acos((cos({gam})-cos({bet})*cos({al}))/(sin({al})*sin({al})))'.format(gam=gam,al=al,bet=bet)        
+        
+        T[0,0] =  spf('{a}*sin({gam2})*sin({bet})'.format(a=a,gam2=gam2,bet=bet))
+        T[1,0] =  spf('{a}*cos({gam2})*sin({bet})'.format(a=a,gam2=gam2,bet=bet))
+        T[2,0] =  spf('{a}*cos({bet})'.format(a=a,gam2=gam2,bet=bet))
+
+        T[0,1] =  spf(0)
+        T[1,1] =  spf('{b}*sin({al})'.format(b=b,al=al))
+        T[2,1] =  spf('{b}*cos({al})'.format(b=b,al=al))
+
+        T[0,2] =  spf(0)
+        T[1,2] =  spf(0)
+        T[2,2] =  spf(c)
+
+if group:
+    atom = -1
+    hex_group,syms=group_sym(group,dirname=str(dirname))
+
+    if 'i' == basis or 'abc' == basis:
+        print 'Using the conventional coordinate system!'
+        T = sympy.Matrix(sympy.Identity(3))
+
+    if 'cart' == basis:
+
+        print 'Using a cartesian coordinate system'
+        if hex_group:
+            T = sympy.zeros(3)
+            T[0,0] = 1
+            T[0,1] = sympy.sympify(Fraction(-0.5))
+            T[0,2] = 0
+            T[1,0] = 0 
+            T[1,1] = sympy.sqrt(3)/2
+            T[1,2] = 0
+            T[2,0] = 0
+            T[2,1] = 0
+            T[2,2] = 1
+        else:
+            T = sympy.Matrix(sympy.Identity(3))
+
+if print_syms:
+    print 'Symmetry operations:'
+    print 'Format: Number, space transformation, magnetic moment transformation, time-reversal, transformation of the sublattices'
+    for sym in syms:
+        print sym
+
+
+if exp == -1:
+
+    #this returns the symmetrical form of spin-response tensor for atom with index atom
+    #if atom is -1 no projections are done
+    #operator types are given by op1 and op2
+    if not op3:
+        X = symmetrize_sympy.symmetr(syms,op1,op2,atom,debug_sym)
+
+        if not no_rename:
+            X_T = funcs.convert_X(X,T,debug=debug_rename)
+        else:
+            X_T = funcs.convert_X(X,T,ren=False,debug=debug_rename)
+
+        print 'Symmetry restricted form of the tensor, even part'
+        X_T[0].pprint()
+        if latex:
+            X_T[0].pprint(latex=latex)
+        print ''
+
+        print 'Symmetry restricted form of the tensor, odd part'
+        X_T[1].pprint()
+        if latex:
+            X_T[1].pprint(latex=latex)
+        print ''
+
+        if atom2 != -1:
+
+            X_T_2 = symmetrize_sympy.symmetr_AB(syms,X_T,op1,op2,atom,atom2,T=T)
+
+            if X_T_2 == None:
+                print 'no relation with atom %s found' % atom2
+            else:
+                print 'Symmetrized matrix in the input basis even part, atom %s' % atom2
+                X_T_2[0].pprint()
+                if latex:
+                    X_T_2[0].pprint(latex=latex)
+                print 'Symmetrized matrix in the input basis odd part, atom %s' % atom2
+                X_T_2[1].pprint()
+                if latex:
+                    X_T_2[1].pprint(latex=latex)
+                print ''
+
+    else:
+        X = symmetrize_she.symmetr_3op(syms,op1,op2,op3,atom,T=T)
+        spins=['x','y','z']
+        print 'even part:'
+        for i in range(3):
+            print 'op1=',spins[i]
+            sympy.pprint(X[0].reduce(0,i).mat())
             print ''
 
-
-
-if 'abc_o' in basis or 'all' in basis:
-    #transform to cubic
-    #this transforms the results to an orthogonal basis defined in the following way:
-    #vector z=c
-    #vector y lies in the bc plane and is ortogonal to z
-    #vector x is ortogonal to y and z and they form a right-handed system
-    #length of x is a, of y is b and of z is c
-
-    T2 = sympy.zeros(3)
-
-    abc = read.r_abc(lines)
-
-    al = mradians(float(abc[3]))
-    bet = mradians(float(abc[4]))
-    gam = mradians(float(abc[5]))
-    gam2 = macos((mcos(gam)-mcos(bet)*mcos(al))/(msin(al)*msin(bet)))
-
-    T2[0,0] = msin(gam2)*msin(bet)
-    T2[1,0] = mcos(gam2)*msin(bet)
-    T2[2,0] = mcos(bet)
-
-    T2[0,1] = 0
-    T2[1,1] = msin(al)
-    T2[2,1] = mcos(al)
-
-    T2[0,2] = 0
-    T2[1,2] = 0
-    T2[2,2] = 1
-
-    T2 = funcs.make_rational(T2)
-
-    X_O = symmetrize_sympy.convert_X(X,T2,debug=debug_rename)
-
-    print ''
-    print 'EXPERIMENTAL: Symmetrized matrix in the orthogonalized basis even part:'
-    X_O[0].pprint()
-    if latex:
-        X_O[0].pprint(latex=True)
-    print 'EXPERIMENTAL: Symmetrized matrix in the orthogonalized basis odd part:'
-    X_O[1].pprint()
-    if latex:
-        X_O[1].pprint(latex=True)
-
-    if atom2 != -1:
-
-        #tries to transform the tensor X_O to an atom atom2
-        #T is used to transform the symmetries
-        X_O_2 = symmetrize_sympy.symmetr_AB(syms,X_O,op1,op2,atom,atom2,T=T2.mat(numpy=True))
-
-        if X_O_2 == None:
-            print 'no relation with atom %s found' % atom2
-        else:
-            print 'Symmetrized matrix in the orthogonalized basis even part, atom %s' % atom2
-            X_O_2[0].pprint()
-            if latex:
-                X_O_2[0].pprint(latex=True)
-            print 'Symmetrized matrix in the orthogonalized basis odd part, atom %s' % atom2
-            X_O_2[1].pprint()
-            if latex:
-                X_O_2[1].pprint(latex=True)
+        print 'odd part:'
+        for i in range(3):
+            print 'op1=',spins[i]
+            sympy.pprint(X[1].reduce(0,i).mat())
             print ''
 
-if equiv:
+if exp != -1:
+
+    if inp:
+
+        #findsym output for nonmagnetic structure
+        lines_nm = fs_nonmag(fin_c)
+
+        #reads the nonmagnetic findsym output
+        syms_nm = read.r_sym(lines_nm) 
+        [vec_a_nm,vec_b_nm,vec_c_nm] = read.r_basis(lines_nm)
+        Tnm = create_Tm(vec_a_nm,vec_b_nm,vec_c_nm)
+
+        if 'i' == basis:
+            T_exp = Tnm
+
+    if group:
+        print '!!!The input group must be one of the nonmagnetic point groups, otherwise the ouput will be wrong.!!!' 
+        syms_nm = syms
+
+    X = st.symmetr_ten(syms_nm,op1,op2,exp,proj=atom,T=T,debug=debug_tensor,debug_Y=debug_Y,debug_time=debug_time)
+    st.print_tensor(X)
+    if latex:
+      st.print_tensor(X,latex=latex)
+    
+if equiv and ( exp != -1 ):
+    print 'You cannot use --equiv and --exp together. Equivalent configurations not supported for expansions.'
+
+if equiv and ( exp == -1):
     #outputs also the form of the tensor for all equivalent magnetic configurations
-    #equiv is a name of the nonamgnetic findsym output
-    #always outputs in the input basis
 
-    #reads data from the nonmagnetic output file
-    with open(equiv) as f:
-        lines_nm = f.readlines()
+    lines_nm = fs_nonsym(fin_c)
+
+    #reads the nonmagnetic findsym output
     syms_nm = read.r_sym(lines_nm) 
     [vec_a_nm,vec_b_nm,vec_c_nm] = read.r_basis(lines_nm)
 
     #transformation matrix from the magnetic basis to the input one
-
-    T_m = np.zeros((3,3))
-
-    T_m[0,0] = vec_a[0]
-    T_m[1,0] = vec_a[1]
-    T_m[2,0] = vec_a[2]
-
-    T_m[0,1] = vec_b[0]
-    T_m[1,1] = vec_b[1]
-    T_m[2,1] = vec_b[2]
-
-    T_m[0,2] = vec_c[0]
-    T_m[1,2] = vec_c[1]
-    T_m[2,2] = vec_c[2]
-
-    #T_m = funcs.make_rational(T_m)
-
-    o_m = np.array(read.r_origin(lines))
-
-    try:
-        X_I
-    except:
-        X_I = funcs.convert_X(X,T_m)
+    T_m = create_Tm(vec_a,vec_b,vec_c)
 
     #transformation matrix from the nonmagnetic basis to the input one
-    T_nm = sympy.zeros(3)
+    T_nm = create_Tm(vec_a_nm,vec_b_nm,vec_c_nm)
 
-    T_nm[0,0] = vec_a_nm[0]
-    T_nm[1,0] = vec_a_nm[1]
-    T_nm[2,0] = vec_a_nm[2]
+    T_nmX = T*T_m.inv()*T_nm
 
-    T_nm[0,1] = vec_b_nm[0]
-    T_nm[1,1] = vec_b_nm[1]
-    T_nm[2,1] = vec_b_nm[2]
-
-    T_nm[0,2] = vec_c_nm[0]
-    T_nm[1,2] = vec_c_nm[1]
-    T_nm[2,2] = vec_c_nm[2]
-
-    T_nm = funcs.make_rational(T_nm)
-
-    o_nm = np.array(read.r_origin(lines_nm))
+    #o_nm = np.array(read.r_origin(lines_nm))
 
     #the shift from the magnetic to the nonmagnetic
-    shift = np.dot(np.linalg.inv(T_nm),o_nm)
+    #shift = np.dot(np.linalg.inv(T_nm),o_nm)
 
     #atomic positions including magnetic moments
     #we need the moments in the correct basis, for the the length of the vectos a,b,c is needed:
     fix_m = [np.linalg.norm(vec_a),np.linalg.norm(vec_b),np.linalg.norm(vec_c)]
+    fix_m = funcs.make_rational(sympy.Matrix([[fix_m[0],fix_m[1],fix_m[2]]]))
     pos = read.r_pos(lines,fix_m)
-    #converted positions to the input basis
-    pos_t = funcs.convert_pos(pos,T_m,o_m)
+    #converted magnetic moments to the selected basis
+    mag = funcs.convert_mag(pos,T)
 
     if debug_equiv:
         print ''
-        print 'positions in the nonmagnetic basis:'
+        print 'positions in the magnetic basis:'
         for p in pos:
             print p
         print ''
-        print 'transformation matrix from the nonmagnetic to the input basis:'
-        print T_nm
+        print 'transformation matrix from the magnetic to the selected basis:'
+        print T
         print ''
-        print 'positions in the input basis:'
-        for p in pos_t:
+        print 'positions in the selected basis:'
+        for p in mag_t:
             print p
-        print ''
-        print 'transformation from the magnetic basis to the input basis'
-        print T_m
 
     #this outputs all the equaivalen configurations
     #C is a conf class, it contains both the configurations and the transformed tensors
-    C = find_eq.find_equiv(X_I,op1,op2,atom,syms_nm,pos_t,T_nm,shift,debug_equiv)
+    C = find_eq.find_equiv(X_T,op1,op2,atom,syms_nm,mag,T_nmX,debug_equiv)
+    print ''
+    print 'Equivalent configurations:'
     C.pprint(latex=latex)
-
-
-
