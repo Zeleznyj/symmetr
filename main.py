@@ -279,10 +279,26 @@ if inp:
         T_c[1,2] =  spf(vec_3[1])
         T_c[2,2] =  spf(vec_3[2])
 
+        normalize = True
+        if normalize == True:
+            norm = sympy.sqrt(T_c[0,0]**2 + T_c[1,0]**2 + T_c[2,0]**2)
+            T_c[0,0] = T_c[0,0] / norm
+            T_c[1,0] = T_c[1,0] / norm
+            T_c[2,0] = T_c[2,0] / norm
+
+            norm = sympy.sqrt(T_c[0,1]**2 + T_c[1,1]**2 + T_c[2,1]**2)
+            T_c[0,1] = T_c[0,1] / norm
+            T_c[1,1] = T_c[1,1] / norm
+            T_c[2,1] = T_c[2,1] / norm
+
+            norm = sympy.sqrt(T_c[0,2]**2 + T_c[1,2]**2 + T_c[2,2]**2)
+            T_c[0,2] = T_c[0,2] / norm
+            T_c[1,2] = T_c[1,2] / norm
+            T_c[2,2] = T_c[2,2] / norm
+
         T_m = create_Tm(vec_a,vec_b,vec_c)
 
         T = T_c.inv()*T_i*T_m
-
 
     if 'abc_c' == basis:
 
@@ -317,7 +333,7 @@ if inp:
 if group:
     atom = -1
     print group
-    hex_group,syms=group_sym(group,dirname=str(dirname),debug=True)
+    hex_group,syms=group_sym(group,dirname=str(dirname),debug=False)
 
     if 'i' == basis or 'abc' == basis:
         print 'Using the conventional coordinate system!'
@@ -394,6 +410,8 @@ if exp == -1:
             X = symmetrize_she.symmetr_3op(syms,op1,op2,op3,atom,T=T)
         else:
             X = symmetrize_she.symmetr_3op(syms,op1,op2,op3,atom)
+            sympy.pprint(X[0])
+            sympy.pprint(X[1])
             X_T = []
             X_T.append(funcs.convert_tensor_3op(X[0],T))
             X_T.append(funcs.convert_tensor_3op(X[1],T))

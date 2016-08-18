@@ -404,6 +404,7 @@ def transform_tensor_3op(tensor_current,sym,op1,op2,op3,l,T=None,debug=False):
     mat2 = sym2mat(sym,op_type=op2)
     mat3 = sym2mat(sym,op_type=op3)
 
+
     if T!= None:
 
         if debug:
@@ -448,6 +449,8 @@ def transform_tensor_3op(tensor_current,sym,op1,op2,op3,l,T=None,debug=False):
         print 'transformation matrix 3 (other indeces transformation):'
         sympy.pprint(mat3)
         print '' 
+
+    mat3 = mat3.inv().T
 
     trans = tensor(0,tensor_current.dim1,tensor_current.dim2)
     
