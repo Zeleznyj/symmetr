@@ -2,7 +2,7 @@ import re
 import sys
 
 
-def group_sym(name,dirname='.'):
+def group_sym(name,dirname='.',debug=False):
     """Returns symmetry operations for a given group.
 
     Args:
@@ -41,6 +41,9 @@ def group_sym(name,dirname='.'):
             line_f = line
             ops = [x[2:-1] for x in re.findall('\'\([12346xyzm\-]+\|',line[1])]
             ops_T = [x[2:-1] for x in re.findall('\"\([12346xyzm\-]+\|',line[1])]
+            if debug:
+                print 'operations without time-reversal:', ops
+                print 'operations with time-reversal:', ops_T
             hex_group = False
             for op in ops + ops_T:
                 if op in hex_syms:
@@ -67,11 +70,17 @@ def group_sym(name,dirname='.'):
         ops = ops.split(',')
         opm = opm.split(',')
 
+        if debug:
+            print 'no time reversal'
+            print 'operator', op
+            print 'symmetry operation:', [j,ops,opm,'+1']
+            print ''
+
         syms.append([j,ops,opm,'+1'])
 
     for j in range(len(ops_T)):
 
-        op = sym_a[3][j]
+        op = sym_a[4][j]
 
         if sym_a[2]:
 
@@ -103,6 +112,12 @@ def group_sym(name,dirname='.'):
                     opm[i] = 'my'
                 if m == '-mz':
                     opm[i] = 'mz'
+
+        if debug:
+            print 'time reversal'
+            print 'operator', op
+            print 'symmetry operation:', [n+j,ops,opm,'-1']
+            print ''
 
         syms.append([n+j,ops,opm,'-1'])
 

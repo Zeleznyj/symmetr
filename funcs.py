@@ -380,15 +380,14 @@ def transform_tensor_3op(tensor_current,sym,op1,op2,op3,l,T=None,debug=False):
     """
     Transforms a tensor by a symmetry operation.
 
-    The tensor is an expansion term in the expansion of linear response tensor in powers of magnetization.
-    First two indeces are transformed according to op types the rest correspons to expansion in powers of magnetization 
+    The tensor describes a 3 operator linear response.
 
     Args:
         tensor_current: The tensor to be transformed.
         sym: The symmetry operation. Format as outputted by read.py.
         op1 (str): First operator type.
         op2 (str): Second operator type.
-        op3 (str): Second operator type.
+        op3 (str): Third operator type.
         l (int): If this is 0, it is transformed as an even part. If it is 1, it is transformed as an odd part.
         T (matrix): Coordinate transformation matrix. If it is set, the symmetry operations will be transformed by this matrix.
             Symmetry operations are given in basis A. T transforms from A to B, ie Tx_A = x_B.
@@ -561,6 +560,35 @@ def convert_X(X,T,ren=True,debug=False):
 
     return X_T
 
+def convert_tensor_3op(ten,T):
+    """
+    Converts a tensor, which describes a 3 operator linear response.
+    Args:
+        tensor: The tensor to be transformed.
+        T (matrix): Coordinate transformation matrix. If it is set, the symmetry operations will be transformed by this matrix.
+            Symmetry operations are given in basis A. T transforms from A to B, ie Tx_A = x_B.
+    Returns:
+        ten_T: The transformed tensor.
+    """
+
+
+    mat1 = T
+    mat2 = T.inv().T
+    ten_T = tensor(0,ten.dim1,ten.dim2)
+ 
+    for ind1 in ten_T:
+        for ind2 in ten:
+            factor = 1
+            for i in range(ten.dim2):
+                if i == 0:
+                    factor *= mat1[ind1[i],ind2[i]]
+                elif i == 1:
+                    factor *= mat1[ind1[i],ind2[i]]
+                else:
+                    factor *= mat2[ind1[i],ind2[i]]
+            ten_T[ind1] += factor*ten[ind2]
+    
+    return ten_T
 
 def convert_pos(poss,T,shift=np.array([0,0,0])):
     #converts a positions by a matrix T and shifts them by shift

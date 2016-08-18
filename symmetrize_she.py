@@ -15,7 +15,8 @@ from conv_index import *
 
 def symmetr_3op(symmetries,op1,op2,op3,proj=-1,debug=False,T=None):
     """
-    Returns a symmetrical form of a response matrix for a given atom and given list of symmetries.
+    Returns a symmetrical form of a response tensor for a 3 operator linear response formula
+            and given list of symmetries.
 
     Args:
         symmetries: A list of symmetry operations. In a format outputted by read.py.
@@ -24,14 +25,16 @@ def symmetr_3op(symmetries,op1,op2,op3,proj=-1,debug=False,T=None):
             'v' for velocity operator
             'x' for position
         op2 (string): Second operator type. 
+        op3 (string): Third operator type. 
         proj (Optional[int]): Determines projection on atom. Defaults to -1.
             If set to -1, there is no projection.
             If set to positive integer, it determines atom number.
+            !!!I'm not sure if this option really has any meaning in this context.!!!
         debug (Optional[boolean]): Defaults to false. If set to true, additional debug output is printed.
-        T (Default[sympy matrix): A linear response matrix. Defaults to None
+        T (Optional[sympy matrix): A linear response matrix. Defaults to None
             If it is set, then the linear response matrix is used to transform the symmetry operations.
             Symmetry operations are given in basis A. T transforms from A to B, ie Tx_A = x_B.
-            Primarily for debugging.
+
 
     Outputs:
         X ([X[0],X[1]]): A list which contains symmetrized form of the even and the odd part of the linear response tensor.
@@ -102,22 +105,22 @@ def symmetr_3op(symmetries,op1,op2,op3,proj=-1,debug=False,T=None):
                     print ''
                     print X_trans
 
-                #the matrix must be equal to the transformed matrix, this give us a system of 9 linear equations
+                #the tensor must be equal to the transformed tensor, this give us a system of 27 linear equations
                 #matrix Y is a matrix that represents this system, ie the system X-X_trans = 0
-                #we reverse the order of the rows - ie the first row corresponds to x[2,2] and last to x[0,0]
+                #we reverse the order of the rows - ie the first row corresponds to x[2,2,2] and last to x[0,0,0]
                 # it doesn't really matter but the results are more natural this way
                 Y = matrix(0,27)
 
                 #we do a loop over all rows of the matrix Y - ie over all linear equations
                 for i,j,q in itertools.product(range(3),range(3),range(3)):
 
-                    #convert_index transforms an index in a 3x3 matrix into an index in a 1x9 vector form
+                    #convert_index transforms an index in a 3x3x3 matrix into an index in a 1x27 vector form
                     m = convert_index_3(i,j,q)
 
                     #a loop over all columns of matrix Y
                     for k,ll,r in itertools.product(range(3),range(3),range(3)):
 
-                        #again converts an index from 3x3 matrix form to the 1x9 vector form, but in this case in the reversed order
+                        #again converts an index from 3x3x3 matrix form to the 1x27 vector form, but in this case in the reversed order
                         n = convert_index_rev_3(k,ll,r)
 
                         #now in the equation we substite 1 to the matrix component that correponds to the column and 0 to all others
@@ -194,39 +197,4 @@ def symmetr_3op(symmetries,op1,op2,op3,proj=-1,debug=False,T=None):
 
 
     return X
-
-
-def symmetr_AB(syms,X,op1,op2,atom1,atom2,T=None):
-    """
-    Tries to transform the tensor projected on one atom to a different atom
-
-    Args:
-        syms: The symmmetry operations. Format as outputted by read.py
-        X: The input tensor.
-        op1: The first operator.
-        op2: The second operator.
-        atom1: The atom on which X is projected.
-        atom2: The atom on which X is transformed.
-        T (Optional[matrix]): Coordinate transformation matrix. If it is set, the symmetry operations will be transformed by this matrix.
-            Symmetry operations are given in basis A. T transforms from A to B, ie Tx_A = x_B.
-
-    Returns:
-        X_trans: The transformed tensor.
-    """
-
-    X_trans = []
-
-    found = False
-    for sym in syms:
-        #there will usually be more symmetries that transform from atom1 to atom2, we need only one, as they all
-        #give the same results
-        if sym_type(atom1,sym) == atom2 and not found:
-            found = True
-            for l in range(2):
-                X_trans.append(transform_matrix(X[l],sym,op1,op2,l,T=T))
-
-    if found:
-        return X_trans
-    else:
-        return None
 

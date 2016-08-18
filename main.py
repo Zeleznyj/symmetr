@@ -142,6 +142,9 @@ parser.add_argument('--debug',help='Controls if debug output is printed. all mea
 parser.add_argument('--latex',action='store_const',const=True,default=False,help='If set, the matrices are printed also in a latex format.')
 parser.add_argument('--exp',default=-1)
 parser.add_argument('--print-syms',action='store_const',const=True,default=False,help='Prints all symmetry operations.')
+parser.add_argument('--transform-result',action='store_const',const=True,default=False,help='By default, the symmetry operations are \
+        transformed to the correct basis. If this option is chosen, the symmetry operations are not transformed and instead the \
+        result is transformed. Only works for the three operators.')
 args = parser.parse_args()
 
 op1=args.op1 #type of the first operator
@@ -161,6 +164,7 @@ exp = int(args.exp)
 print_syms = args.print_syms
 group = args.group
 op3 = args.op3
+transform_result = args.transform_result
 
 if atom2 != -1:
     if atom == -1:
@@ -312,7 +316,8 @@ if inp:
 
 if group:
     atom = -1
-    hex_group,syms=group_sym(group,dirname=str(dirname))
+    print group
+    hex_group,syms=group_sym(group,dirname=str(dirname),debug=True)
 
     if 'i' == basis or 'abc' == basis:
         print 'Using the conventional coordinate system!'
@@ -385,7 +390,15 @@ if exp == -1:
                 print ''
 
     else:
-        X = symmetrize_she.symmetr_3op(syms,op1,op2,op3,atom,T=T)
+        if transform_result == False:
+            X = symmetrize_she.symmetr_3op(syms,op1,op2,op3,atom,T=T)
+        else:
+            X = symmetrize_she.symmetr_3op(syms,op1,op2,op3,atom)
+            X_T = []
+            X_T.append(funcs.convert_tensor_3op(X[0],T))
+            X_T.append(funcs.convert_tensor_3op(X[1],T))
+            X = X_T
+
         spins=['x','y','z']
         print 'even part:'
         for i in range(3):
