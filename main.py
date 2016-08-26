@@ -115,6 +115,25 @@ def fs_nonmag(fin_c):
 
     return lines_nm
 
+def same_op_sym(X,T):
+    """
+    If op1==op2 then additional requirement is that even part of the tensor is symmetric
+    and the odd part antisymmetric.
+
+    Args:
+        X[matrix,matrix]: the tensors to be symmetrized
+        T: transformation matrix to some cartesian basis
+
+    Returns:
+        X_S: the symmetrized (antisymmetrized) part of X
+    """
+
+    X_C  = funcs.convert_X(X,T)
+    X_C[0] = funcs.sym_part(X_C[0])
+    X_C[1] = funcs.asym_part(X_C[1])
+    X_S = funcs.convert_X(X_C,T.inv())
+
+    return X_S
 
 #this finds the location of the main.py file and ads this location to the path where modules are searched
 #this way the modules have to be present only in the install directory and not in the run directory
@@ -145,6 +164,8 @@ parser.add_argument('--print-syms',action='store_const',const=True,default=False
 parser.add_argument('--transform-result',action='store_const',const=True,default=False,help='By default, the symmetry operations are \
         transformed to the correct basis. If this option is chosen, the symmetry operations are not transformed and instead the \
         result is transformed. Only works for the three operators.')
+parser.add_argument('--syms',default=-1,help='Choose which symmetry operations to take, the rest is ignored. Insert symmetry operation\
+         numbers separated by commas with no spaces. They are numbered as they appear in the findsym output file.')
 args = parser.parse_args()
 
 op1=args.op1 #type of the first operator
@@ -165,6 +186,7 @@ print_syms = args.print_syms
 group = args.group
 op3 = args.op3
 transform_result = args.transform_result
+syms_sel = args.syms
 
 if atom2 != -1:
     if atom == -1:
@@ -356,6 +378,18 @@ if group:
         else:
             T = sympy.Matrix(sympy.Identity(3))
 
+if syms_sel != -1:
+    syms_sel = syms_sel.split(',')
+    for i in range(len(syms_sel)):
+        syms_sel[i] = int(syms_sel[i])
+
+    syms_new = []
+    for i in range(len(syms)):
+        if i+1 in syms_sel:
+            syms_new.append(syms[i])
+
+    syms = syms_new
+
 if print_syms:
     print 'Symmetry operations:'
     print 'Format: Number, space transformation, magnetic moment transformation, time-reversal, transformation of the sublattices'
@@ -370,6 +404,13 @@ if exp == -1:
     #operator types are given by op1 and op2
     if not op3:
         X = symmetrize_sympy.symmetr(syms,op1,op2,atom,debug_sym)
+        
+        if op1 == op2:
+            T_m = create_Tm(vec_a,vec_b,vec_c)
+            T_i = create_Ti(fin)
+            T_cart = T_i*T_m
+
+            X = same_op_sym(X,T_cart)
 
         if not no_rename:
             X_T = funcs.convert_X(X,T,debug=debug_rename)
@@ -410,8 +451,6 @@ if exp == -1:
             X = symmetrize_she.symmetr_3op(syms,op1,op2,op3,atom,T=T)
         else:
             X = symmetrize_she.symmetr_3op(syms,op1,op2,op3,atom)
-            sympy.pprint(X[0])
-            sympy.pprint(X[1])
             X_T = []
             X_T.append(funcs.convert_tensor_3op(X[0],T))
             X_T.append(funcs.convert_tensor_3op(X[1],T))
