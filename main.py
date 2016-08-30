@@ -165,7 +165,8 @@ parser.add_argument('--transform-result',action='store_const',const=True,default
         transformed to the correct basis. If this option is chosen, the symmetry operations are not transformed and instead the \
         result is transformed. Only works for the three operators.')
 parser.add_argument('--syms',default=-1,help='Choose which symmetry operations to take, the rest is ignored. Insert symmetry operation\
-         numbers separated by commas with no spaces. They are numbered as they appear in the findsym output file.')
+         numbers separated by commas with no spaces. They are numbered as they appear in the findsym output file.\
+         Also can include ranges. Example: 1-3,7,9-12')
 args = parser.parse_args()
 
 op1=args.op1 #type of the first operator
@@ -380,12 +381,17 @@ if group:
 
 if syms_sel != -1:
     syms_sel = syms_sel.split(',')
+    syms_sel2 = []
     for i in range(len(syms_sel)):
-        syms_sel[i] = int(syms_sel[i])
+        if '-' in syms_sel[i]:
+            s = syms_sel[i].split('-')
+            syms_sel2 += range(int(s[0]),int(s[1])+1)
+        else:
+            syms_sel2.append(int(syms_sel[i]))
 
     syms_new = []
     for i in range(len(syms)):
-        if i+1 in syms_sel:
+        if i+1 in syms_sel2:
             syms_new.append(syms[i])
 
     syms = syms_new
