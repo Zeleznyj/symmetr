@@ -12,7 +12,7 @@ from funcs import *
 from conv_index import *
 
 
-def symmetr(symmetries,op1,op2,proj=-1,debug=False,T=None):
+def symmetr(symmetries,op1,op2,proj=-1,debug=False,T=None,sym_format='findsym'):
     """
     Returns a symmetrical form of a response matrix for a given atom and given list of symmetries.
 
@@ -89,7 +89,7 @@ def symmetr(symmetries,op1,op2,proj=-1,debug=False,T=None):
                         print ''
 
                 #this transforms the matrix by the symmetry operation
-                X_trans = transform_matrix(X[l],sym,op1,op2,l,debug=debug,T=T)
+                X_trans = transform_matrix(X[l],sym,op1,op2,l,debug=debug,T=T,sym_format='mat')
                 
                 if debug:
                     print ''

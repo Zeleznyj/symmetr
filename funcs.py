@@ -215,7 +215,7 @@ def convert_op(sym,op_type):
         return out
 
 
-def transform_matrix(matrix_current,sym,op1,op2,l,debug=False,T=None):
+def transform_matrix(matrix_current,sym,op1,op2,l,debug=False,T=None,sym_format='findsym'):
     """
     Transforms matrix of linear response by symmetry operation sym.
 
@@ -231,9 +231,13 @@ def transform_matrix(matrix_current,sym,op1,op2,l,debug=False,T=None):
     Returns:
        trans_current: The transformed linear response matrix. 
     """
-    sym_mat1 = sym2mat(sym,op1) #matrix representing the symmetry transformation of op1
-    sym_mat2 = sym2mat(sym,op2) #matrix representing the symmetry transformation of op2
-    #sym_mat2i = np.linalg.inv(sym_mat2) #inversion of sym_mat2
+    if sym_format == 'findsym':
+        sym_mat1 = sym2mat(sym,op1) #matrix representing the symmetry transformation of op1
+        sym_mat2 = sym2mat(sym,op2) #matrix representing the symmetry transformation of op2
+    if sym_format == 'mat':
+        sym_mat1 = sym2mat(sym,op1,sym_format=sym_format) #matrix representing the symmetry transformation of op1
+        sym_mat2 = sym2mat(sym,op2,sym_format=sym_format) #matrix representing the symmetry transformation of op2
+
     sym_mat2i = sym_mat2.inv() #inversion of sym_mat2
 
     if debug:
@@ -376,7 +380,7 @@ def transform_tensor(tensor_current,sym,op1,op2,l,T=None,debug=False):
 
     return trans
 
-def transform_tensor_3op(tensor_current,sym,op1,op2,op3,l,T=None,debug=False):
+def transform_tensor_3op(tensor_current,sym,op1,op2,op3,l,T=None,sym_format='findsym',debug=False):
     """
     Transforms a tensor by a symmetry operation.
 
@@ -400,9 +404,9 @@ def transform_tensor_3op(tensor_current,sym,op1,op2,op3,l,T=None,debug=False):
             tensor types.
     """
 
-    mat1 = sym2mat(sym,op_type=op1)
-    mat2 = sym2mat(sym,op_type=op2)
-    mat3 = sym2mat(sym,op_type=op3)
+    mat1 = sym2mat(sym,op_type=op1,sym_format=sym_format)
+    mat2 = sym2mat(sym,op_type=op2,sym_format=sym_format)
+    mat3 = sym2mat(sym,op_type=op3,sym_format=sym_format)
 
 
     if T!= None:
@@ -632,9 +636,19 @@ def convert_mag(mag_conf,T):
 
     return mag_conf_T
 
+def convert_vecs(mags,T):
+    """Converts a list of vectors by transform matrix T.
+    """
 
+    mags_T = []
+    for i,mag in enumerate(mags): 
+        mag_T = T*mag.T 
+        mag_T = mag_T.T
+        mags_T.append(mag_T)
 
-def sym2mat(sym,op_type=None):
+    return mags_T
+
+def sym2mat(sym,op_type=None,sym_format='findsym'):
     """
     Returns the matrix form of the symmetry operation.
 
@@ -651,10 +665,13 @@ def sym2mat(sym,op_type=None):
         I'm not 100% sure that the translation is actually correct!!! It's not needed anywhere so not tested properly.
     """
 
-    if not op_type:
+    if (not op_type) and (sym_format == 'mat'):
+        sys.exit('This is not implemented.')
+
+    if (not op_type) and (sym_format == 'findsym'):
 
         #space part
-        sym_s = np.zeros((3,3))
+        sym_s = sympy.zeros(3)
         for i in range(3):
             trans = convert_op(sym,['x',i])
             for t in trans:
@@ -663,14 +680,14 @@ def sym2mat(sym,op_type=None):
                         sym_s[i,l] = t[1]
 
         #translation
-        sym_sv = np.zeros((3))
+        sym_sv = sympy.zeros(1,3)
         for i in range(3):
             trans = convert_op(sym,['translation',i])
             for t in trans:
                 sym_sv[i] = sym_sv[i] + t
 
         #magnetic part
-        sym_m = np.zeros(3)
+        sym_m = sympy.zeros(3)
         for i in range(3):
             trans = convert_op(sym,['s',i])
             for t in trans:
@@ -678,9 +695,9 @@ def sym2mat(sym,op_type=None):
                     if t[0] == l:
                         sym_m[i,l] = t[1]
 
-        return [sym_s,sym_sv,sym_m]
+        return [sym_s,sym_sv,sym_m,sym[3],sym[4]]
 
-    else:
+    if op_type and (sym_format == 'findsym'):
 
         sym_t = sympy.zeros(3)
         for i in range(3):
@@ -691,6 +708,18 @@ def sym2mat(sym,op_type=None):
                         sym_t[i,l] = t[1]
 
         return make_rational(sym_t)
+
+    if op_type and (sym_format == 'mat'):
+
+        if op_type == 'x':
+            return sym[0]
+        if op_type == 's':
+            return sym[2]
+        if op_type == 'v':
+            if sym[3] == '+1':
+                return sym[0]
+            if sym[3] == '-1':
+                return -sym[0]
 
 
 def mat2sym(msym):

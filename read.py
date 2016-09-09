@@ -158,7 +158,7 @@ def  r_pos(lines, fix_m=[]):
     return positions
 
 
-def r_sym(lines,debug=False):
+def r_sym(lines,debug=False,syms_only=False):
 #read symmetries 
 #format: number of symmetry, space transformation, time transformation, switch controlling
 #if there is time-reversal, list of tuples which show to which position each position transforms
@@ -189,88 +189,89 @@ def r_sym(lines,debug=False):
          for sym in syms:
              print sym
 
-     #read space group number
-     for i in range(len(lines)):
-         if "Space Group " in lines[i]:
-             group = re.findall('[0-9]+\.[0-9]+',lines[i])
+     if not syms_only:
+         #read space group number
+         for i in range(len(lines)):
+             if "Space Group " in lines[i]:
+                 group = re.findall('[0-9]+\.[0-9]+',lines[i])
 
-     positions = r_pos(lines)
+         positions = r_pos(lines)
 
-     #magnetic group tables
-     #needs a file 'tables_wyckoff.txt' which are magnetic tables with all unneccessary information deleted
-     dirname, filename = os.path.split(os.path.abspath(__file__))
-     tables_loc = str(dirname)+'/tables_wyckoff.txt'
-     tables=open(tables_loc)
+         #magnetic group tables
+         #needs a file 'tables_wyckoff.txt' which are magnetic tables with all unneccessary information deleted
+         dirname, filename = os.path.split(os.path.abspath(__file__))
+         tables_loc = str(dirname)+'/tables_wyckoff.txt'
+         tables=open(tables_loc)
 
-     #read shifts of wickoff positions
-     #this is neccessary to obtain all positions
-     #in body centered structure for example, the output from findsym only contains half of the positions,
-     #but symmetries also consider those that trasform one atom into another one shifted by 1/2 1/2 1/2
-     found = False
-     end = False
-     for line in tables:
-         rx = r"BNS: +" + re.escape(group[0])
-         if re.match(rx,line):
-             found = True
-         if found and not end:
-             if re.match('Wyckoff positions:',line) or re.match('Wyckoff positions (BNS):',line):
-                 end = True
-                 shifts = re.findall('\([0-9./]+,[0-9./]+,[0-9./]+\)\+',line)
+         #read shifts of wickoff positions
+         #this is neccessary to obtain all positions
+         #in body centered structure for example, the output from findsym only contains half of the positions,
+         #but symmetries also consider those that trasform one atom into another one shifted by 1/2 1/2 1/2
+         found = False
+         end = False
+         for line in tables:
+             rx = r"BNS: +" + re.escape(group[0])
+             if re.match(rx,line):
+                 found = True
+             if found and not end:
+                 if re.match('Wyckoff positions:',line) or re.match('Wyckoff positions (BNS):',line):
+                     end = True
+                     shifts = re.findall('\([0-9./]+,[0-9./]+,[0-9./]+\)\+',line)
 
-     if shifts:
-         for l in range(len(shifts)):
-             shift_sep = re.findall('[0-9./]+',shifts[l])
-             for i in range(len(shift_sep)):
-                 if re.match('[0-9]+/[0-9]+',shift_sep[i]):
-                     t = shift_sep[i].split('/')
-                     shift_sep[i] = float(t[0]) / float(t[1])
-                 else:
-                     shift_sep[i] = float(shift_sep[i])
-             shifts[l] = shift_sep
+         if shifts:
+             for l in range(len(shifts)):
+                 shift_sep = re.findall('[0-9./]+',shifts[l])
+                 for i in range(len(shift_sep)):
+                     if re.match('[0-9]+/[0-9]+',shift_sep[i]):
+                         t = shift_sep[i].split('/')
+                         shift_sep[i] = float(t[0]) / float(t[1])
+                     else:
+                         shift_sep[i] = float(shift_sep[i])
+                 shifts[l] = shift_sep
 
-         if shifts[0] != [0,0,0]:
-             sys.exit('First shift is not zero')
-         else:
-             shifts.pop(0)
+             if shifts[0] != [0,0,0]:
+                 sys.exit('First shift is not zero')
+             else:
+                 shifts.pop(0)
 
-             if debug:
-                 print 'found wyckoff shifts:'
-                 for shift in shifts:
-                     print shift
-     
+                 if debug:
+                     print 'found wyckoff shifts:'
+                     for shift in shifts:
+                         print shift
+         
 
-     if debug:
-         print 'finding info about sublattice transformations'
-     #this adds the information about transformation of sublattices 
-     for l in range(len(syms)):
          if debug:
-             print ''
-             print 'taking symmetry', syms[l]
-         sym_trans = []
-         for i in range(len(positions)):
-             trans = transform_position(positions[i],syms[l],0.001)
+             print 'finding info about sublattice transformations'
+         #this adds the information about transformation of sublattices 
+         for l in range(len(syms)):
              if debug:
-                 print 'taking position:', positions[i]
-                 print 'transformed to:', trans
-             for j in range(len(positions)):
-                 if equal_vectors(trans,positions[j][0:6],0.001):
-                     sym_trans.append((positions[i][6],positions[j][6]))
-                     if debug:
-                         print 'transformed atom identified as atom ', positions[j][6], ' with position ', positions[j]
-                 else:
-                     for k in range(len(shifts)):
-                         sym_temp =['',['x+'+str(shifts[k][0]),'y+'+str(shifts[k][1]),'z+'+str(shifts[k][2])],['mx','my','mz']]
-                         pos_shift = transform_position(positions[j][0:6],sym_temp,0.001)
-                         if equal_vectors(trans,pos_shift,0.001):
-                             sym_trans.append((positions[i][6],positions[j][6]))
-                             if debug:
-                                 print 'transformed atom identified as atom ', positions[j][6], ' with position ', positions[j]
+                 print ''
+                 print 'taking symmetry', syms[l]
+             sym_trans = []
+             for i in range(len(positions)):
+                 trans = transform_position(positions[i],syms[l],0.001)
+                 if debug:
+                     print 'taking position:', positions[i]
+                     print 'transformed to:', trans
+                 for j in range(len(positions)):
+                     if equal_vectors(trans,positions[j][0:6],0.001):
+                         sym_trans.append((positions[i][6],positions[j][6]))
+                         if debug:
+                             print 'transformed atom identified as atom ', positions[j][6], ' with position ', positions[j]
+                     else:
+                         for k in range(len(shifts)):
+                             sym_temp =['',['x+'+str(shifts[k][0]),'y+'+str(shifts[k][1]),'z+'+str(shifts[k][2])],['mx','my','mz']]
+                             pos_shift = transform_position(positions[j][0:6],sym_temp,0.001)
+                             if equal_vectors(trans,pos_shift,0.001):
+                                 sym_trans.append((positions[i][6],positions[j][6]))
+                                 if debug:
+                                     print 'transformed atom identified as atom ', positions[j][6], ' with position ', positions[j]
 
-         if len(sym_trans) != len(positions):
-             print syms[l]
-             print sym_trans
-             sys.exit('Wrong number of transformed atoms. Something\'s wrong')
-         syms[l].append(list(sym_trans))
+             if len(sym_trans) != len(positions):
+                 print syms[l]
+                 print sym_trans
+                 sys.exit('Wrong number of transformed atoms. Something\'s wrong')
+             syms[l].append(list(sym_trans))
 
      return syms
 
@@ -284,5 +285,18 @@ def r_abc(lines):
      abc = lines[pos_abc+1].split()
 
      return abc
+
+def r_mag_fin(fin):
+    start = False
+    mags = []
+    for i in range(len(fin)):
+        if start:
+            mag = sympy.zeros(1,3)  
+            for j in range(3):
+                mag[j] = sympy.sympify(fin[i].split(' ')[j+3])
+            mags.append(mag)
+        elif (not start) and 'magnetic' in fin[i]:
+            start = True
+    return mags
 
 

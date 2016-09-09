@@ -12,6 +12,7 @@ from tensors import matrix, mat2ten
 import funcs
 from rename import rename
 from groups import group_sym
+from noso import noso_syms
 
 import find_eq
 
@@ -135,6 +136,22 @@ def same_op_sym(X,T):
 
     return X_S
 
+def is_hex(lines):
+    for i,line in enumerate(lines):
+        if 'Values of a,b,c,alpha,beta,gamma:' in line:
+            pos = i
+    angles = lines[pos+1].split()[3:6]
+    print angles
+    hexag= False
+    for angle in angles:
+        if int(round(float(angle))) != 90:
+            if int(round(float(angle))) == 120:
+                hexag = True
+            else:
+                sys.exit('one of the angles in findsym output is neither 90 nor 120.')
+    return is_hex
+
+
 #this finds the location of the main.py file and ads this location to the path where modules are searched
 #this way the modules have to be present only in the install directory and not in the run directory
 dirname, filename = os.path.split(os.path.abspath(__file__))
@@ -167,6 +184,7 @@ parser.add_argument('--transform-result',action='store_const',const=True,default
 parser.add_argument('--syms',default=-1,help='Choose which symmetry operations to take, the rest is ignored. Insert symmetry operation\
          numbers separated by commas with no spaces. They are numbered as they appear in the findsym output file.\
          Also can include ranges. Example: 1-3,7,9-12')
+parser.add_argument('--noso',action='store_const',const=True,default=False,help='Symmetry without spin-orbit coupling.')
 args = parser.parse_args()
 
 op1=args.op1 #type of the first operator
@@ -188,6 +206,7 @@ group = args.group
 op3 = args.op3
 transform_result = args.transform_result
 syms_sel = args.syms
+noso = args.noso
 
 if atom2 != -1:
     if atom == -1:
@@ -208,12 +227,20 @@ if op3 and equiv:
 if op3 and (exp != -1):
     sys.exit('Expansions are not implemented for three operators.')
 
+if noso and group:
+    sys.exit('Spin-orbit coupling cannot be ignored, when group name is used as an input.')
+
+if noso and (equiv or (exp != -1) or (atom2 != -1)):
+    sys.exit('This is not implemented.')
+
+
 debug_sym = False
 debug_rename = False
 debug_equiv = False
 debug_tensor = False
 debug_time = False
 debug_Y = False
+debug_noso = False
 
 if 'symmetrize' in debug or 'all' in debug:
     debug_sym = True
@@ -227,6 +254,8 @@ if 'time' in debug or 'all' in debug:
     debug_time = True
 if 'Y' in debug:
     debug_Y = True
+if 'noso' in debug:
+    debug_noso = True
 
 if inp:
     #runs findsym and reads the output
@@ -255,6 +284,9 @@ if inp:
     #reads the input
     #vec_a,b,c are needed to know the basis transformation
     #syms contain the symmetries in the form that is needed by symmetr
+    #if noso then a nonmagnetic symmetry is used
+    if noso:
+        lines = fs_nonmag(fin_c)
     [vec_a,vec_b,vec_c] = read.r_basis(lines)
     syms = read.r_sym(lines)
 
@@ -396,6 +428,12 @@ if syms_sel != -1:
 
     syms = syms_new
 
+if noso:
+    mags = read.r_mag_fin(fin_c)
+    Tm = create_Tm(vec_a,vec_b,vec_c)
+    mags_T = funcs.convert_vecs(mags,Tm.inv())
+    syms_noso = noso_syms(syms,mags_T,is_hex(lines),debug=debug_noso)
+
 if print_syms:
     print 'Symmetry operations:'
     print 'Format: Number, space transformation, magnetic moment transformation, time-reversal, transformation of the sublattices'
@@ -409,7 +447,10 @@ if exp == -1:
     #if atom is -1 no projections are done
     #operator types are given by op1 and op2
     if not op3:
-        X = symmetrize_sympy.symmetr(syms,op1,op2,atom,debug_sym)
+        if not noso:
+            X = symmetrize_sympy.symmetr(syms,op1,op2,atom,debug_sym)
+        if noso:
+            X = symmetrize_sympy.symmetr(syms_noso,op1,op2,atom,debug_sym,sym_format='mat')
         
         if op1 == op2:
             T_m = create_Tm(vec_a,vec_b,vec_c)
@@ -454,9 +495,17 @@ if exp == -1:
 
     else:
         if transform_result == False:
-            X = symmetrize_she.symmetr_3op(syms,op1,op2,op3,atom,T=T)
+            if not noso:
+                X = symmetrize_she.symmetr_3op(syms,op1,op2,op3,atom,T=T)
+            if noso:
+                X = symmetrize_she.symmetr_3op(syms_noso,op1,op2,op3,atom,T=T,sym_format='mat')
+
         else:
-            X = symmetrize_she.symmetr_3op(syms,op1,op2,op3,atom)
+            if not noso:
+                X = symmetrize_she.symmetr_3op(syms,op1,op2,op3,atom)
+            if noso:
+                X = symmetrize_she.symmetr_3op(syms_noso,op1,op2,op3,atom,sym_format='mat')
+
             X_T = []
             X_T.append(funcs.convert_tensor_3op(X[0],T))
             X_T.append(funcs.convert_tensor_3op(X[1],T))

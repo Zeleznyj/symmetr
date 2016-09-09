@@ -13,7 +13,7 @@ from funcs import *
 from conv_index import *
 
 
-def symmetr_3op(symmetries,op1,op2,op3,proj=-1,debug=False,T=None):
+def symmetr_3op(symmetries,op1,op2,op3,proj=-1,debug=False,T=None,sym_format='findsym'):
     """
     Returns a symmetrical form of a response tensor for a 3 operator linear response formula
             and given list of symmetries.
@@ -93,7 +93,7 @@ def symmetr_3op(symmetries,op1,op2,op3,proj=-1,debug=False,T=None):
                         print ''
 
                 #this transforms the matrix by the symmetry operation
-                X_trans = transform_tensor_3op(X[l],sym,op1,op2,op3,l,debug=debug,T=T)
+                X_trans = transform_tensor_3op(X[l],sym,op1,op2,op3,l,debug=debug,T=T,sym_format=sym_format)
                 
                 if debug:
                     print ''
