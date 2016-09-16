@@ -1,8 +1,7 @@
 ### Program for determining symmetry of linear transport coefficients ###
 
 ## How to install ##
-
-Download the findsym code from the [isotropy suite](http://stokes.byu.edu/iso/isolinux.php). This is used for determining the symmetry. See the findsym.txt file for info on the input format for findsym.
+The program uses the findsym code from the [isotropy suite](http://stokes.byu.edu/iso/isolinux.php) for determining the symmetry. Findsym is now included in the repository so it does not have to be installed separately. See the findsym.txt file for info on the input format for findsym.
 
 Install python, numpy and sympy. Sympy is a symbolic library for python. Sympy is in the repositories of most distributions or you can download the latest version from [github](https://github.com/sympy/sympy). If installing sympy from github, you will probably also need to install [mpmath](https://github.com/fredrik-johansson/mpmath#1-download--installation)
 
@@ -27,12 +26,7 @@ from the folder where the code is located.
 
 ## How to use ##
 
-Create input file for findsym and run findsym:
 
-```
-#!bash
-
-findsym < findsym.in > findsym.out
 ```
 
 Main executable is called main.py. It takes as input the type of operators, use v v for conductivity tensor, s v for non-equilibrium spin-polarization:
