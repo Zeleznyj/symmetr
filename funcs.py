@@ -533,7 +533,7 @@ def asym_part(X):
     Y = ( X - X.T() ) / 2
     return Y
             
-def convert_X(X,T,ren=True,debug=False):
+def convert_X(X,T,ren=True,debug=False,ignore_ren_warning=False):
     """
     Converts a matrix of linear response by matrix T from basis A to basis B.
 
@@ -559,8 +559,8 @@ def convert_X(X,T,ren=True,debug=False):
     Ti = mat2ten(T.mat().inv())
 
     if ren:
-        X_T.append(rename(T*X[0]*Ti,'x',debug))
-        X_T.append(rename(T*X[1]*Ti,'x',debug))
+        X_T.append(rename(T*X[0]*Ti,'x',debug,ignore_ren_warning=ignore_ren_warning))
+        X_T.append(rename(T*X[1]*Ti,'x',debug,ignore_ren_warning=ignore_ren_warning))
     else:
         X_T.append(T*X[0]*Ti)
         X_T.append(T*X[1]*Ti)
@@ -666,7 +666,7 @@ def sym2mat(sym,op_type=None,sym_format='findsym'):
     """
 
     if (not op_type) and (sym_format == 'mat'):
-        sys.exit('This is not implemented.')
+        sys.exit('This is not implemented (sym2mat).')
 
     if (not op_type) and (sym_format == 'findsym'):
 
@@ -840,23 +840,68 @@ def convert_sym(sym,T,shift,debug=False):
 
     return sym_trans
 
-def convert_sym_mat(sym,T):
+def convert_mat(sym,T):
     """
-    Converts symmetry operation represented by a matrix to a different coordinate system.
+    Converts a matrix to a different coordinate system.
 
     Args:
-        sym: Symmetry operation represented by a matrix. In basis A.
+        sym: Matrix n basis A.
             A sympy matrix.
         T: Matrix repr. the transformation from basis A to basis B.
             That is a matrix such that Tx_A = x_B.
             A sympy matrix.
 
     Returns:
-        sym_B: the symmetry operation in matrix form in basis B. A sympy matrix.
+        sym_B: Matrix in basis B. A sympy matrix.
     """
 
     sym_B = T * sym * T.inv()
 
     return sym_B
 
+def convert_sym_mat(sym,T,sym_format='mat'):
+    """
+    Converts symmetry operations to a different coordinate system.
+
+    Can be both the findsym format and the matrix format. The output is always matrix format!
+
+    Args:
+        sym: Symmetry operations in basis A.
+                Can be both findsym format and matrix format (the full symmetry operation as returned by sym2mat).
+                Can be a single symmetry operation or a list.
+        T: Matrix repr. the transformation from basis A to basis B.
+            That is a matrix such that Tx_A = x_B.
+            A sympy matrix.
+
+    Returns:
+        sym_B: the symmetry operations in matrix form in basis B. A sympy matrix.
+
+    Note:
+        !!!The translation part is not converted at all!!!!
+    """
+    if type(sym[0]) == list:
+        sym_list = True
+
+    if sym_list:
+        nsyms = len(sym)
+        syms_T = []
+    else:
+        nsyms = 1
+
+    for i in range(nsyms):
+        if sym_list:
+            sym_T = sym[i]
+        else:
+            sym_T = sym
+        if sym_format == 'findsym':
+            sym_T = sym2mat(sym_T)
+        sym_T[0] = convert_mat(sym_T[0],T)
+        sym_T[2] = convert_mat(sym_T[2],T)
+        if sym_list:
+            syms_T.append(list(sym_T))
+
+    if sym_list:
+        return syms_T
+    else:
+        return sym_T
 

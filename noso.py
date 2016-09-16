@@ -33,16 +33,18 @@ def read_all_syms(is_hex):
     for i,line in enumerate(lines):
         split = re.findall('[a-zA-Z0-9\-,\+]+',line)
         sym = str(i) + '  ' + split[1]+ ',+1  ' + split[2] 
-        syms_list.append(sym)
+        if not is_hex:
+            syms_list.append(sym)
+        else:
+            if 'T' not in line:
+                syms_list.append(sym)
+
 
     syms_list.append(" ")
     syms = r_sym(syms_list,syms_only=True)
     mats = []
     for sym in syms:
-        if not is_hex:
-            mats.append(sym2mat(sym,op_type='x'))
-        else:
-            mats.append(sym2mat(sym,op_type='s'))
+        mats.append(sym2mat(sym,op_type='x'))
 
     return mats
 
@@ -90,28 +92,44 @@ def noso_syms(syms,mag_conf,is_hex,prec=1e-5,debug=False):
     """
 
     if debug:
+        if is_hex:
+            print 'The conventional coordinate system is hexagonal.'
+        else:
+            print 'The conventional coordinate system is not hexagonal.'
+        print ''
+
+    if debug:
         print 'Magnetic moments are:'
         for i,mag in enumerate(mag_conf):
             print i+1,' ',
             sympy.pprint(mag)
 
-    syms_mat = []
+    mats = read_all_syms(is_hex)
+    if debug:
+        print ''
+        print 'list of all crystallographic symmetry operations:'
+        for i,mat in enumerate(mats):
+            print ''
+            print i+1
+            sympy.pprint(mat)
+            print ''
+
+    syms_noso = []
     start_new = 0
-    for sym in syms:
-        start_new = len(syms_mat)
+    for nsym,sym in enumerate(syms):
+        start_new = len(syms_noso)
 
         if debug:
             print ''
-            print 'taking symmetry operation:'
-            print sym
-        sym_mat = sym2mat(sym)
-        if debug:
-            print 'symmetry operation in matrix form:'
+            print 'taking symmetry operation ', nsym+1
             print 'space part:'
-            sympy.pprint(sym_mat[0])
+            sympy.pprint(sym[0])
             print 'magnetic part:'
-            sympy.pprint(sym_mat[2])
-
+            sympy.pprint(sym[2])
+            print 'time reversal:'
+            sympy.pprint(sym[3])
+            print 'permutations:'
+            print sym[4]
 
         nmag = 0
         mag_is = []
@@ -129,17 +147,26 @@ def noso_syms(syms,mag_conf,is_hex,prec=1e-5,debug=False):
                 Y[i*3+j,9] = mag_conf[sym_type(mag_is[i]+1,sym)-1][j]
 
         if debug: 
+            print ''
             print 'Matrix of the system to be solved.'
             sympy.pprint(Y)
         
-        Rs = matrix('s',3) 
+        Rs = matrix('s',3,name='R') 
         sol = sympy.solve_linear_system(Y,Rs.x[0,0],Rs.x[0,1],Rs.x[0,2],Rs.x[1,0],Rs.x[1,1],Rs.x[1,2],Rs.x[2,0],\
                                          Rs.x[2,1],Rs.x[2,2])
         if debug:
             print 'solution of the system'
             print sol
 
-        mats = read_all_syms(is_hex)
+        for s in sol:
+            Rs.subs(s,sol[s])
+
+        if debug:
+            print ''
+            print 'general form of transformation matrix that keeps the magnetic order invariant:'
+            sympy.pprint(Rs.mat())
+            print ''
+
         for mat in mats:
             if debug:
                 print 'Considering the matrix:'
@@ -163,21 +190,22 @@ def noso_syms(syms,mag_conf,is_hex,prec=1e-5,debug=False):
                     if debug:
                         print 'Improper spin rotation, thus not taking this matrix.'
             if fits:
-                sym_mat_new = list(sym_mat)
-                sym_mat_new[2] = mat
-                syms_mat.append(sym_mat_new)
+                sym_new = list(sym)
+                sym_new[2] = mat
+                syms_noso.append(sym_new)
 
         if debug:
             print 'original symmetry operation:'
             print 'space part:'
-            sympy.pprint(sym_mat[0])
+            sympy.pprint(sym[0])
             print 'magnetic part:'
-            sympy.pprint(sym_mat[2])
+            sympy.pprint(sym[2])
             print ''
 
             print 'new symmetry operations (magnetic part only):'
-            for sm in syms_mat[start_new:]:
+            for sm in syms_noso[start_new:]:
                 sympy.pprint(sm[2])
                 print ''
 
-    return syms_mat
+    return syms_noso
+

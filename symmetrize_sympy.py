@@ -89,7 +89,7 @@ def symmetr(symmetries,op1,op2,proj=-1,debug=False,T=None,sym_format='findsym'):
                         print ''
 
                 #this transforms the matrix by the symmetry operation
-                X_trans = transform_matrix(X[l],sym,op1,op2,l,debug=debug,T=T,sym_format='mat')
+                X_trans = transform_matrix(X[l],sym,op1,op2,l,debug=debug,T=T,sym_format=sym_format)
                 
                 if debug:
                     print ''

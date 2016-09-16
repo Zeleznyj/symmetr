@@ -1,12 +1,11 @@
-Symmetrized matrix in the input basis even part, atom -1
-WARNING!!! Assuming input basis is orthogonal
+Symmetry restricted form of the tensor, even part
 [x00   0    0 ]
 [             ]
 [ 0   x11   0 ]
 [             ]
 [ 0    0   x22]
-Symmetrized matrix in the input basis odd part, atom -1
-WARNING!!! Assuming input basis is orthogonal
+
+Symmetry restricted form of the tensor, odd part
 [0  0  0]
 [       ]
 [0  0  0]

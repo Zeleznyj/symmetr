@@ -1,22 +1,23 @@
-Symmetrized matrix in the input basis even part, atom -1
-WARNING!!! Assuming input basis is orthogonal
+Symmetry restricted form of the tensor, even part
 [x00  x01  x01]
 [             ]
 [x01  x00  x01]
 [             ]
 [x01  x01  x00]
-Symmetrized matrix in the input basis odd part, atom -1
-WARNING!!! Assuming input basis is orthogonal
+
+Symmetry restricted form of the tensor, odd part
 [ 0    x01   -x01]
 [                ]
 [-x01   0    x01 ]
 [                ]
 [x01   -x01   0  ]
 
+
+Equivalent configurations:
 starting configuration:
-atom 2, m = -1.0, -1.0, 1.99999
-atom 3, m = 2.0, -1.0, -1.0
-atom 4, m = -1.0, 2.0, -1.0
+atom 2, m = -1.0000, -1.0000, 2.0000
+atom 3, m = 2.0000, -1.0000, -1.0000
+atom 4, m = -1.0000, 2.0000, -1.0000
 even part:
 [x00  x01  x01]
 [             ]
@@ -32,9 +33,9 @@ odd part:
 [x01   -x01   0  ]
 
 configuration 1
-atom 2, m = -1.0, 1.0, -1.99999
-atom 3, m = 2.0, 1.0, 1.0
-atom 4, m = -1.0, -2.0, 1.0
+atom 2, m = -1.0000, 1.0000, -2.0000
+atom 3, m = 2.0000, 1.0000, 1.0000
+atom 4, m = -1.0000, -2.0000, 1.0000
 even part:
 [x00   -x01  -x01]
 [                ]
@@ -50,9 +51,9 @@ odd part:
 [-x01  -x01   0 ]
 
 configuration 2
-atom 2, m = 1.0, -1.0, -1.99999
-atom 3, m = -2.0, -1.0, 1.0
-atom 4, m = 1.0, 2.0, 1.0
+atom 2, m = 1.0000, -1.0000, -2.0000
+atom 3, m = -2.0000, -1.0000, 1.0000
+atom 4, m = 1.0000, 2.0000, 1.0000
 even part:
 [x00   -x01  x01 ]
 [                ]
@@ -68,9 +69,9 @@ odd part:
 [x01  x01    0  ]
 
 configuration 3
-atom 2, m = 1.0, 1.0, 1.99999
-atom 3, m = -2.0, 1.0, -1.0
-atom 4, m = 1.0, -2.0, -1.0
+atom 2, m = 1.0000, 1.0000, 2.0000
+atom 3, m = -2.0000, 1.0000, -1.0000
+atom 4, m = 1.0000, -2.0000, -1.0000
 even part:
 [x00   x01   -x01]
 [                ]
@@ -86,9 +87,9 @@ odd part:
 [-x01  x01   0  ]
 
 configuration 4
-atom 2, m = 1.0, 1.0, -1.99999
-atom 3, m = -2.0, 1.0, 1.0
-atom 4, m = 1.0, -2.0, 1.0
+atom 2, m = 1.0000, 1.0000, -2.0000
+atom 3, m = -2.0000, 1.0000, 1.0000
+atom 4, m = 1.0000, -2.0000, 1.0000
 even part:
 [x00  x01  x01]
 [             ]
@@ -104,9 +105,9 @@ odd part:
 [-x01  x01    0  ]
 
 configuration 5
-atom 2, m = 1.0, -1.0, 1.99999
-atom 3, m = -2.0, -1.0, -1.0
-atom 4, m = 1.0, 2.0, -1.0
+atom 2, m = 1.0000, -1.0000, 2.0000
+atom 3, m = -2.0000, -1.0000, -1.0000
+atom 4, m = 1.0000, 2.0000, -1.0000
 even part:
 [x00   -x01  -x01]
 [                ]
@@ -122,9 +123,9 @@ odd part:
 [x01   x01   0  ]
 
 configuration 6
-atom 2, m = -1.0, 1.0, 1.99999
-atom 3, m = 2.0, 1.0, -1.0
-atom 4, m = -1.0, -2.0, -1.0
+atom 2, m = -1.0000, 1.0000, 2.0000
+atom 3, m = 2.0000, 1.0000, -1.0000
+atom 4, m = -1.0000, -2.0000, -1.0000
 even part:
 [x00   -x01  x01 ]
 [                ]
@@ -140,9 +141,9 @@ odd part:
 [-x01  -x01   0 ]
 
 configuration 7
-atom 2, m = -1.0, -1.0, -1.99999
-atom 3, m = 2.0, -1.0, 1.0
-atom 4, m = -1.0, 2.0, 1.0
+atom 2, m = -1.0000, -1.0000, -2.0000
+atom 3, m = 2.0000, -1.0000, 1.0000
+atom 4, m = -1.0000, 2.0000, 1.0000
 even part:
 [x00   x01   -x01]
 [                ]

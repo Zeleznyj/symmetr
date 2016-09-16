@@ -116,7 +116,7 @@ def fs_nonmag(fin_c):
 
     return lines_nm
 
-def same_op_sym(X,T):
+def same_op_sym(X,T,debug=False,debug_rename=False):
     """
     If op1==op2 then additional requirement is that even part of the tensor is symmetric
     and the odd part antisymmetric.
@@ -129,10 +129,44 @@ def same_op_sym(X,T):
         X_S: the symmetrized (antisymmetrized) part of X
     """
 
-    X_C  = funcs.convert_X(X,T)
+    if debug:
+        print ''
+        print 'matrix in the original system before (anti-)symmetrizing'
+        print 'even part'
+        X[0].pprint()
+        print 'odd part'
+        X[1].pprint()
+
+    X_C  = funcs.convert_X(X,T,debug=debug_rename)
+
+    if debug:
+        print ''
+        print 'matrix in the cartesian system before (anti-)symmetrizing'
+        print 'even part'
+        X_C[0].pprint()
+        print 'odd part'
+        X_C[1].pprint()
+
     X_C[0] = funcs.sym_part(X_C[0])
     X_C[1] = funcs.asym_part(X_C[1])
-    X_S = funcs.convert_X(X_C,T.inv())
+
+    if debug:
+        print ''
+        print 'matrix in the cartesian system after (anti-)symmetrizing'
+        print 'even part'
+        X_C[0].pprint()
+        print 'odd part'
+        X_C[1].pprint()
+
+    X_S = funcs.convert_X(X_C,T.inv(),debug=debug_rename,ignore_ren_warning=True)
+
+    if debug:
+        print ''
+        print 'matrix in the original system after (anti-)symmetrizing'
+        print 'even part'
+        X_S[0].pprint()
+        print 'odd part'
+        X_S[1].pprint()
 
     return X_S
 
@@ -141,7 +175,6 @@ def is_hex(lines):
         if 'Values of a,b,c,alpha,beta,gamma:' in line:
             pos = i
     angles = lines[pos+1].split()[3:6]
-    print angles
     hexag= False
     for angle in angles:
         if int(round(float(angle))) != 90:
@@ -170,11 +203,11 @@ parser.add_argument('-op3',help='third operator in the linear response formula',
 parser.add_argument('-b','--basis',help='Sets a coordinate basis: abc for conventional crystallographic basis, i for the one used in input \
 (default). cart for a cartesian basis in which the input basis is define. \
         abc_c for orthogonalized crystalographic basis (not tested much).',default='i')
-parser.add_argument('-e','--equivalent',action='store_true',help='finds response matrices for equivalent magnetic configurations. Needs output of finddsym with\
-        zero moments as an input.')
+parser.add_argument('-e','--equivalent',action='store_const',const=True,default=False,help='finds response matrices for equivalent magnetic configurations.')
 parser.add_argument('--no-rename',action='store_true')
 parser.add_argument('--debug',help='Controls if debug output is printed. all means all debug output is printed, symmetrize means debug\
-        output for symmetrizing, rename for renaming, equiv for finding the equivalent configurations',default='')
+        output for symmetrizing, rename for renaming, equiv for finding the equivalent configurations,\
+        op1eqop2 is also possible.',default='')
 parser.add_argument('--latex',action='store_const',const=True,default=False,help='If set, the matrices are printed also in a latex format.')
 parser.add_argument('--exp',default=-1)
 parser.add_argument('--print-syms',action='store_const',const=True,default=False,help='Prints all symmetry operations.')
@@ -185,6 +218,8 @@ parser.add_argument('--syms',default=-1,help='Choose which symmetry operations t
          numbers separated by commas with no spaces. They are numbered as they appear in the findsym output file.\
          Also can include ranges. Example: 1-3,7,9-12')
 parser.add_argument('--noso',action='store_const',const=True,default=False,help='Symmetry without spin-orbit coupling.')
+parser.add_argument('--ignore-op1eqop2',action='store_const',const=True,default=False,help='When op1=op2, the even part has to be \
+        symmetric and the odd part antisymmetric. If this is selected, this property is ignored.')
 args = parser.parse_args()
 
 op1=args.op1 #type of the first operator
@@ -207,6 +242,7 @@ op3 = args.op3
 transform_result = args.transform_result
 syms_sel = args.syms
 noso = args.noso
+ig_op1eqop2 = args.ignore_op1eqop2
 
 if atom2 != -1:
     if atom == -1:
@@ -241,6 +277,7 @@ debug_tensor = False
 debug_time = False
 debug_Y = False
 debug_noso = False
+debug_op1eqop2 = False
 
 if 'symmetrize' in debug or 'all' in debug:
     debug_sym = True
@@ -256,6 +293,8 @@ if 'Y' in debug:
     debug_Y = True
 if 'noso' in debug:
     debug_noso = True
+if 'op1eqop2' in debug:
+    debug_op1eqop2 = True
 
 if inp:
     #runs findsym and reads the output
@@ -285,10 +324,17 @@ if inp:
     #vec_a,b,c are needed to know the basis transformation
     #syms contain the symmetries in the form that is needed by symmetr
     #if noso then a nonmagnetic symmetry is used
-    if noso:
-        lines = fs_nonmag(fin_c)
     [vec_a,vec_b,vec_c] = read.r_basis(lines)
     syms = read.r_sym(lines)
+
+    #when one of these switches is set, also the nonmagnetic symmetry is needed
+    if noso or equiv or (exp != -1):
+        #findsym output for nonmagnetic structure
+        lines_nm = fs_nonmag(fin_c)
+
+        #reads the nonmagnetic findsym output
+        syms_nm = read.r_sym(lines_nm) 
+        [vec_a_nm,vec_b_nm,vec_c_nm] = read.r_basis(lines_nm)
 
     #construct the transformation matrix from the magnetic basis to the selected basis
     if 'abc' == basis:
@@ -297,11 +343,18 @@ if inp:
 
     if 'i' == basis:
 
-        T = create_Tm(vec_a,vec_b,vec_c)
+        if exp == -1:
+            T = create_Tm(vec_a,vec_b,vec_c)
+        else:
+            T = create_Tm(vec_a,vec_b,vec_c)
 
     if 'cart' == basis:
 
-        T_m = create_Tm(vec_a,vec_b,vec_c)
+        if exp == -1:
+            T_m = create_Tm(vec_a,vec_b,vec_c)
+        else:
+            T_m = create_Tm(vec_a,vec_b,vec_c)
+
         T_i = create_Ti(fin)
 
         T = T_i*T_m
@@ -351,7 +404,10 @@ if inp:
             T_c[1,2] = T_c[1,2] / norm
             T_c[2,2] = T_c[2,2] / norm
 
-        T_m = create_Tm(vec_a,vec_b,vec_c)
+        if exp == -1:
+            T_m = create_Tm(vec_a,vec_b,vec_c)
+        else:
+            T_m = create_Tm(vec_a,vec_b,vec_c)
 
         T = T_c.inv()*T_i*T_m
 
@@ -429,10 +485,13 @@ if syms_sel != -1:
     syms = syms_new
 
 if noso:
+
     mags = read.r_mag_fin(fin_c)
     Tm = create_Tm(vec_a,vec_b,vec_c)
+    Tnm = create_Tm(vec_a_nm,vec_b_nm,vec_c_nm)
     mags_T = funcs.convert_vecs(mags,Tm.inv())
-    syms_noso = noso_syms(syms,mags_T,is_hex(lines),debug=debug_noso)
+    syms_nm_T = funcs.convert_sym_mat(syms_nm,Tm.inv()*Tnm,sym_format='findsym')
+    syms_noso = noso_syms(syms_nm_T,mags_T,is_hex(lines),debug=debug_noso)
 
 if print_syms:
     print 'Symmetry operations:'
@@ -452,12 +511,15 @@ if exp == -1:
         if noso:
             X = symmetrize_sympy.symmetr(syms_noso,op1,op2,atom,debug_sym,sym_format='mat')
         
-        if op1 == op2:
-            T_m = create_Tm(vec_a,vec_b,vec_c)
-            T_i = create_Ti(fin)
-            T_cart = T_i*T_m
+        if not ig_op1eqop2:
 
-            X = same_op_sym(X,T_cart)
+            if op1 == op2:
+
+                T_m = create_Tm(vec_a,vec_b,vec_c)
+                T_i = create_Ti(fin)
+                T_cart = T_i*T_m
+
+                X = same_op_sym(X,T_cart,debug_op1eqop2,debug_rename)
 
         if not no_rename:
             X_T = funcs.convert_X(X,T,debug=debug_rename)
@@ -526,19 +588,6 @@ if exp == -1:
 
 if exp != -1:
 
-    if inp:
-
-        #findsym output for nonmagnetic structure
-        lines_nm = fs_nonmag(fin_c)
-
-        #reads the nonmagnetic findsym output
-        syms_nm = read.r_sym(lines_nm) 
-        [vec_a_nm,vec_b_nm,vec_c_nm] = read.r_basis(lines_nm)
-        Tnm = create_Tm(vec_a_nm,vec_b_nm,vec_c_nm)
-
-        if 'i' == basis:
-            T_exp = Tnm
-
     if group:
         print '!!!The input group must be one of the nonmagnetic point groups, otherwise the ouput will be wrong.!!!' 
         syms_nm = syms
@@ -554,49 +603,27 @@ if equiv and ( exp != -1 ):
 if equiv and ( exp == -1):
     #outputs also the form of the tensor for all equivalent magnetic configurations
 
-    lines_nm = fs_nonsym(fin_c)
-
-    #reads the nonmagnetic findsym output
-    syms_nm = read.r_sym(lines_nm) 
-    [vec_a_nm,vec_b_nm,vec_c_nm] = read.r_basis(lines_nm)
-
+    #reads the magnetic moments from the input file
+    mags = read.r_mag_fin(fin_c)
     #transformation matrix from the magnetic basis to the input one
-    T_m = create_Tm(vec_a,vec_b,vec_c)
+    Tm = create_Tm(vec_a,vec_b,vec_c)
 
     #transformation matrix from the nonmagnetic basis to the input one
-    T_nm = create_Tm(vec_a_nm,vec_b_nm,vec_c_nm)
+    Tnm = create_Tm(vec_a_nm,vec_b_nm,vec_c_nm)
 
-    T_nmX = T*T_m.inv()*T_nm
-
-    #o_nm = np.array(read.r_origin(lines_nm))
-
-    #the shift from the magnetic to the nonmagnetic
-    #shift = np.dot(np.linalg.inv(T_nm),o_nm)
-
-    #atomic positions including magnetic moments
-    #we need the moments in the correct basis, for the the length of the vectos a,b,c is needed:
-    fix_m = [np.linalg.norm(vec_a),np.linalg.norm(vec_b),np.linalg.norm(vec_c)]
-    fix_m = funcs.make_rational(sympy.Matrix([[fix_m[0],fix_m[1],fix_m[2]]]))
-    pos = read.r_pos(lines,fix_m)
-    #converted magnetic moments to the selected basis
-    mag = funcs.convert_mag(pos,T)
-
-    if debug_equiv:
-        print ''
-        print 'positions in the magnetic basis:'
-        for p in pos:
-            print p
-        print ''
-        print 'transformation matrix from the magnetic to the selected basis:'
-        print T
-        print ''
-        print 'positions in the selected basis:'
-        for p in mag_t:
-            print p
+    #convert the magnetic moments to the selected basis
+    #T*Tm.inv() is a matrix that transforms the magnetic moments to the selected basis because:
+    #Tm.inv() converts to the magnetic basis and then T converts to the selected
+    mags_T = funcs.convert_vecs(mags,T*Tm.inv())
+    #convert the non-magnetic symmetry operations to the chosen basis
+    syms_nm_T = funcs.convert_sym_mat(syms_nm,T*Tm.inv()*Tnm,sym_format='findsym')
 
     #this outputs all the equaivalen configurations
     #C is a conf class, it contains both the configurations and the transformed tensors
-    C = find_eq.find_equiv(X_T,op1,op2,atom,syms_nm,mag,T_nmX,debug_equiv)
+    if not op3:
+        C = find_eq.find_equiv(X_T,op1,op2,atom,syms_nm_T,mags_T,debug=debug_equiv)
+    else:
+        C = find_eq.find_equiv(X,op1,op2,atom,syms_nm_T,mags_T,op3=op3,debug=debug_equiv)
     print ''
     print 'Equivalent configurations:'
     C.pprint(latex=latex)

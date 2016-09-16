@@ -29,7 +29,7 @@ def should_rename(X,X_t):
 #renames the matrix so that it has the simplest form possible
 #it looks for the relation between components so no information is lost
 #debug is an optional parameter, if it's true, then the routine outputs lots of information
-def rename(X,name,debug=False):
+def rename(X,name,debug=False,ignore_ren_warning=False):
 
     ninds = len(list(set(re.findall(r'x[0-9]+',sympy.srepr(X)))))
 
@@ -43,6 +43,11 @@ def rename(X,name,debug=False):
         print '======= Start renaming ======='
         print 'Input matrix:'
         sympy.pprint(X.mat())
+
+        print ''
+        print 'independent components:'
+        print list(set(re.findall(r'x[0-9]+',sympy.srepr(X))))
+        print ''
 
     #a loop over all components of  the input matrix
     for i in range(3):
@@ -133,8 +138,12 @@ def rename(X,name,debug=False):
 
     ninds_new = len(list(set(re.findall(r'x[0-9]+',sympy.srepr(Y)))))
 
-    if ninds != ninds_new:
+    if ninds != ninds_new and not ignore_ren_warning:
         print '!WARNING! Problem in renaming tensor components. Try --no-rename.' 
+        print 'old number of independent components:', ninds
+        print list(set(re.findall(r'x[0-9]+',sympy.srepr(X))))
+        print 'new number of independent components:', ninds_new
+        print list(set(re.findall(r'x[0-9]+',sympy.srepr(Y))))
 
     return Y
 

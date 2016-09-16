@@ -114,7 +114,7 @@ class confs:
         return confs_t
 
 
-def find_equiv(X,op1,op2,atom,syms,mag,T,debug=False):
+def find_equiv(X,op1,op2,atom,syms,mag,op3=None,debug=False):
     """
     Takes a tensor and a list of nonmagnetic symmetries and find the form of the tensor for all equivalent configurations.
 
@@ -143,7 +143,7 @@ def find_equiv(X,op1,op2,atom,syms,mag,T,debug=False):
         b = mag[i][1]
         c = mag[i][2]
         if a.round(4) !=0 or b.round(6) !=0 or c.round(6) != 0:
-            start_conf[mag[i][3]] = sympy.Matrix([[a,b,c]])
+            start_conf[i+1] = sympy.Matrix([[a,b,c]])
 
     #creates a conf class, which stores all the configurations and adds the starting one
     C = confs()
@@ -157,25 +157,16 @@ def find_equiv(X,op1,op2,atom,syms,mag,T,debug=False):
         #if there is a projection take only the symmetry that keeps the atom invariant
         if atom == -1 or atom == sym_type(atom,sym):
 
-            #convert the symmetry to the matrix form and transform to the input basis
-            sym_mat = sym2mat(sym,op_type='s')
-            sym_mat_T = convert_sym_mat(sym_mat,T)
-
             if debug:
                 print 'taking sym (in the nonmagnetic basis): '
-                print sym
-                print ''
-                print 'in matrix form:'
-                sympy.pprint(sym_mat)
-                print 'in the input basis:'
-                sympy.pprint(sym_mat_T)
+                sympy.pprint(sym)
                 print ''
 
             #transforms the starting configuration by the symmetry
             conf_t = {}
             for p in start_conf:
                 mom = sympy.Matrix([[start_conf[p][0],start_conf[p][1],start_conf[p][2]]])
-                mom_T = sym_mat_T * mom.T
+                mom_T = sym[2] * mom.T
                 mom_T = mom_T.T
                 conf_t[sym_type(p,sym)] = sympy.Matrix([[mom_T[0],mom_T[1],mom_T[2]]])
 
@@ -191,7 +182,10 @@ def find_equiv(X,op1,op2,atom,syms,mag,T,debug=False):
                     print 'configuration has not been found before'
                 Xt = []
                 for l in range(2):
-                    Xt.append(transform_matrix(X[l],sym,op1,op2,l,T=T))
+                    if op3 == None:
+                        Xt.append(transform_matrix(X[l],sym,op1,op2,l,sym_format='mat'))
+                    else:
+                        Xt.append(transform_tensor_3op(X[l],sym,op1,op2,op3,l,sym_format='mat'))
                 if debug:
                     print 'even part converted to:'
                     Xt[0].pprint()
