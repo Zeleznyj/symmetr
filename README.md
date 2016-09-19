@@ -38,7 +38,22 @@ main.py s v -f findsym.in
 
 ```
 
+You can also use a group name or number as an input:
+```
+#!bash
 
+main.py s v -g Pmmm
+main.py v v -g 47.249
+
+```
+
+Escape primes with a backslash:
+```
+#!bash
+
+main.py v v -g Pm\'mm
+
+```
 
 Non-equilibrium spin-polarization can also be calculated projected on a particular atom, specify atom number with a switch -p or --projection. For example for atom with number 1 run:
 
