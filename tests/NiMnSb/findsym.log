@@ -1,0 +1,37 @@
+FINDSYM, Version 4.2, June 2014
+Written by Harold T. Stokes, Branton J. Campbell, and Dorian M. Hatch
+Brigham Young University
+ 
+NiMnAs
+Tolerance:    0.00100
+Lattice vectors in cartesian coordinates:
+   3.00000   0.00000   0.00000
+   0.00000   3.00000   0.00000
+   0.00000   0.00000   3.00000
+Lattice parameters, a,b,c,alpha,beta,gamma:
+   3.00000   3.00000   3.00000  90.00000  90.00000  90.00000
+Centering: F
+Number of atoms in unit cell:
+  3
+Type of each atom:
+Ni Mn Sb 
+Position and magnetic moment of each atom (dimensionless coordinates)
+   1   0.00000   0.00000   0.00000     0.00000   0.00000   0.00000
+   2   0.25000   0.25000   0.25000     0.00000   0.00000   0.00000
+   3   0.75000   0.75000   0.75000     0.00000   0.00000   0.00000
+------------------------------------------
+Space Group 216.75  F-43m1'             
+Origin at    0.00000   0.00000   0.00000
+Vectors a,b,c:
+   1.00000   0.00000   0.00000
+   0.00000   1.00000   0.00000
+   0.00000   0.00000   1.00000
+Values of a,b,c,alpha,beta,gamma:
+   3.00000   3.00000   3.00000  90.00000  90.00000  90.00000
+Atomic positions and magnetic moments in terms of a,b,c:
+Wyckoff position a
+   1   0.00000   0.00000   0.00000     0.00000   0.00000   0.00000
+Wyckoff position c
+   2   0.25000   0.25000   0.25000     0.00000   0.00000   0.00000
+Wyckoff position d
+   3   0.75000   0.75000   0.75000     0.00000   0.00000   0.00000
