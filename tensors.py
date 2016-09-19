@@ -162,6 +162,9 @@ class tensor:
             out[ind] = self[ind2]
         return out
 
+    def pprint(self):
+        print self
+
 
 
 class matrix(tensor):

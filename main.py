@@ -4,9 +4,8 @@ import sys
 import os
 import subprocess
 
-import symmetrize_sympy
-import symmetrize_she
-import symmetrize_tensor as st
+import symmetrize
+import symmetrize_exp as st
 import read
 from tensors import matrix, mat2ten
 import funcs
@@ -207,13 +206,18 @@ parser.add_argument('-e','--equivalent',action='store_const',const=True,default=
 parser.add_argument('--no-rename',action='store_true')
 parser.add_argument('--debug',help='Controls if debug output is printed. all means all debug output is printed, symmetrize means debug\
         output for symmetrizing, rename for renaming, equiv for finding the equivalent configurations,\
-        op1eqop2 is also possible.',default='')
+        noso for the symmetry without spin-orbit coupling. op1eqop2 is also possible.',default='')
 parser.add_argument('--latex',action='store_const',const=True,default=False,help='If set, the matrices are printed also in a latex format.')
-parser.add_argument('--exp',default=-1)
+parser.add_argument('--exp',default=-1,help=\
+        'Prints the tensor, which describes the expansion of the linear response tensor in magnetic moments.\
+        Choose which order term in the expansion.\
+        Only works for ferromagnets and collinear antiferromagnets. In antiferromagnets only for quantities\
+        on a sublattice!!!')
 parser.add_argument('--print-syms',action='store_const',const=True,default=False,help='Prints all symmetry operations.')
-parser.add_argument('--transform-result',action='store_const',const=True,default=False,help='By default, the symmetry operations are \
-        transformed to the correct basis. If this option is chosen, the symmetry operations are not transformed and instead the \
-        result is transformed. Only works for the three operators.')
+parser.add_argument('--transform-result',action='store_const',const=True,default=False,help=
+        'Keep the symmetry operations in findsym basis and transform the result to the correct basis.')
+parser.add_argument('--transform-syms',action='store_const',const=True,default=False,help=\
+        'Transform the symmetry operations to the correct basis instead of transforming the result.')
 parser.add_argument('--syms',default=-1,help='Choose which symmetry operations to take, the rest is ignored. Insert symmetry operation\
          numbers separated by commas with no spaces. They are numbered as they appear in the findsym output file.\
          Also can include ranges. Example: 1-3,7,9-12')
@@ -240,6 +244,7 @@ print_syms = args.print_syms
 group = args.group
 op3 = args.op3
 transform_result = args.transform_result
+transform_syms = args.transform_syms
 syms_sel = args.syms
 noso = args.noso
 ig_op1eqop2 = args.ignore_op1eqop2
@@ -269,17 +274,31 @@ if noso and group:
 if noso and (equiv or (exp != -1) or (atom2 != -1)):
     sys.exit('This is not implemented.')
 
+if transform_result and transform_syms:
+    sys.exit('You cannot specify both --transform-result and --transform-syms')
+
+#By default we transform the result in case of no op3 and syms in case of op3
+if (not transform_result) and (not transform_syms):
+    if op3 == None:
+        transform_result = True
+    else:
+        transform_result = False
+else:
+    if transform_syms:
+        transform_result = False
+    else:
+        transform_result = True
 
 debug_sym = False
 debug_rename = False
 debug_equiv = False
 debug_tensor = False
 debug_time = False
-debug_Y = False
+debug_symY = False
 debug_noso = False
 debug_op1eqop2 = False
 
-if 'symmetrize' in debug or 'all' in debug:
+if 'symmetrize' in debug or 'all' in debug or 'symmetrizeY' in debug:
     debug_sym = True
 if 'rename' in debug or 'all' in debug:
     debug_rename = True
@@ -289,8 +308,8 @@ if 'exp' in debug or 'all' in debug:
     debug_tensor = True
 if 'time' in debug or 'all' in debug:
     debug_time = True
-if 'Y' in debug:
-    debug_Y = True
+if 'symmetrizeY' in debug:
+    debug_symY = True
 if 'noso' in debug:
     debug_noso = True
 if 'op1eqop2' in debug:
@@ -505,15 +524,16 @@ if exp == -1:
     #this returns the symmetrical form of spin-response tensor for atom with index atom
     #if atom is -1 no projections are done
     #operator types are given by op1 and op2
-    if not op3:
+    if transform_result:
         if not noso:
-            X = symmetrize_sympy.symmetr(syms,op1,op2,atom,debug_sym)
+            X = symmetrize.symmetrize_linres(syms,op1,op2,op3=op3,proj=atom,debug=debug_sym,\
+                    debug_time=debug_time,debug_Y=debug_symY)
         if noso:
-            X = symmetrize_sympy.symmetr(syms_noso,op1,op2,atom,debug_sym,sym_format='mat')
-        
-        if not ig_op1eqop2:
+            X = symmetrize.symmetrize_linres(syms_noso,op1,op2,op3=op3,proj=atom,debug=debug_sym,\
+                    sym_format='mat',debug_time=debug_time,debug_Y=debug_symY)
 
-            if op1 == op2:
+        if not ig_op1eqop2:
+            if op1 == op2 and op3 == None:
 
                 T_m = create_Tm(vec_a,vec_b,vec_c)
                 T_i = create_Ti(fin)
@@ -521,11 +541,34 @@ if exp == -1:
 
                 X = same_op_sym(X,T_cart,debug_op1eqop2,debug_rename)
 
-        if not no_rename:
-            X_T = funcs.convert_X(X,T,debug=debug_rename)
+        if op3 == None:
+            if not no_rename:
+                X_T = funcs.convert_X(X,T,debug=debug_rename)
+            else:
+                X_T = funcs.convert_X(X,T,ren=False,debug=debug_rename)
         else:
-            X_T = funcs.convert_X(X,T,ren=False,debug=debug_rename)
+            X_T = []
+            X_T.append(funcs.convert_tensor_3op(X[0],T))
+            X_T.append(funcs.convert_tensor_3op(X[1],T))
 
+    else:
+        if not noso:
+            X_T = symmetrize.symmetrize_linres(syms,op1,op2,op3=op3,proj=atom,debug=debug_sym,T=T,\
+                    debug_time=debug_time,debug_Y=debug_symY)
+        if noso:
+            X_T = symmetrize.symmetrize_linres(syms_noso,op1,op2,op3=op3,proj=atom,debug=debug_sym,\
+                    sym_format='mat',T=T,debug_time=debug_time,debug_Y=debug_symY)
+
+        if not ig_op1eqop2:
+            if op1 == op2 and op3 == None:
+
+                T_m = create_Tm(vec_a,vec_b,vec_c)
+                T_i = create_Ti(fin)
+                T_cart = T_i*T_m*T.inv()
+
+                X_T = same_op_sym(X_T,T_cart,debug_op1eqop2,debug_rename)
+
+    if op3 == None:
         print 'Symmetry restricted form of the tensor, even part'
         X_T[0].pprint()
         if latex:
@@ -538,52 +581,35 @@ if exp == -1:
             X_T[1].pprint(latex=latex)
         print ''
 
-        if atom2 != -1:
-
-            X_T_2 = symmetrize_sympy.symmetr_AB(syms,X_T,op1,op2,atom,atom2,T=T)
-
-            if X_T_2 == None:
-                print 'no relation with atom %s found' % atom2
-            else:
-                print 'Symmetrized matrix in the input basis even part, atom %s' % atom2
-                X_T_2[0].pprint()
-                if latex:
-                    X_T_2[0].pprint(latex=latex)
-                print 'Symmetrized matrix in the input basis odd part, atom %s' % atom2
-                X_T_2[1].pprint()
-                if latex:
-                    X_T_2[1].pprint(latex=latex)
-                print ''
-
     else:
-        if transform_result == False:
-            if not noso:
-                X = symmetrize_she.symmetr_3op(syms,op1,op2,op3,atom,T=T)
-            if noso:
-                X = symmetrize_she.symmetr_3op(syms_noso,op1,op2,op3,atom,T=T,sym_format='mat')
-
-        else:
-            if not noso:
-                X = symmetrize_she.symmetr_3op(syms,op1,op2,op3,atom)
-            if noso:
-                X = symmetrize_she.symmetr_3op(syms_noso,op1,op2,op3,atom,sym_format='mat')
-
-            X_T = []
-            X_T.append(funcs.convert_tensor_3op(X[0],T))
-            X_T.append(funcs.convert_tensor_3op(X[1],T))
-            X = X_T
-
         spins=['x','y','z']
         print 'even part:'
         for i in range(3):
             print 'op1=',spins[i]
-            sympy.pprint(X[0].reduce(0,i).mat())
+            sympy.pprint(X_T[0].reduce(0,i).mat())
             print ''
 
         print 'odd part:'
         for i in range(3):
             print 'op1=',spins[i]
-            sympy.pprint(X[1].reduce(0,i).mat())
+            sympy.pprint(X_T[1].reduce(0,i).mat())
+            print ''
+
+    if atom2 != -1 and op3 == None:
+
+        X_T_2 = symmetrize.symmetr_AB(syms,X_T,op1,op2,atom,atom2,T=T)
+
+        if X_T_2 == None:
+            print 'no relation with atom %s found' % atom2
+        else:
+            print 'Symmetrized matrix in the input basis even part, atom %s' % atom2
+            X_T_2[0].pprint()
+            if latex:
+                X_T_2[0].pprint(latex=latex)
+            print 'Symmetrized matrix in the input basis odd part, atom %s' % atom2
+            X_T_2[1].pprint()
+            if latex:
+                X_T_2[1].pprint(latex=latex)
             print ''
 
 if exp != -1:
@@ -592,7 +618,7 @@ if exp != -1:
         print '!!!The input group must be one of the nonmagnetic point groups, otherwise the ouput will be wrong.!!!' 
         syms_nm = syms
 
-    X = st.symmetr_ten(syms_nm,op1,op2,exp,proj=atom,T=T,debug=debug_tensor,debug_Y=debug_Y,debug_time=debug_time)
+    X = st.symmetrize_exp(syms_nm,op1,op2,exp,proj=atom,T=T,debug=debug_sym,debug_Y=debug_symY,debug_time=debug_time)
     st.print_tensor(X)
     if latex:
       st.print_tensor(X,latex=latex)

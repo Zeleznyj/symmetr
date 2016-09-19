@@ -286,7 +286,20 @@ def transform_matrix(matrix_current,sym,op1,op2,l,debug=False,T=None,sym_format=
 
         return trans_current
 
-def transform_tensor(tensor_current,sym,op1,op2,l,T=None,debug=False):
+def transform_tensor_params(matrix_current,sym,params):
+    """
+    A wrapper for transform matrix.
+    """
+
+    if params.op3 == None:
+        return transform_matrix(matrix_current,sym,params.op1,params.op2,params.l,T=params.T,\
+            sym_format=params.sym_format)
+    else:
+        return transform_tensor_3op(matrix_current,sym,params.op1,params.op2,params.op3,params.l,T=params.T,\
+            sym_format=params.sym_format)
+
+
+def transform_exptensor(tensor_current,sym,op1,op2,l,T=None,debug=False):
     """
     Transforms a tensor by a symmetry operation.
 
@@ -379,6 +392,11 @@ def transform_tensor(tensor_current,sym,op1,op2,l,T=None,debug=False):
             trans[ind1] += factor*tensor_current[ind2]
 
     return trans
+
+def transform_exptensor_params(tensor_current,sym,params,debug=False):
+
+    return transform_exptensor(tensor_current,sym,params.op1,params.op2,params.l,T=params.T,debug=debug)
+
 
 def transform_tensor_3op(tensor_current,sym,op1,op2,op3,l,T=None,sym_format='findsym',debug=False):
     """
