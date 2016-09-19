@@ -534,7 +534,9 @@ if exp == -1:
 
         if not ig_op1eqop2:
             if op1 == op2 and op3 == None:
-
+                if group:
+                    sys.exit('You have to set \'--ignore-op1e1op2\' when using group name input and two same operators \
+                            since this is not implemented yet.')
                 T_m = create_Tm(vec_a,vec_b,vec_c)
                 T_i = create_Ti(fin)
                 T_cart = T_i*T_m

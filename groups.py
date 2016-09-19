@@ -33,6 +33,7 @@ def group_sym(name,dirname='.',debug=False):
     with open(dirname+'/mag_groups.txt') as f:
         lines = f.readlines()
     
+    found = False
     for line in lines:
         line = line.split(',',1)
         name_text = line[0].split()[2]
@@ -51,8 +52,11 @@ def group_sym(name,dirname='.',debug=False):
 
             sym_a=(name_text,name_num,hex_group,ops,ops_T)
 
+            found = True
             break
 
+    if not found:
+        sys.exit('Group not found')
     syms=[]
 
     n = len(sym_a[3])
