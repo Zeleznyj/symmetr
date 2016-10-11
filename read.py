@@ -293,7 +293,7 @@ def r_mag_fin(fin):
         if start:
             mag = sympy.zeros(1,3)  
             for j in range(3):
-                mag[j] = sympy.sympify(fin[i].split(' ')[j+3])
+                mag[j] = sympy.sympify(fin[i].split()[j+3])
             mags.append(mag)
         elif (not start) and 'magnetic' in fin[i]:
             start = True

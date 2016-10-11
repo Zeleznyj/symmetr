@@ -165,7 +165,18 @@ class tensor:
     def pprint(self):
         print self
 
+    def pprint(self,latex=False,no_newline=False):
 
+        if self.dim2 == 2:
+            if latex:
+                if no_newline:
+                    print sympy.latex(self.mat()),
+                else:
+                    print sympy.latex(self.mat())
+            else:
+                sympy.pprint(self.mat())
+        else:
+            print self
 
 class matrix(tensor):
 
@@ -217,14 +228,7 @@ class matrix(tensor):
      def T(self):
          return mat2ten(self.mat().T)
 
-     def pprint(self,latex=False,no_newline=False):
-         if latex:
-             if no_newline:
-                 print sympy.latex(self.mat()),
-             else:
-                 print sympy.latex(self.mat())
-         else:
-             sympy.pprint(self.mat())
+    
             
 
 def makeinds(dim1,dim2):

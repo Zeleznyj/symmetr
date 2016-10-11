@@ -74,7 +74,7 @@ def symmetrize_exp(symmetries,op1,op2,order,proj=-1,T=None,debug=False,debug_Y=F
             syms_sel.append(sym)
 
     params = params_trans(op1,op2,None,order % 2,T,'findsym')
-    X = symmetr(syms_sel,X,transform_exptensor_params,debug=debug,debug_time=debug_time,debug_Y=debug_Y)
+    X = symmetr(syms_sel,X,transform_exptensor_params,params,debug=debug,debug_time=debug_time,debug_Y=debug_Y)
 
     return X
 

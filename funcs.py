@@ -899,6 +899,8 @@ def convert_sym_mat(sym,T,sym_format='mat'):
     """
     if type(sym[0]) == list:
         sym_list = True
+    else:
+        sym_list = False
 
     if sym_list:
         nsyms = len(sym)
@@ -908,9 +910,9 @@ def convert_sym_mat(sym,T,sym_format='mat'):
 
     for i in range(nsyms):
         if sym_list:
-            sym_T = sym[i]
+            sym_T = list(sym[i])
         else:
-            sym_T = sym
+            sym_T = list(sym)
         if sym_format == 'findsym':
             sym_T = sym2mat(sym_T)
         sym_T[0] = convert_mat(sym_T[0],T)

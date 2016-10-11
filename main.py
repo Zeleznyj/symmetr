@@ -221,6 +221,7 @@ parser.add_argument('--transform-syms',action='store_const',const=True,default=F
 parser.add_argument('--syms',default=-1,help='Choose which symmetry operations to take, the rest is ignored. Insert symmetry operation\
          numbers separated by commas with no spaces. They are numbered as they appear in the findsym output file.\
          Also can include ranges. Example: 1-3,7,9-12')
+parser.add_argument('--syms-noso',default=-1,help='Like --syms, but fot noso symmetry operations')
 parser.add_argument('--noso',action='store_const',const=True,default=False,help='Symmetry without spin-orbit coupling.')
 parser.add_argument('--ignore-op1eqop2',action='store_const',const=True,default=False,help='When op1=op2, the even part has to be \
         symmetric and the odd part antisymmetric. If this is selected, this property is ignored.')
@@ -246,6 +247,7 @@ op3 = args.op3
 transform_result = args.transform_result
 transform_syms = args.transform_syms
 syms_sel = args.syms
+syms_sel_noso = args.syms_noso
 noso = args.noso
 ig_op1eqop2 = args.ignore_op1eqop2
 
@@ -512,12 +514,40 @@ if noso:
     syms_nm_T = funcs.convert_sym_mat(syms_nm,Tm.inv()*Tnm,sym_format='findsym')
     syms_noso = noso_syms(syms_nm_T,mags_T,is_hex(lines),debug=debug_noso)
 
+    if syms_sel_noso != -1:
+        syms_sel_noso = syms_sel_noso.split(',')
+        syms_sel_noso2 = []
+        for i in range(len(syms_sel_noso)):
+            if '-' in syms_sel_noso[i]:
+                s = syms_sel_noso[i].split('-')
+                syms_sel_noso2 += range(int(s[0]),int(s[1])+1)
+            else:
+                syms_sel_noso2.append(int(syms_sel_noso[i]))
+
+        syms_noso_new = []
+        for i in range(len(syms_noso)):
+            if i+1 in syms_sel_noso2:
+                syms_noso_new.append(syms_noso[i])
+
+        syms_noso = syms_noso_new
+
 if print_syms:
     print 'Symmetry operations:'
     print 'Format: Number, space transformation, magnetic moment transformation, time-reversal, transformation of the sublattices'
     for sym in syms:
         print sym
-
+    if noso:
+        print '' 
+        print 'Nonmagnetic symmetry operations'
+        for i,sym in enumerate(syms_nm_T):
+            print 'nonmagnetic basis:'
+            print i+1,syms_nm[i]
+            print 'magnetic basis:'
+            print i+1,sym
+        print ''
+        print 'Noso symmetry operations (in the magnetic basis)'
+        for i,sym in enumerate(syms_noso):
+            print i+1,sym
 
 if exp == -1:
 
@@ -588,13 +618,13 @@ if exp == -1:
         print 'even part:'
         for i in range(3):
             print 'op1=',spins[i]
-            sympy.pprint(X_T[0].reduce(0,i).mat())
+            X_T[0].reduce(0,i).pprint(latex=latex)
             print ''
 
         print 'odd part:'
         for i in range(3):
             print 'op1=',spins[i]
-            sympy.pprint(X_T[1].reduce(0,i).mat())
+            X_T[1].reduce(0,i).pprint(latex=latex)
             print ''
 
     if atom2 != -1 and op3 == None:
