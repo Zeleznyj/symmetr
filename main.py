@@ -181,7 +181,7 @@ def is_hex(lines):
                 hexag = True
             else:
                 sys.exit('one of the angles in findsym output is neither 90 nor 120.')
-    return is_hex
+    return hexag
 
 
 #this finds the location of the main.py file and ads this location to the path where modules are searched
@@ -512,7 +512,8 @@ if noso:
     Tnm = create_Tm(vec_a_nm,vec_b_nm,vec_c_nm)
     mags_T = funcs.convert_vecs(mags,Tm.inv())
     syms_nm_T = funcs.convert_sym_mat(syms_nm,Tm.inv()*Tnm,sym_format='findsym')
-    syms_noso = noso_syms(syms_nm_T,mags_T,is_hex(lines),debug=debug_noso)
+    hexag = is_hex(lines)
+    syms_noso = noso_syms(syms_nm_T,mags_T,hexag,debug=debug_noso)
 
     if syms_sel_noso != -1:
         syms_sel_noso = syms_sel_noso.split(',')

@@ -11,16 +11,16 @@ from read import r_sym
 dirname, filename = os.path.split(os.path.abspath(__file__))
 sys.path.append(str(dirname))
 
-def read_all_syms(is_hex):
+def read_all_syms(hexag):
     """
     Generates a list of all crystallographic symmetry operations.
 
     Args:
-        is_hex(boolean): true if the conventional crystallographic group of the nonmagnetic crystal
+        hexag(boolean): true if the conventional crystallographic group of the nonmagnetic crystal
             is hexagonal or trigonal, false otherwise.
     """
 
-    if not is_hex:
+    if not hexag:
         syms_file = '/syms_table.dat'
     else:
         syms_file = '/syms_table_hex.dat'
@@ -33,7 +33,7 @@ def read_all_syms(is_hex):
     for i,line in enumerate(lines):
         split = re.findall('[a-zA-Z0-9\-,\+]+',line)
         sym = str(i) + '  ' + split[1]+ ',+1  ' + split[2] 
-        if not is_hex:
+        if not hexag:
             syms_list.append(sym)
         else:
             if 'T' not in line:
@@ -48,7 +48,7 @@ def read_all_syms(is_hex):
 
     return mats
 
-def noso_syms(syms,mag_conf,is_hex,prec=1e-5,debug=False):
+def noso_syms(syms,mag_conf,hexag,prec=1e-5,debug=False):
     """
     Takes symmetry operations in a nonmagnetic crystal and returns symmetry operations of a
         magnetic crystal without spin-orbit coupling.
@@ -56,7 +56,7 @@ def noso_syms(syms,mag_conf,is_hex,prec=1e-5,debug=False):
     Args:
         syms: list of symmetry operations as returned by r_sym
         mag_conf([sympy(3)]): list of magnetic moments of every atom 
-        is_hex(boolean): true if the conventional crystallographic group of the nonmagnetic crystal
+        hexag(boolean): true if the conventional crystallographic group of the nonmagnetic crystal
             is hexagonal or trigonal, false otherwise.
 
     Returns:
@@ -92,7 +92,7 @@ def noso_syms(syms,mag_conf,is_hex,prec=1e-5,debug=False):
     """
 
     if debug:
-        if is_hex:
+        if hexag:
             print 'The conventional coordinate system is hexagonal.'
         else:
             print 'The conventional coordinate system is not hexagonal.'
@@ -104,7 +104,7 @@ def noso_syms(syms,mag_conf,is_hex,prec=1e-5,debug=False):
             print i+1,' ',
             sympy.pprint(mag)
 
-    mats = read_all_syms(is_hex)
+    mats = read_all_syms(hexag)
     if debug:
         print ''
         print 'list of all crystallographic symmetry operations:'
