@@ -109,3 +109,7 @@ The output can be also given in latex format, use --latex switch.
 ### Tests ###
 
 There are tests in a folder tests/, you can see how they were created in a script run_tests.sh
+
+## License ##
+
+This code is distributed under the [MPL 2.0 license](https://www.mozilla.org/en-US/MPL/2.0/FAQ/).
