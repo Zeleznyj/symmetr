@@ -16,13 +16,13 @@ def group_sym(name,dirname='.',debug=False):
         syms: The symmetrey operations in the format that is used in the code. The same format is outputted by the read.py module.
     """
 
-    with open(dirname+'/syms_table.dat') as f:
+    with open(dirname+'/../findsym/syms_table.dat') as f:
         lines = f.readlines()
         syms_t = {}
         for line in lines:
             syms_t[line.split()[0]] = (line.split()[1],line.split()[2])
 
-    with open(dirname+'/syms_table_hex.dat') as f:
+    with open(dirname+'/../findsym/syms_table_hex.dat') as f:
         lines = f.readlines()
         syms_t_hex = {}
         for line in lines:
@@ -30,7 +30,7 @@ def group_sym(name,dirname='.',debug=False):
 
     hex_syms = ['6z','3z','3z-1','6z-1','21','22','23','-6z','-3z','-3z-1','-6z-1','m1','m2','m3']
 
-    with open(dirname+'/mag_groups.txt') as f:
+    with open(dirname+'/../findsym/mag_groups.txt') as f:
         lines = f.readlines()
     
     found = False

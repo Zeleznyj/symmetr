@@ -1,4 +1,4 @@
-#Contains functions for reading various data from output of findsym
+"""Contains functions for reading various data from output of findsym"""
 
 import re
 import math
@@ -200,7 +200,7 @@ def r_sym(lines,debug=False,syms_only=False):
          #magnetic group tables
          #needs a file 'tables_wyckoff.txt' which are magnetic tables with all unneccessary information deleted
          dirname, filename = os.path.split(os.path.abspath(__file__))
-         tables_loc = str(dirname)+'/tables_wyckoff.txt'
+         tables_loc = str(dirname)+'/../findsym/tables_wyckoff.txt'
          tables=open(tables_loc)
 
          #read shifts of wickoff positions

@@ -1,13 +1,3 @@
-import re
-import copy
-import sys
-import math
-
-import sympy
-import numpy as np
-
-from tensors import matrix, mat2ten
-from read import transform_position
 from funcs import *
 
 class confs:

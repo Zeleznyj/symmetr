@@ -1,3 +1,4 @@
+"""Contains various functions for working with symmetry operations and tensors"""
 import re
 import copy
 import sys

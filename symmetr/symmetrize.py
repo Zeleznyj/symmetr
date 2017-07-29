@@ -55,8 +55,9 @@ def symmetr(syms,X,trans_func,params,debug=False,debug_time=False,debug_Y=False)
                     transform_sym = True
             except:
                 transform_sym = False
-            print 'transformed symmetry:'
-            print convert_sym_mat(sym,params.T)
+            if transform_sym:
+                print 'transformed symmetry:'
+                print convert_sym_mat(sym,params.T)
 
         X_trans = trans_func(X,sym,params)
             

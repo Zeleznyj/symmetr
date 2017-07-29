@@ -21,9 +21,9 @@ def read_all_syms(hexag):
     """
 
     if not hexag:
-        syms_file = '/syms_table.dat'
+        syms_file = '/../findsym/syms_table.dat'
     else:
-        syms_file = '/syms_table_hex.dat'
+        syms_file = '/../findsym/syms_table_hex.dat'
 
     with open(dirname+syms_file) as f:
         lines = f.readlines()

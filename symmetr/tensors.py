@@ -1,3 +1,8 @@
+"""Defines a symbolic tensor class.
+
+All the tensors that are symmetrized use this class.
+"""
+
 import sympy
 import numpy as np
 import copy
@@ -44,7 +49,7 @@ class tensor:
             for ind in self.inds:
                 s_tot = var_name(name,ind,self.dim1)
                 self.v[s_tot] = sympy.symbols(s_tot)
-        #self.t contains the tensor itself, stored as a dictionary
+        # self.t contains the tensor itself, stored as a dictionary
         self.t = {}
         #self.x contains the symbolic variables in a form that can be easily retrieved
         self.x = {}
