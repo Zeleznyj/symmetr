@@ -69,7 +69,8 @@ def rename(X,name,debug=False,ignore_ren_warning=False):
                     if debug:
                         print 'renaming to:', ' ',
                         sympy.pprint(V.x[i,j])
-                # if we don't have the first component we try if the component is not a linear combination of the previous
+                # if we don't have the first component we try if the component is not a linear combination
+                # of the previous
                 #components, if it's not we give it a new name, if it is then we set it equal to that combination
                 else: 
                     #to find if the component is a linear combination of a previous components we set a linear equations system
@@ -90,7 +91,7 @@ def rename(X,name,debug=False,ignore_ren_warning=False):
                             Z[o,p] = tmp
                     
                     if debug:
-                        print 'linear equations system: (last columng is the right hand side)'
+                        print 'linear equations system: (last column is the right hand side)'
                         sympy.pprint(Z)
 
                     #this will give a solution to the linear equation system

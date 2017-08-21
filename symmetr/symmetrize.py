@@ -32,6 +32,7 @@ def symmetr(syms,X,trans_func,params,debug=False,debug_time=False,debug_Y=False)
         trans_func: function that transforms the tensor X using symmetry sym
             trans_func must work in the following way:
             X_trans = trans_func(sym,X,params)
+            If trans_func returns None then the symmetry operation is ignored
         params: parameters to be sent to function trans_func
 
     Returns:
@@ -60,6 +61,8 @@ def symmetr(syms,X,trans_func,params,debug=False,debug_time=False,debug_Y=False)
                 print convert_sym_mat(sym,params.T)
 
         X_trans = trans_func(X,sym,params)
+        if X_trans is None:
+            continue
             
         if debug:
             print ''

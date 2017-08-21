@@ -1,21 +1,15 @@
 import re
 import sys
 import os
-import subprocess
 
 import symmetrize
 import symmetrize_exp as st
-import read
-from tensors import matrix, mat2ten
+import fslib
 import funcs
-from rename import rename
-from groups import group_sym
-from noso import noso_syms
-import input as inp
-
 import find_eq
+import symT
+import mham
 
-import sympy
 from sympy import sympify as spf
 
 #this finds the location of the main.py file and ads this location to the path where modules are searched
@@ -76,361 +70,6 @@ def same_op_sym(X,T,debug=False,debug_rename=False):
         X_S[1].pprint()
 
     return X_S
-def create_Tm(vec_a,vec_b,vec_c):
-
-    T = sympy.zeros(3)
-
-    T[0,0] = vec_a[0]
-    T[1,0] = vec_a[1]
-    T[2,0] = vec_a[2]
-
-    T[0,1] = vec_b[0]
-    T[1,1] = vec_b[1]
-    T[2,1] = vec_b[2]
-
-    T[0,2] = vec_c[0]
-    T[1,2] = vec_c[1]
-    T[2,2] = vec_c[2]
-
-    T = funcs.make_rational(T)
-
-    return T
-
-def create_Ti(fin):
-
-    T_i = sympy.zeros(3)
-
-    inp_type = int(fin[2])
-
-    if inp_type == 1:
-
-        vec_1 = fin[3].split()
-        vec_2 = fin[4].split()
-        vec_3 = fin[5].split()
-
-        T_i[0,0] =  spf(vec_1[0])
-        T_i[1,0] =  spf(vec_1[1])
-        T_i[2,0] =  spf(vec_1[2])
-
-        T_i[0,1] =  spf(vec_2[0])
-        T_i[1,1] =  spf(vec_2[1])
-        T_i[2,1] =  spf(vec_2[2])
-
-        T_i[0,2] =  spf(vec_3[0])
-        T_i[1,2] =  spf(vec_3[1])
-        T_i[2,2] =  spf(vec_3[2])
-
-    if inp_type == 2:
-
-        a,b,c,al,bet,gam = fin[3].split()
-        al = al+'*2*pi/360'
-        bet = bet+'*2*pi/360'
-        gam = gam+'*2*pi/360'
-        gam2 = 'acos((cos({gam})-cos({bet})*cos({al}))/(sin({al})*sin({al})))'.format(gam=gam,al=al,bet=bet)        
-
-        
-        T_i[0,0] =  spf('{a}*sin({gam2})*sin({bet})'.format(a=a,gam2=gam2,bet=bet))
-        T_i[1,0] =  spf('{a}*cos({gam2})*sin({bet})'.format(a=a,gam2=gam2,bet=bet))
-        T_i[2,0] =  spf('{a}*cos({bet})'.format(a=a,gam2=gam2,bet=bet))
-
-        T_i[0,1] =  spf(0)
-        T_i[1,1] =  spf('{b}*sin({al})'.format(b=b,al=al))
-        T_i[2,1] =  spf('{b}*cos({al})'.format(b=b,al=al))
-
-        T_i[0,2] =  spf(0)
-        T_i[1,2] =  spf(0)
-        T_i[2,2] =  spf(c)
-    
-    return T_i
-
-def is_hex(lines):
-    for i,line in enumerate(lines):
-        if 'Values of a,b,c,alpha,beta,gamma:' in line:
-            pos = i
-    angles = lines[pos+1].split()[3:6]
-    hexag= False
-    for angle in angles:
-        if int(round(float(angle))) != 90:
-            if int(round(float(angle))) == 120:
-                hexag = True
-            else:
-                sys.exit('one of the angles in findsym output is neither 90 nor 120.')
-    return hexag
-
-def read_fs_inp(inp,clean=True):
-    with open(inp,'r') as f:
-
-        fin = f.readlines()
-        
-        #fin_c cleans definition of axes from the findsym input
-        #otherwise findsym crashes
-        fin_c = []
-        found = False
-        i = 0
-        for i in range(len(fin)):
-            if 'axes:' in fin[i]:
-                found = True
-            if not found:
-                fin_c.append(fin[i])
-
-    if clean:
-        return fin_c
-    else:
-        return fin
-
-def run_fs(inp):
-    dirname, filename = os.path.split(os.path.abspath(__file__))
-    fin_c = read_fs_inp(inp)
-    try:  
-        fs = subprocess.Popen([dirname+'/../findsym/findsym'],stdin=subprocess.PIPE,stdout=subprocess.PIPE)
-        out = fs.communicate(input=''.join(fin_c))[0]
-        lines = out.split('\n')
-    except:
-        sys.exit('Error in findsym input') 
-    return lines
-
-def run_fs_nonmag(inp):
-    
-    #replaces the magnetic moments by 0
-    fin_c = read_fs_inp(inp)
-    start = False
-    fin_cnm = []
-    for i in range(len(fin_c)):
-        if 'magnetic' in fin_c[i]:
-            start = True
-        if start:
-            fin_cnm.append(re.sub(r'([0-9\.\-]+ +[0-9\.\-]+ +[0-9\.\-]+).+',r'\1 0 0 0',fin_c[i],count=1))
-        else:
-            fin_cnm.append(fin_c[i])
-    
-    #sends the nonmagnetic input file to findsym
-    dirname, filename = os.path.split(os.path.abspath(__file__))
-    fs = subprocess.Popen([dirname+'/../findsym/findsym'],stdin=subprocess.PIPE,stdout=subprocess.PIPE)
-    out_nm = fs.communicate(input=''.join(fin_cnm))[0]
-    lines_nm = out_nm.split('\n')
-
-    return lines_nm
-
-def get_syms(opt):
-    if opt['inp']:
-        #runs findsym and reads the output
-        lines = run_fs(opt['inp'])
-        syms = read.r_sym(lines)
-
-    if opt['group']:
-        atom = -1
-        print opt['group']
-        _,syms=group_sym(opt['group'],dirname=str(dirname),debug=False)
-
-    #this selects some of the symmetries 
-    if opt['syms_sel'] != -1:
-        syms_sel = opt['syms_sel'].split(',')
-        syms_sel2 = []
-        for i in range(len(syms_sel)):
-            if '-' in syms_sel[i]:
-                s = syms_sel[i].split('-')
-                syms_sel2 += range(int(s[0]),int(s[1])+1)
-            else:
-                syms_sel2.append(int(syms_sel[i]))
-
-        syms_new = []
-        for i in range(len(syms)):
-            if i+1 in syms_sel2:
-                syms_new.append(syms[i])
-
-        syms = syms_new
-
-    return syms
-
-def get_T(opt,nonmag=False):
-    """
-    Returns transformation matrix from the conventional coordinate system (used by findsym)
-    to the user selected basis.
-
-    There are two different behaviors:
-        nonmag=False: conventional coordinate system for the magnetic system
-        nonmag=True: conventional coordinate system for the nonmagnetic system
-    """
-    if opt['inp']:
-        #runs findsym and reads the output
-        fin = read_fs_inp(opt['inp'],clean=False)
-        lines = run_fs(opt['inp'])
-        if nonmag:
-            lines_nm = run_fs_nonmag(opt['inp'])
-
-        #reads the input
-        #vec_a,b,c are needed to know the basis transformation
-        #syms contain the symmetries in the form that is needed by symmetr
-        if not nonmag:
-            [vec_a,vec_b,vec_c] = read.r_basis(lines)
-        else:
-            [vec_a,vec_b,vec_c] = read.r_basis(lines_nm)
-
-        #construct the transformation matrix from the findsym basis to the selected basis
-        if 'abc' == opt['basis']:
-
-            T = sympy.Matrix(sympy.Identity(3))
-
-        if 'i' == opt['basis']:
-
-            T = create_Tm(vec_a,vec_b,vec_c)
-
-        if 'cart' == opt['basis']:
-
-            T_m = create_Tm(vec_a,vec_b,vec_c)
-
-            T_i = create_Ti(fin)
-
-            T = T_i*T_m
-
-        if 'custom' == opt['basis']:
-            
-            #T_i is a transformation matrix from the input coordinate system to the cartesian one
-            T_i = create_Ti(fin)
-                    
-            for i in range(len(fin)):
-                if 'axes:' in fin[i]:
-                    loc = i
-            
-            vec_1 = fin[loc+1].split()
-            vec_2 = fin[loc+2].split()
-            vec_3 = fin[loc+3].split()
-
-            #T_c is the transformation matrix from the used-defined basis to the cartesian one
-            T_c = sympy.zeros(3)
-
-            T_c[0,0] =  spf(vec_1[0])
-            T_c[1,0] =  spf(vec_1[1])
-            T_c[2,0] =  spf(vec_1[2])
-
-            T_c[0,1] =  spf(vec_2[0])
-            T_c[1,1] =  spf(vec_2[1])
-            T_c[2,1] =  spf(vec_2[2])
-
-            T_c[0,2] =  spf(vec_3[0])
-            T_c[1,2] =  spf(vec_3[1])
-            T_c[2,2] =  spf(vec_3[2])
-
-            normalize = True
-            if normalize == True:
-                norm = sympy.sqrt(T_c[0,0]**2 + T_c[1,0]**2 + T_c[2,0]**2)
-                T_c[0,0] = T_c[0,0] / norm
-                T_c[1,0] = T_c[1,0] / norm
-                T_c[2,0] = T_c[2,0] / norm
-
-                norm = sympy.sqrt(T_c[0,1]**2 + T_c[1,1]**2 + T_c[2,1]**2)
-                T_c[0,1] = T_c[0,1] / norm
-                T_c[1,1] = T_c[1,1] / norm
-                T_c[2,1] = T_c[2,1] / norm
-
-                norm = sympy.sqrt(T_c[0,2]**2 + T_c[1,2]**2 + T_c[2,2]**2)
-                T_c[0,2] = T_c[0,2] / norm
-                T_c[1,2] = T_c[1,2] / norm
-                T_c[2,2] = T_c[2,2] / norm
-
-            T = T_c.inv()*T_i*T_m
-
-        if 'abc_c' == opt['basis']:
-
-            T = sympy.zeros(3)
-
-            if not nonmag:
-                abc = read.r_abc(lines)
-            else:
-                abc = read.r_abc(lines_nm)
-
-            a = abc[0]
-            b = abc[1]
-            c = abc[2]
-            al = abc[3]
-            bet = abc[4]
-            gam = abc[5]
-
-            al = al+'*2*pi/360'
-            bet = bet+'*2*pi/360'
-            gam = gam+'*2*pi/360'
-            gam2 = 'acos((cos({gam})-cos({bet})*cos({al}))/(sin({al})*sin({al})))'.format(gam=gam,al=al,bet=bet)        
-            
-            T[0,0] =  spf('{a}*sin({gam2})*sin({bet})'.format(a=a,gam2=gam2,bet=bet))
-            T[1,0] =  spf('{a}*cos({gam2})*sin({bet})'.format(a=a,gam2=gam2,bet=bet))
-            T[2,0] =  spf('{a}*cos({bet})'.format(a=a,gam2=gam2,bet=bet))
-
-            T[0,1] =  spf(0)
-            T[1,1] =  spf('{b}*sin({al})'.format(b=b,al=al))
-            T[2,1] =  spf('{b}*cos({al})'.format(b=b,al=al))
-
-            T[0,2] =  spf(0)
-            T[1,2] =  spf(0)
-            T[2,2] =  spf(c)
-
-    if opt['group']:
-        atom = -1
-        print opt['group']
-        hex_group,_=group_sym(opt['group'],dirname=str(dirname),debug=False)
-
-        if 'i' == opt['basis'] or 'abc' == opt['basis']:
-            print 'Using the conventional coordinate system!'
-            T = sympy.Matrix(sympy.Identity(3))
-
-        if 'cart' == opt['basis']:
-
-            print 'Using a cartesian coordinate system'
-            if hex_group:
-                T = sympy.zeros(3)
-                T[0,0] = 1
-                T[0,1] = sympy.sympify(Fraction(-0.5))
-                T[0,2] = 0
-                T[1,0] = 0 
-                T[1,1] = sympy.sqrt(3)/2
-                T[1,2] = 0
-                T[2,0] = 0
-                T[2,1] = 0
-                T[2,2] = 1
-            else:
-                T = sympy.Matrix(sympy.Identity(3))
-
-    return T
-
-def get_syms_nonmag(opt):
-    lines = run_fs_nonmag(opt['inp'])
-    syms = read.r_sym(lines)
-    return syms
-
-def get_syms_noso(opt):
-
-    fin_c = read_fs_inp(opt['inp'])
-    mags = read.r_mag_fin(fin_c)
-    lines = run_fs(opt['inp'])
-    lines_nm = run_fs_nonmag(opt['inp'])
-    [vec_a,vec_b,vec_c] = read.r_basis(lines)
-    [vec_a_nm,vec_b_nm,vec_c_nm] = read.r_basis(lines_nm)
-
-    Tm = create_Tm(vec_a,vec_b,vec_c)
-    Tnm = create_Tm(vec_a_nm,vec_b_nm,vec_c_nm)
-    mags_T = funcs.convert_vecs(mags,Tm.inv())
-    syms_nm = get_syms_nonmag(opt)
-    syms_nm_T = funcs.convert_sym_mat(syms_nm,Tm.inv()*Tnm,sym_format='findsym')
-    hexag = is_hex(lines)
-    syms_noso = noso_syms(syms_nm_T,mags_T,hexag,debug=opt['debug_noso'])
-
-    if opt['syms_sel_noso'] != -1:
-        syms_sel_noso = opt['syms_sel_noso'].split(',')
-        syms_sel_noso2 = []
-        for i in range(len(syms_sel_noso)):
-            if '-' in syms_sel_noso[i]:
-                s = syms_sel_noso[i].split('-')
-                syms_sel_noso2 += range(int(s[0]),int(s[1])+1)
-            else:
-                syms_sel_noso2.append(int(syms_sel_noso[i]))
-
-        syms_noso_new = []
-        for i in range(len(syms_noso)):
-            if i+1 in syms_sel_noso2:
-                syms_noso_new.append(syms_noso[i])
-
-        syms_noso = syms_noso_new
-
-    return syms_noso
 
 def sym_linres(opt,printit=False):
     """
@@ -454,22 +93,22 @@ def sym_linres(opt,printit=False):
     op3 = opt['op3']
 
     #the symmetry operations given in the basis used by findsym
-    syms = get_syms(opt)
+    syms = symT.get_syms(opt)
     #transformation matrix from the basis used by findsym to the user defined basis
-    T = get_T(opt)
+    T = symT.get_T(opt)
     if opt['noso']:
-        syms_noso = get_syms_noso(opt)
+        syms_noso = symT.get_syms_noso(opt)
 
     #This is a hacky code that will need to be replaced in the future.
     if not opt['ig_op1eqop2']:
         if op1 == op2 and op3 == None:
             
-            lines = run_fs(opt['inp'])
-            (vec_a,vec_b,vec_c) = read.r_basis(lines)
-            fin = read_fs_inp(opt['inp'])
+            lines = fslib.run_fs(opt['inp'])
+            (vec_a,vec_b,vec_c) = fslib.r_basis(lines)
+            fin = fslib.read_fs_inp(opt['inp'])
 
-            T_m = create_Tm(vec_a,vec_b,vec_c)
-            T_i = create_Ti(fin)
+            T_m = symT.create_Tm(vec_a,vec_b,vec_c)
+            T_i = symT.create_Ti(fin)
             T_cart1 = T_i*T_m
             T_cart2 = T_i*T_m*T.inv()
 
@@ -560,21 +199,21 @@ def sym_linres(opt,printit=False):
 
     #if equiv is set then we transform the tensor to all equivalent magnetic configurations
     if opt['equiv']:
-        fin_c = read_fs_inp(opt['inp'])
-        mags = read.r_mag_fin(fin_c)
-        lines = run_fs(opt['inp'])
-        lines_nm = run_fs_nonmag(opt['inp'])
-        [vec_a,vec_b,vec_c] = read.r_basis(lines)
-        [vec_a_nm,vec_b_nm,vec_c_nm] = read.r_basis(lines_nm)
-        syms_nm = get_syms_nonmag(opt)
+        fin_c = fslib.read_fs_inp(opt['inp'])
+        mags = fslib.r_mag_fin(fin_c)
+        lines = fslib.run_fs(opt['inp'])
+        lines_nm = fslib.run_fs_nonmag(opt['inp'])
+        [vec_a,vec_b,vec_c] = fslib.r_basis(lines)
+        [vec_a_nm,vec_b_nm,vec_c_nm] = fslib.r_basis(lines_nm)
+        syms_nm = symT.get_syms_nonmag(opt)
 
         #reads the magnetic moments from the input file
-        mags = read.r_mag_fin(fin_c)
+        mags = fslib.r_mag_fin(fin_c)
         #transformation matrix from the magnetic basis to the input one
-        Tm = create_Tm(vec_a,vec_b,vec_c)
+        Tm = symT.create_Tm(vec_a,vec_b,vec_c)
 
         #transformation matrix from the nonmagnetic basis to the input one
-        Tnm = create_Tm(vec_a_nm,vec_b_nm,vec_c_nm)
+        Tnm = symT.create_Tm(vec_a_nm,vec_b_nm,vec_c_nm)
 
         #convert the magnetic moments to the selected basis
         #T*Tm.inv() is a matrix that transforms the magnetic moments to the selected basis because:
@@ -615,10 +254,10 @@ def sym_exp(opt,printit=False):
 
     if opt['group']:
         print '!!!The input group must be one of the nonmagnetic point groups, otherwise the ouput will be wrong.!!!' 
-        syms_nm = get_syms(opt)
+        syms_nm = symT.get_syms(opt)
     else:
-        T = get_T(opt,nonmag=True)
-        syms_nm = get_syms_nonmag(opt)
+        T = symT.get_T(opt,nonmag=True)
+        syms_nm = symT.get_syms_nonmag(opt)
 
     X = st.symmetrize_exp(syms_nm,opt['op1'],opt['op2'],opt['exp'],proj=opt['atom'],T=T,\
             debug=opt['debug_sym'],debug_Y=opt['debug_symY'],debug_time=opt['debug_time'])
@@ -629,3 +268,44 @@ def sym_exp(opt,printit=False):
           st.print_tensor(X,latex=opt['latex'])
 
     return X
+
+def sym_res(opt,printit=False):
+    """A wrapper function that returns the appropriate response tensor based on the input options.
+
+    Args:
+        opt (class options): stores all the input arguments. Only some are used here.
+        printit (optional[boolean]): if true this prints the output
+    """
+    if opt['exp'] == -1:
+        return sym_linres(opt,printit=printit)
+    else:
+        return sym_exp(opt,printit=printit)
+
+def sym_mham(opt,printit=False):
+    T = symT.get_T(opt,nonmag=True)
+    syms = symT.get_syms_nonmag(opt)
+    if opt['transform_syms']:
+        H_T = mham.sym_mag_ham(opt['sites'],syms,T=T,debug=opt['debug_sym'])
+    else:
+        H = mham.sym_mag_ham(opt['sites'],syms,T=None,debug=opt['debug_sym'])
+        H_T = mham.convert_mag_ham(H,T)
+    if opt['equiv']:
+        H_E = mham.equiv(H_T,opt['sites'],syms,T)
+    if printit:
+        if H_T.dim2 == 2:
+            print 'Hamiltonian term in matrix form:'
+            H_T.pprint(latex=opt['latex'])
+            print ''
+        mham.print_Ham(H_T,opt['sites'],latex=opt['latex'])
+        if opt['equiv']:
+            print ''
+            print 'Hamiltonian terms for all equivalent combinations of sites:'
+            for sites in H_E:
+                print str(sites)+':'
+                mham.print_Ham(H_E[sites],sites,latex=opt['latex'])
+                print ''
+    if not opt['equiv']:
+        return H_T
+    else:
+        return H_T,H_E
+

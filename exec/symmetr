@@ -1,0 +1,9 @@
+#!/usr/bin/python
+
+import sys
+from runpy import run_path
+
+sys.path.append('..')
+run_path('../symmetr')
+
+

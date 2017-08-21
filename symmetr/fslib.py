@@ -1,12 +1,72 @@
-"""Contains functions for reading various data from output of findsym"""
+"""Contains functions for working with findsym
+
+Includes functions for running findsym, reading findsym input, and extracting
+data from findsym output.
+"""
 
 import re
 import math
 import sys
 import os
+import subprocess
 
 from fractions import Fraction
 import sympy
+
+def read_fs_inp(inp,clean=True):
+    with open(inp,'r') as f:
+
+        fin = f.readlines()
+        
+        #fin_c cleans definition of axes from the findsym input
+        #otherwise findsym crashes
+        fin_c = []
+        found = False
+        i = 0
+        for i in range(len(fin)):
+            if 'axes:' in fin[i]:
+                found = True
+            if not found:
+                fin_c.append(fin[i])
+
+    if clean:
+        return fin_c
+    else:
+        return fin
+
+def run_fs(inp):
+    dirname, filename = os.path.split(os.path.abspath(__file__))
+    fin_c = read_fs_inp(inp)
+    try:  
+        fs = subprocess.Popen([dirname+'/../findsym/findsym'],stdin=subprocess.PIPE,stdout=subprocess.PIPE)
+        out = fs.communicate(input=''.join(fin_c))[0]
+        lines = out.split('\n')
+    except:
+        sys.exit('Error in findsym input') 
+    return lines
+
+def run_fs_nonmag(inp):
+    
+    #replaces the magnetic moments by 0
+    fin_c = read_fs_inp(inp)
+    start = False
+    fin_cnm = []
+    for i in range(len(fin_c)):
+        if 'magnetic' in fin_c[i]:
+            start = True
+        if start:
+            fin_cnm.append(re.sub(r'([0-9\.\-]+ +[0-9\.\-]+ +[0-9\.\-]+).+',r'\1 0 0 0',fin_c[i],count=1))
+        else:
+            fin_cnm.append(fin_c[i])
+    
+    #sends the nonmagnetic input file to findsym
+    dirname, filename = os.path.split(os.path.abspath(__file__))
+    fs = subprocess.Popen([dirname+'/../findsym/findsym'],stdin=subprocess.PIPE,stdout=subprocess.PIPE)
+    out_nm = fs.communicate(input=''.join(fin_cnm))[0]
+    lines_nm = out_nm.split('\n')
+
+    return lines_nm
+
 
 
 #tests if two vectors are equal with precision prec
