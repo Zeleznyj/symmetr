@@ -1,9 +1,12 @@
 #!/usr/bin/python
 
 import sys
+import os
 from runpy import run_path
 
+dirname, filename = os.path.split(os.path.abspath(__file__))
+
 sys.path.append('..')
-run_path('../symmetr')
+run_path(dirname+'/../symmetr')
 
 
