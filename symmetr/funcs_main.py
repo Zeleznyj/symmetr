@@ -258,6 +258,7 @@ def sym_exp(opt,printit=False):
     if opt['group']:
         print '!!!The input group must be one of the nonmagnetic point groups, otherwise the ouput will be wrong.!!!' 
         syms_nm = symT.get_syms(opt)
+        T = symT.get_T(opt)
     else:
         T = symT.get_T(opt,nonmag=True)
         syms_nm = symT.get_syms_nonmag(opt)

@@ -1,14 +1,15 @@
+Using a cartesian coordinate system
 Symmetry restricted form of the tensor, even part
 [x00   0    0 ]
 [             ]
-[ 0   x11   0 ]
+[ 0   x00   0 ]
 [             ]
-[ 0    0   x22]
+[ 0    0   x00]
 
 Symmetry restricted form of the tensor, odd part
-[0  0  0]
-[       ]
-[0  0  0]
-[       ]
-[0  0  0]
+[x00   0    0 ]
+[             ]
+[ 0   x00   0 ]
+[             ]
+[ 0    0   x00]
 

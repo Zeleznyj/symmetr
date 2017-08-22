@@ -81,7 +81,7 @@ class options:
             if self['equiv'] and ( self['exp'] != -1 ):
                 raise InputError('You cannot use --equiv and --exp together. Equivalent configurations not supported\
                         for expansions.')
-            if self['op1'] == self['op2'] and self['op3'] == None and self['group']:
+            if self['op1'] == self['op2'] and self['op3'] == None and self['group'] and not self['ig_op1eqop2']:
                 raise InputError('You have to set \'--ignore-op1e1op2\' when using group name input and two same operators \
                             since this is not implemented yet.')
         if self['mode'] == 'mham':
@@ -105,7 +105,7 @@ def parse(clargs=None):
     parser_parent.add_argument('-f','--findsym',help='Findsym input file',default=None,dest='inp')
     parser_parent.add_argument('-b','--basis',help='Sets a coordinate basis: abc for conventional crystallographic basis, i for the one used in input \
     (default). cart for a cartesian basis in which the input basis is define. \
-            abc_c for orthogonalized crystalographic basis (not tested much).',default='i')
+    abc_c for orthogonalized crystalographic basis (not tested much).',default='cart')
     parser_parent.add_argument('--print-syms',action='store_const',const=True,default=False,help='Prints all symmetry operations.')
     parser_parent.add_argument('--transform-result',action='store_const',const=True,default=False,help=
             'Keep the symmetry operations in findsym basis and transform the result to the correct basis.')

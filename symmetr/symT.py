@@ -9,6 +9,7 @@ import fslib
 import sympy
 import funcs
 from sympy import sympify as spf
+from groups import group_sym
 
 def create_Tm(vec_a,vec_b,vec_c):
 
@@ -99,8 +100,7 @@ def get_syms(opt):
 
     if opt['group']:
         atom = -1
-        print opt['group']
-        _,syms=group_sym(opt['group'],dirname=str(dirname),debug=False)
+        _,syms=group_sym(opt['group'],debug=False)
 
     #this selects some of the symmetries 
     if opt['syms_sel'] != -1:
@@ -245,8 +245,7 @@ def get_T(opt,nonmag=False):
 
     if opt['group'] is not None:
         atom = -1
-        print opt['group']
-        hex_group,_=group_sym(opt['group'],dirname=str(dirname),debug=False)
+        hex_group,_=group_sym(opt['group'],debug=False)
 
         if 'i' == opt['basis'] or 'abc' == opt['basis']:
             print 'Using the conventional coordinate system!'

@@ -1,0 +1,7 @@
+!!!The input group must be one of the nonmagnetic point groups, otherwise the ouput will be wrong.!!!
+Using a cartesian coordinate system
+[m2*x002     0     m0*x020]
+[                         ]
+[   0     m2*x002  m1*x020]
+[                         ]
+[m0*x200  m1*x200  m2*x222]

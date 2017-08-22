@@ -3,9 +3,9 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 import re
 import sys
+import os
 
-
-def group_sym(name,dirname='.',debug=False):
+def group_sym(name,debug=False):
     """Returns symmetry operations for a given group.
 
     Args:
@@ -18,6 +18,8 @@ def group_sym(name,dirname='.',debug=False):
         hex_group: Boolean. True if hexagonal or trigonal group, False otherwise. Useful for basis transformations.
         syms: The symmetrey operations in the format that is used in the code. The same format is outputted by the read.py module.
     """
+
+    dirname, filename = os.path.split(os.path.abspath(__file__))
 
     with open(dirname+'/../findsym/syms_table.dat') as f:
         lines = f.readlines()

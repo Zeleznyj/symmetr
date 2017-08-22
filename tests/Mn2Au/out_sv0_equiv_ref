@@ -15,8 +15,8 @@ Symmetry restricted form of the tensor, odd part
 
 Equivalent configurations:
 starting configuration:
-atom 1, m = 1.0000, 0, 0
-atom 2, m = -1.0000, 0, 0
+atom 1, m = 3.0000, 0, 0
+atom 2, m = -3.0000, 0, 0
 even part:
 [ 0   x01  0]
 [           ]
@@ -32,8 +32,8 @@ odd part:
 [x20  0   0 ]
 
 configuration 1
-atom 1, m = -1.0000, 0, 0
-atom 2, m = 1.0000, 0, 0
+atom 1, m = -3.0000, 0, 0
+atom 2, m = 3.0000, 0, 0
 even part:
 [ 0   x01  0]
 [           ]
@@ -49,8 +49,8 @@ odd part:
 [-x20  0   0  ]
 
 configuration 2
-atom 1, m = 0, 1.0000, 0
-atom 2, m = 0, -1.0000, 0
+atom 1, m = 0, 3.0000, 0
+atom 2, m = 0, -3.0000, 0
 even part:
 [ 0    -x10  0]
 [             ]
@@ -66,8 +66,8 @@ odd part:
 [0  x20   0 ]
 
 configuration 3
-atom 1, m = 0, -1.0000, 0
-atom 2, m = 0, 1.0000, 0
+atom 1, m = 0, -3.0000, 0
+atom 2, m = 0, 3.0000, 0
 even part:
 [ 0    -x10  0]
 [             ]
