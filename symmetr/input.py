@@ -89,7 +89,8 @@ class options:
                 raise InputError('group input is not allowed for mham')
             if self['inp'] is None:
                 raise InputError('You need to specify findsym input file')
-        
+        if not self['inp'] and self['print_pos']:
+            raise InputError('print-pos is only possible with findsym input.')
 
 def parse(clargs=None):
     """Parses the input line arguments
@@ -117,6 +118,8 @@ def parse(clargs=None):
     parser_parent.add_argument('--print-opt',action='store_const',const=True,default=False,help='If set all the input options are printed.')
     parser_parent.add_argument('-g','--group',help='group name',default=None)
     parser_parent.add_argument('--latex',action='store_const',const=True,default=False,help='If set, the matrices are printed also in a latex format.')
+    parser_parent.add_argument('--print-pos',action='store_const',const=True,default=False,help='If set prints the atomic sites used in\
+            findsym.')
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,\
             description=textwrap.dedent('''\

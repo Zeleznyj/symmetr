@@ -6,6 +6,7 @@
 import funcs_main as fmain
 import symT
 import input
+import fslib
 
 opt = input.parse()
     
@@ -24,6 +25,14 @@ if opt['print_syms']:
 
 if opt['print_opt']:
     print opt
+
+if opt['print_pos']:
+    lines = fslib.run_fs(opt['inp'])
+    pos = fslib.r_pos(lines)
+    print 'Atomic sites as used by findsym:'
+    for p in pos:
+        print p[-1],p[0:3]
+    print ''
 
 if opt['mode'] == 'res':
     fmain.sym_res(opt,printit=True)
