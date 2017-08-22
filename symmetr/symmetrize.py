@@ -195,6 +195,25 @@ def symmetr(syms,X,trans_func,params,debug=False,debug_time=False,debug_Y=False)
 
     return X
 
+def even_odd(op1,op2,op3):
+    """Finds whether the first part of the response tensor is even or odd
+    
+    Args:
+        op1,op2,op3: the operator types
+        Returns: either ('even','odd') or ('odd','even')
+    """
+    sym = [sympy.diag(1,1,1),0,sympy.diag(-1,-1,-1),'-1']
+    params = params_trans(op1,op2,op3,0,sym_format='mat')
+    if op3 is None:
+        X = matrix('s',3)
+    else:
+        X = tensor('s',3,3)
+    X_T = transform_tensor_params(X,sym,params)
+    if X_T == X:
+        return('even','odd')
+    else:
+        return('odd','even')
+
 def symmetrize_linres(symmetries,op1,op2,op3=None,proj=-1,debug=False,debug_time=False,debug_Y=False,\
         T=None,sym_format='findsym'):
     """

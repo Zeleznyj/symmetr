@@ -6,6 +6,7 @@ set -x
 cd IrMn3
 ../../exec/symmetr res j E -f findsym.in  > out_vv
 ../../exec/symmetr res j E -f findsym.in -e  > out_vv_equiv
+../../exec/symmetr res s.j E -f findsym.in  > out_svv
 ../../exec/symmetr mham -s 2,3 -f findsym.in  > out_mham_23
 ../../exec/symmetr mham -s 2,2 -f findsym.in -e  > out_mham_22_equiv
 cd ..

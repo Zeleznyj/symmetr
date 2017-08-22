@@ -54,7 +54,7 @@ class confs:
 
         return out
 
-    def pprint(self,m=-1,latex=False):
+    def pprint(self,eo,m=-1,latex=False):
         #prints everything in a (somewhat) nice form
         #if m is set it prints only configuration m
 
@@ -71,11 +71,11 @@ class confs:
             for p in self.confs[n]:
                 print 'atom %s, m = %s, %s, %s' %(p,self.confs[n][p][0].round(4),self.confs[n][p][1].round(4),self.confs[n][p][2].round(4))
                 #print 'atom %s, m = %s, %s, %s' %(p,self.confs[n][p][0],self.confs[n][p][1],self.confs[n][p][2])
-            print 'even part:'
+            print '%s part:' % eo[0]
             self.Xs[n][0].pprint()
             if latex:
                 self.Xs[n][0].pprint(latex=True)
-            print 'odd part:\n'
+            print '%s part:\n' % eo[1]
             self.Xs[n][1].pprint()
             if latex:
                 self.Xs[n][1].pprint(latex=True)

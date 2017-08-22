@@ -741,6 +741,11 @@ def sym2mat(sym,op_type=None,sym_format='findsym'):
                 return sym[0]
             if sym[3] == '-1':
                 return -sym[0]
+        if op_type == 't':
+            if sym[3] == '+1':
+                return sym[2]
+            if sym[3] == '-1':
+                return -sym[2]
 
 
 def mat2sym(msym):

@@ -12,13 +12,13 @@ Symmetry restricted form of the tensor, odd part
 [           ]
 [x20  0   0 ]
 
-Symmetrized matrix in the input basis even part, atom 2
+Symmetry restricted form of the tensor, even part, atom 2
 [ 0    -x01  0]
 [             ]
 [-x10   0    0]
 [             ]
 [ 0     0    0]
-Symmetrized matrix in the input basis odd part, atom 2
+Symmetry restricted form of the tensor, odd part, atom 2
 [ 0   0  x02]
 [           ]
 [ 0   0   0 ]

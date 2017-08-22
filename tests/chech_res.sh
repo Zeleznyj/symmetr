@@ -5,6 +5,7 @@ set -e
 files=()
 files+=('IrMn3/out_vv')
 files+=('IrMn3/out_vv_equiv')
+files+=('IrMn3/out_svv')
 files+=('Mn2Au/out_sv0')
 files+=('Mn2Au/out_sv0_1')
 files+=('Mn2Au/out_vv')

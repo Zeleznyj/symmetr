@@ -12,6 +12,7 @@ import funcs
 import find_eq
 import symT
 import mham
+from tensors import tensor,matrix
 
 from sympy import sympify as spf
 
@@ -74,6 +75,7 @@ def same_op_sym(X,T,debug=False,debug_rename=False):
 
     return X_S
 
+
 def sym_linres(opt,printit=False):
     """
     Finds the response tensors for linear response based on the input arguments.
@@ -95,6 +97,8 @@ def sym_linres(opt,printit=False):
     op2 = opt['op2']
     op3 = opt['op3']
 
+    eo =  symmetrize.even_odd(op1,op2,op3)
+    
     #the symmetry operations given in the basis used by findsym
     syms = symT.get_syms(opt)
     #transformation matrix from the basis used by findsym to the user defined basis
@@ -155,13 +159,13 @@ def sym_linres(opt,printit=False):
 
     if printit:
         if op3 == None:
-            print 'Symmetry restricted form of the tensor, even part'
+            print 'Symmetry restricted form of the tensor, %s part' % eo[0]
             X_T[0].pprint()
             if opt['latex']:
                 X_T[0].pprint(latex=opt['latex'])
             print ''
 
-            print 'Symmetry restricted form of the tensor, odd part'
+            print 'Symmetry restricted form of the tensor, %s part' % eo[1]
             X_T[1].pprint()
             if opt['latex']:
                 X_T[1].pprint(latex=opt['latex'])
@@ -169,13 +173,13 @@ def sym_linres(opt,printit=False):
 
         else:
             spins=['x','y','z']
-            print 'even part:'
+            print '%s part:' % eo[0]
             for i in range(3):
                 print 'op1=',spins[i]
                 X_T[0].reduce(0,i).pprint(latex=opt['latex'])
                 print ''
 
-            print 'odd part:'
+            print '%s part:' % eo[1]
             for i in range(3):
                 print 'op1=',spins[i]
                 X_T[1].reduce(0,i).pprint(latex=opt['latex'])
@@ -190,11 +194,11 @@ def sym_linres(opt,printit=False):
             print 'no relation with atom %s found' % opt['atom2']
         else:
             if printit:
-                print 'Symmetrized matrix in the input basis even part, atom %s' % opt['atom2']
+                print 'Symmetry restricted form of the tensor, %s part, atom %s' % (eo[0],opt['atom2'])
                 X_T_2[0].pprint()
                 if opt['latex']:
                     X_T_2[0].pprint(latex=True)
-                print 'Symmetrized matrix in the input basis odd part, atom %s' % opt['atom2']
+                print 'Symmetry restricted form of the tensor, %s part, atom %s' % (eo[1],opt['atom2'])
                 X_T_2[1].pprint()
                 if opt['latex']:
                     X_T_2[1].pprint(latex=True)
@@ -232,7 +236,7 @@ def sym_linres(opt,printit=False):
         if printit:
             print ''
             print 'Equivalent configurations:'
-            C.pprint(latex=opt['latex'])
+            C.pprint(eo,latex=opt['latex'])
 
     #based on the chosen options different variables are returned
     if not opt['equiv']:

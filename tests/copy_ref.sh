@@ -1,10 +1,9 @@
 #!/bin/bash
 
-set -e
-
 files=()
 files+=('IrMn3/out_vv')
 files+=('IrMn3/out_vv_equiv')
+files+=('IrMn3/out_svv')
 files+=('IrMn3/out_mham_23')
 files+=('IrMn3/out_mham_22_equiv')
 files+=('Mn2Au/out_sv0')
