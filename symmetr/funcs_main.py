@@ -149,7 +149,7 @@ def sym_linres(opt,printit=False):
             X_T = symmetrize.symmetrize_linres(syms,op1,op2,op3=op3,proj=opt['atom'],T=T,\
                     debug=opt['debug_sym'],debug_time=opt['debug_time'],debug_Y=opt['debug_symY'])
         if opt['noso']:
-            X_T = symmetrize.symmetrize_linres(syms_noso,op1,op2,op3=op3,proj=atom,T=T,\
+            X_T = symmetrize.symmetrize_linres(syms_noso,op1,op2,op3=op3,proj=opt['atom'],T=T,\
                     sym_format='mat',debug=opt['debug_sym'],debug_time=opt['debug_time'],debug_Y=opt['debug_symY'])
 
         if not opt['ig_op1eqop2']:

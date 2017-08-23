@@ -10,6 +10,7 @@ import sympy
 import funcs
 from sympy import sympify as spf
 from groups import group_sym
+from noso import noso_syms
 
 def create_Tm(vec_a,vec_b,vec_c):
 

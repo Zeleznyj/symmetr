@@ -61,10 +61,13 @@ class options:
                 raise InputError('Equivalent configurations are not possible with group name input. Use findsym input file.')
 
             if self['op3'] and self['equiv']:
-                raise InputError('Equivalent configurations not implemented for three operators.')
+                raise InputError('Equivalent configurations not implemented for three component response function.')
 
             if self['op3'] and (self['exp'] != -1):
-                raise InputError('Expansions are not implemented for three operators.')
+                raise InputError('Expansions are not implemented for three component response function.')
+
+            if self['op3'] and (self['atom2'] != -1):
+                raise InputError('Second site projection not implemented for three component response function.')
 
             if self['op3'] and (self['equiv']):
                 raise InputError('Equivalent magnetic configurations are not implemented for three operators.')
@@ -132,8 +135,8 @@ def parse(clargs=None):
     parser_mham = subparsers.add_parser('mham',parents=[parser_parent])
 
 
-    parser_res.add_argument('op1', help='The opeator of which response we are evaluating.')
-    parser_res.add_argument('op2', help='The field which induces the response.')
+    parser_res.add_argument('op1', help='The opeator of which response we are evaluating.',metavar='A')
+    parser_res.add_argument('op2', help='The field which induces the response.',metavar='F')
     parser_res.add_argument('-p','--projection',help='Sets a projection on an atom.',default=-1,dest='atom',type=int)
     parser_res.add_argument('-p2','--projection2',help='Sets a projection on a second atom. Tries to find a relation between tensors on the first \
             atom and on the second atom.',default=-1,dest='atom2',type=int)
