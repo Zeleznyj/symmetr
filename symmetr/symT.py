@@ -209,6 +209,8 @@ def get_T(opt,nonmag=False):
                 T_c[1,2] = T_c[1,2] / norm
                 T_c[2,2] = T_c[2,2] / norm
 
+            T_m = create_Tm(vec_a,vec_b,vec_c)
+
             T = T_c.inv()*T_i*T_m
 
         if 'abc_c' == opt['basis']:
