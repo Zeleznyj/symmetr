@@ -9,7 +9,7 @@ import sympy
 from tensors import matrix
 from funcs import sym2mat
 from funcs import sym_type
-from read import r_sym
+from fslib import r_sym
 
 dirname, filename = os.path.split(os.path.abspath(__file__))
 sys.path.append(str(dirname))

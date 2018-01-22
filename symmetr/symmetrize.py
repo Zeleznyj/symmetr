@@ -10,7 +10,7 @@ import sympy
 import numpy as np
 
 from tensors import matrix, mat2ten
-from read import transform_position
+from fslib import transform_position
 from funcs import *
 from conv_index import *
 

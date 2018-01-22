@@ -11,7 +11,7 @@ import sympy
 import numpy as np
 
 from tensors import matrix, mat2ten, tensor
-from read import transform_position
+from fslib import transform_position
 from funcs import *
 from symmetrize import symmetr,params_trans
 

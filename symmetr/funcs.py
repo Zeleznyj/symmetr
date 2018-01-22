@@ -10,7 +10,7 @@ import math
 import sympy
 import numpy as np
 
-from read import transform_position
+from fslib import transform_position
 from tensors import matrix, mat2ten,tensor
 from rename import rename
 
