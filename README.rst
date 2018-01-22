@@ -269,3 +269,8 @@ This code is distributed under the `MPL 2.0
 license <https://www.mozilla.org/en-US/MPL/2.0/FAQ/>`__.
 
 If the code is used in any research that leads to a publication, it would be appreciated if the code would be cited in the publication. 
+
+Contact
+--------
+
+If you have any issues or questions, you can contant me by email at jakub.zelezny@gmail.com or create issue here on bitbucket.
