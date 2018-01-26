@@ -23,6 +23,14 @@ Download the repository as a zip file from `this link <https://bitbucket.org/zel
 
 This will create a folder called linear-response-symmetry.
 
+To use findsym, you need to set up environment variable ISODATA. In bash you do this by
+
+::
+
+    export ISODATA=install_dir/findsym/
+
+where install_dir is the directory in which the code is located.
+
 If you want to later update the code, run:
 
 ::
