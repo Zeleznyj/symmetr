@@ -6,7 +6,7 @@ Symmetr is a program for determining various symmetry properties of magnetic and
 How to install
 --------------
 
-The program currently only works on linux. Although the program itself could be run on any operating system since it's written in python, most of the features rely on the findsym code from the `isotropy suite <http://stokes.byu.edu/iso/isolinux.php>`__, which only works on linux. Findsym is now included in the repository so it does not have
+The program currently only works on linux. If you use a different OS, you can run the program using docker, see `here <https://bitbucket.org/zeleznyj/linear-response-symmetry/wiki/docker>`__ . Although the program itself could be run on any operating system since it's written in python, most of the features rely on the findsym code from the `isotropy suite <http://stokes.byu.edu/iso/isolinux.php>`__, which only works on linux. Findsym is now included in the repository so it does not have
 to be installed separately. See the findsym/findsym.txt file for info on the input format for findsym.
 
 For running the code python 2.7 is required, in addition to sympy and nympy libraries. Sympy is a symbolic library for python.
