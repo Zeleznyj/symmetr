@@ -32,7 +32,7 @@ class tensor:
             You can also access x011 by t['x011'].
     """
 
-    def __init__(self,kind,dim1,dim2,name='x'):
+    def __init__(self,kind,dim1,dim2,name='x',ind_types=None):
         """
         Creates a symbolic tensor.
 
@@ -41,12 +41,19 @@ class tensor:
             dim1 (int): How many values can each index have.
             dim2 (int): How many indeces are there in the tensor.
             name (optional[str]): Name of the symbolic variables. Defaults to 'x'.
+            ind_types (optinal[tuple]): Specifies whether individual indeces are covariant
+                or contravariant. 1 specifies contravariant and -1 covariant. If not specified
+                all the indeces are assumed contravariant.
         """
 
         self.inds = makeinds(dim1,dim2)
         self.dim1 = dim1
         self.dim2 = dim2
         self.name = name
+        if ind_types is None:
+            self.ind_types = (1,)*self.dim2
+        else:
+            self.ind_types = ind_types
         if kind == 's':
             self.v = {}
             for ind in self.inds:
@@ -68,6 +75,7 @@ class tensor:
                 self.x[ind] = self.v[n_ind]
         if type_found == False:
             sys.exit('wrong tensor type')
+
     def __getitem__(self,key):
         if type(key) == tuple:
             return self.t[key]
@@ -186,6 +194,52 @@ class tensor:
         else:
             print self
 
+    def is_contravar(self,i):
+        """Checkes if the index i is contravariant."""
+        if self.ind_types[i] == 1:
+            return True
+        elif self.ind_types[i] == -1:
+            return False
+        else:
+            raise Exception('Wrong ind type')
+
+    def is_covar(self,i):
+        """Checkes if the index i is covariant."""
+        if self.ind_types[i] == 1:
+            return False
+        elif self.ind_types[i] == -1:
+            return True
+        else:
+            raise Exception('Wrong ind type')
+
+    def convert(self,T):
+        """
+        Return the tensor transormed by coordinate transformation matrix T.
+
+        Args:
+            T (matrix): Coordinate transformation matrix. T transforms from A to B, ie Tx_A = x_B.
+
+        Returns:
+            ten_T (tensor): the transformed tensor
+        """
+        
+        mat1 = T
+        mat2 = T.inv().T
+
+        ten_T = tensor(0,self.dim1,self.dim2,ind_types=self.ind_types)
+        for ind1 in ten_T:
+            for ind2 in self:
+                factor = 1
+                for i in range(self.dim2):
+                    if self.is_contravar(i):
+                        factor *= mat1[ind1[i],ind2[i]]
+                    else:
+                        factor *= mat2[ind1[i],ind2[i]]
+                ten_T[ind1] += factor*self[ind2]
+        
+        return ten_T
+
+
 class matrix(tensor):
 
      def __init__(self,kind,dim1,name='x'):
@@ -254,7 +308,10 @@ def makeinds(dim1,dim2):
                      else:
                          num.append([i]+n)
      for i in range(len(num)):
-         num[i] = tuple(num[i])
+         if isinstance(num[i], (int,long)):
+             num[i] = (num[i],)
+         else:
+             num[i] = tuple(num[i])
 
      return num
 

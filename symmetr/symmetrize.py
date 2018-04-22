@@ -293,6 +293,48 @@ def symmetrize_linres(symmetries,op1,op2,op3=None,proj=-1,debug=False,debug_time
 
     return X
 
+def symmetrize_res_general(symmetries,op_types,op_contravar,proj=-1,debug=False,debug_time=False,debug_Y=False,\
+        T=None,sym_format='findsym'):
+
+    X1 = tensor('s',3,len(op_types),ind_types=op_contravar)
+    X2 = tensor('s',3,len(op_types),ind_types=op_contravar)
+
+    X = []
+    X.append(X1)
+    X.append(X2)
+
+    syms_sel = []
+    for sym in symmetries:
+        
+        if debug:
+            print 'Symmetry:' 
+            print sym
+            print ''
+            if proj != -1:
+                print 'Symmetry transforms the atom ', proj, ' into atom ', sym_type(proj,sym)
+                if sym_type(proj,sym) != proj:
+                    print 'Skipping symmetry'
+                    print ''
+
+        #if there is a projection set up we only consider symmetries that keep the atom invariant
+        if proj == -1 :
+            take_sym = True
+        elif sym_type(proj,sym) == proj:
+            take_sym = True
+        else:
+            take_sym = False
+
+        if take_sym:
+            syms_sel.append(sym)
+
+    for l in range(2):
+        def trans_func(sym,Xl,params):
+            return transform_tensor(sym,Xl,op_types,l,T=T,sym_format=sym_format)
+        X[l] = symmetr(syms_sel,X[l],trans_func,None,debug=debug,\
+                debug_time=debug_time,debug_Y=debug_Y)
+
+    return X
+
 def symmetr_AB(syms,X,op1,op2,atom1,atom2,T=None):
     """
     Tries to transform the tensor projected on one atom to a different atom

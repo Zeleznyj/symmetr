@@ -495,6 +495,81 @@ def transform_tensor_3op(tensor_current,sym,op1,op2,op3,l,T=None,sym_format='fin
 
     return trans
 
+def transform_tensor(ten,sym,op_types,T_rev_comp,T=None,sym_format='findsym'):
+
+    mats = []
+    for i in range(ten.dim2):
+        mat = sym2mat(sym,op_type=op_types[i],sym_format=sym_format)
+        if T is not None:
+            mat_T = T * mat * T.inv()
+            mats.append(mat_T)
+
+    ten_R = tensor(0,ten.dim1,ten.dim2,ind_types=ten.ind_types)
+
+    for ind1 in ten_R:
+        for ind2 in ten:
+            factor = 1
+            for i in range(ten.dim2):
+                if ten.is_contravar(i):
+                    factor *= mats[i][ind1[i],ind2[i]]
+                else:
+                    mat_iT = mats[i].inv().T
+                    factor *= mat_iT[ind1[i],ind2[i]]
+            if sym[3] == '-1' and T_rev_comp == 1:
+                factor *= -1
+            ten_R[ind1] += factor*ten[ind2]
+
+    return ten_R
+
+
+def transform_tensor_general(ten,sym,P_trans,T_trans,T=None,sym_format=None):
+
+    if sym_format == 'findsym' or sym_format == 'mat':
+        if sym[3] == '1':
+            has_T = False
+        elif sym[3] == '1':
+            has_T = True
+        mat = sym2mat(sym,op_type='x',sym_format=sym_format)
+
+    if sym_format is None:
+        if sym[1] == 1:
+            has_T = False
+        elif sym[0] == -1:
+            has_T = True
+        mat = sym[0]
+
+    if mat.det() != 1 or mat.det() != -1:
+        raise Exception('The determinant of transformation matrix it not 1 or -1.')
+    #mat_P is purely rotation - it does not include space or time inversions
+    #we get rid of the inversion since we add the inversion part at the end
+    mat = mat.det() * mat
+
+    if T is not None:
+        mat = T * mat * T.inv()
+
+    mat_iT = mat.inv().T
+
+    ten_R = tensor(0,ten.dim1,ten.dim2,ind_types=ten.ind_types)
+
+    for ind1 in ten_R:
+        for ind2 in ten:
+            factor = 1
+            for i in range(ten.dim2):
+                if self.is_contravar(i):
+                    factor *= mat[ind1[i],ind2[i]]
+                else:
+                    factor *= mat_iT[ind1[i],ind2[i]]
+            #If the symmetry contains time-reversal and T_trans == -1 there will be additional minus
+            if has_T and T_trans == -1:
+                factor *= -1
+            #If the symmetry contains inversion and P_trans == -1 there will be additional minus
+            if mat.det() == -1 and P_trans == -1:
+                factor *= -1
+            ten_R[ind1] += factor*ten[ind2]
+
+    return ten_R
+
+
 def convert_tensor(ten,T):
     """
     Converts a tensor to a different coordinate system.
@@ -617,6 +692,7 @@ def convert_tensor_3op(ten,T):
             ten_T[ind1] += factor*ten[ind2]
     
     return ten_T
+
 
 def convert_pos(poss,T,shift=np.array([0,0,0])):
     #converts a positions by a matrix T and shifts them by shift

@@ -87,6 +87,8 @@ class options:
             if self['op1'] == self['op2'] and self['op3'] == None and self['group'] and not self['ig_op1eqop2']:
                 raise InputError('You have to set \'--ignore-op1e1op2\' when using group name input and two same operators \
                             since this is not implemented yet.')
+            if self['res_general'] and (self['equiv'] or self['op3'] or self['exp'] != -1 or self['atom2'] != -1):
+                        raise InputError('This is not implemented yet')
         if self['mode'] == 'mham':
             if self['group'] is not None:
                 raise InputError('group input is not allowed for mham')
@@ -162,6 +164,7 @@ def parse(clargs=None):
     parser_mham.add_argument('-e','--equivalent',action='store_const',const=True,default=False,\
             help='Finds the magnetic Hamiltonian also magnetic sites related to the input one by a symmetry operation.',\
             dest='equiv')
+    parser_res.add_argument('--generalized-mode',action='store_const',const=True,default=False,help='')
 
     if clargs != None:
         args = parser.parse_args(clargs.split())
@@ -219,15 +222,31 @@ def parse(clargs=None):
             return op2
 
     if args_dict['mode'] == 'res':
-        args_dict['op2'] = convert_op2(args_dict['op2'])
-        if '.' in args_dict['op1']:
-            op1s = args_dict['op1'].split('.')
-            args_dict['op3'] = args_dict['op2']
-            args_dict['op1'] = convert_op1(op1s[0])
-            args_dict['op2'] = convert_op1(op1s[1])
-        else:
+        if '.' in args_dict['op2'] or args_dict['op2'] == '0' or args_dict['generalized_mode']:
+            args_dict['res_general'] = True
+            op_types1 = args_dict['op1'].split('.')
+            for i,op in enumerate(op_types1):
+                op_types1[i] = convert_op1(op)
+            if args_dict['op2'] == '0':
+                op_types2 = []
+            else:
+                op_types2 = args_dict['op2'].split('.')
+                for i,op in enumerate(op_types2):
+                    op_types2[i] = convert_op2(op)
+            args_dict['op_types'] = op_types1 + op_types2
+            args_dict['op_lengths'] = (len(op_types1),len(op_types2))
             args_dict['op3'] = None
-            args_dict['op1'] = convert_op1(args_dict['op1'])
+        else:
+            args_dict['res_general'] = False
+            args_dict['op2'] = convert_op2(args_dict['op2'])
+            if '.' in args_dict['op1']:
+                op1s = args_dict['op1'].split('.')
+                args_dict['op3'] = args_dict['op2']
+                args_dict['op1'] = convert_op1(op1s[0])
+                args_dict['op2'] = convert_op1(op1s[1])
+            else:
+                args_dict['op3'] = None
+                args_dict['op1'] = convert_op1(args_dict['op1'])
 
     opt = options(args_dict)
 

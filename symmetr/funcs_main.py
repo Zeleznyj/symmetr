@@ -277,6 +277,25 @@ def sym_exp(opt,printit=False):
 
     return X
 
+def sym_res_general(opt,printit=False):
+
+    #the symmetry operations given in the basis used by findsym
+    syms = symT.get_syms(opt)
+    #transformation matrix from the basis used by findsym to the user defined basis
+    T = symT.get_T(opt)
+
+    op_contravar = (1,)*opt['op_lengths'][0] + (-1,)*opt['op_lengths'][1] 
+    X = symmetrize.symmetrize_res_general(syms,opt['op_types'],op_contravar,proj=opt['atom'],T=T,\
+                    debug=opt['debug_sym'],debug_time=opt['debug_time'],debug_Y=opt['debug_symY'])
+
+    if printit:
+        print 'First part of the response tensor:'
+        X[0].pprint()
+        print 'Second part of the response tensor:'
+        X[1].pprint()
+    
+    return X
+
 def sym_res(opt,printit=False):
     """A wrapper function that returns the appropriate response tensor based on the input options.
 
@@ -284,10 +303,13 @@ def sym_res(opt,printit=False):
         opt (class options): stores all the input arguments. Only some are used here.
         printit (optional[boolean]): if true this prints the output
     """
-    if opt['exp'] == -1:
-        return sym_linres(opt,printit=printit)
+    if opt['res_general']:
+        return sym_res_general(opt,printit=printit)
     else:
-        return sym_exp(opt,printit=printit)
+        if opt['exp'] == -1:
+            return sym_linres(opt,printit=printit)
+        else:
+            return sym_exp(opt,printit=printit)
 
 def sym_mham(opt,printit=False):
     T = symT.get_T(opt,nonmag=True)
