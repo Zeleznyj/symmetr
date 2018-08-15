@@ -98,7 +98,7 @@ The program can return the result in different bases (coordinate systems). If fi
    the findsym input. That is, if the conventional basis used in findsym input is given by three lattice vectors, then the cartesian basis vectors are simply: (1,0,0), (0,1,0), (0,0,1). If the conventional basis is given using the form 2 as a,b,c,alpha,beta,gamma, then the conventional basis vectors are defined only up to a rotation. We choose a convention such that the lattice vector c is along the (001) direction and the lattice vector b lies in the [100] plane. 
 #. **abc** - Conventional crystallographic unit cell - this is the unit cell used in
    crystallographic tables. This is the basis in which findsym specifies the symmetry operations and is defined by vectors a,b,c in the findsym output.
-#. **custom** - You can define a custom coordinate system in the findsym input file. Add a keyword *axes* at the end of the findsym input file and define the three basis vectors each on separate line. These are given in the **cart** coordinate system.
+#. **custom** - You can define a custom coordinate system in the findsym input file. Add a keyword *axes:* at the end of the findsym input file and define the three basis vectors each on separate line. These are given in the **cart** coordinate system.
 #. **abc\_o** - Orthogonalized cell - this is an orthogonal coordinate
    system (not a unit cell in general) that has always z in direction of
    c, y in the plane bc and x orthogonal to z and y. This is an
