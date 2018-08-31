@@ -7,9 +7,8 @@ import re
 import numpy as np
 import sympy 
 from tensors import matrix
-from funcs import sym2mat
-from funcs import sym_type
 from fslib import r_sym
+from symmetry import Symmetry,findsym2sym
 
 dirname, filename = os.path.split(os.path.abspath(__file__))
 sys.path.append(str(dirname))
@@ -47,7 +46,8 @@ def read_all_syms(hexag):
     syms = r_sym(syms_list,syms_only=True)
     mats = []
     for sym in syms:
-        mats.append(sym2mat(sym,op_type='x'))
+        sym = findsym2sym(sym)
+        mats.append(sym.get_R('x'))
 
     return mats
 
@@ -147,7 +147,8 @@ def noso_syms(syms,mag_conf,hexag,prec=1e-5,debug=False):
             for j in range(3):
                 for k in range(3):
                     Y[i*3+j,j*3+k] = mag_conf[mag_is[i]][k]
-                Y[i*3+j,9] = mag_conf[sym_type(mag_is[i]+1,sym)-1][j]
+                #Y[i*3+j,9] = mag_conf[sym_type(mag_is[i]+1,sym)-1][j]
+                Y[i*3+j,9] = mag_conf[sym.permutations[mag_is[i]+1]-1][j]
 
         if debug: 
             print ''
@@ -188,13 +189,13 @@ def noso_syms(syms,mag_conf,hexag,prec=1e-5,debug=False):
                     print 'The matrix is not compatible with the magnetic order.'
 
             if fits:
-                if mat.det() != int(sym[3]):
+                if mat.det() == 1 and sym.has_T:
                     fits = False
                     if debug:
                         print 'Improper spin rotation, thus not taking this matrix.'
             if fits:
-                sym_new = list(sym)
-                sym_new[2] = mat
+                sym_new = sym.copy()
+                sym_new.Rs = mat
                 syms_noso.append(sym_new)
 
         if debug:

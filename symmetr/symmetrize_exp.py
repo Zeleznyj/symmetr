@@ -12,77 +12,10 @@ import numpy as np
 
 from tensors import matrix, mat2ten, tensor
 from fslib import transform_position
-from funcs import *
 from symmetrize import symmetr,params_trans
+from symT import convert_vec
 
-def symmetrize_exp(symmetries,op1,op2,order,proj=-1,T=None,debug=False,debug_Y=False,debug_time=False):
-    """
-    Returns a symmetrical form of a tensor, which describes a term in an expansion of linear response tensor in magnetization.
-
-    Args:
-        symmetries: The symmetry operations.
-        op1 (string): The type of the first operator.
-            Can be set to either 's', which means spin or 'v' which means velocity.
-        op2 (string): The type of the second operator.
-        order: The order of the expansion term. Zeroth order corresponds to rank 2 tensor, first order to rank 3 etc.
-        proj (Optional[int]): Determines projection on atom. Defaults to -1.
-            If set to -1, there is no projection.
-            If set to positive integer, it determines atom number.
-        debug (Optional[boolean]): Defaults to false. If set to true, additional debug output is printed.
-        debug_Y (Optional[boolean]): Defaults to false. If set to true, the Y matrix is printed. This can be very large.
-        debug_time (Optional[boolean]): Defaults to false. If set to true, information about how long each step takes.
-
-    Returns:
-        X: The most general form of the tensor allowed by symmetry.
-    """
-
-    #This defines the starting tensor.
-    #Uses a symbolic tensor class made using sympy.
-    
-    X = tensor('s',3,order+2)
-
-    if debug:
-        print ''
-        print '======= Starting symmetrizing ======='
-
-    #we do a loop over all symmetry operations, for each symmetry, we find what form the response matrix can have, when the system has this symmetry
-    #for next symmetry we take the symmetrized matrix from the previous symmetry as a starting point
-    syms_sel = []
-    for sym in symmetries:
-        
-        if debug:
-            print 'Symmetry:' 
-            print sym
-            print ''
-            if proj != -1:
-                print 'Symmetry transforms the atom ', proj, ' into atom ', sym_type(proj,sym)
-                if sym_type(proj,sym) != proj:
-                    print 'Skipping symmetry'
-                    print ''
-
-        #if there is a projection set up we only consider symmetries that keep the atom invariant
-        if proj == -1 :
-            take_sym = True
-        elif sym_type(proj,sym) == proj:
-            take_sym = True
-        else:
-            take_sym = False
-        
-        #we only take the symmetry operations that don't contain time-reversal
-        #those with time-reversal give no new information
-        if sym[3] == '-1':
-            take_sym = False
-
-        if take_sym:
-            syms_sel.append(sym)
-
-    params = params_trans(op1,op2,None,order % 2,T,'findsym')
-    X = symmetr(syms_sel,X,transform_exptensor_params,params,debug=debug,debug_time=debug_time,debug_Y=debug_Y)
-
-    return X
-
-
-def create_rank2(ten,xyz=False):
+def create_rank2(ten,n_op=2,xyz=False):
     """
     Creates a rank 2 tensor that includes magnetic moment explicitely.
     """
@@ -115,14 +48,43 @@ def create_rank2(ten,xyz=False):
             X[ind] = ten[ind]
     return X
 
-def print_tensor(ten,latex=False,xyz=False,no_newline=False):
+def sub_m(ten,n_op,xyz=False):
+    
+    X = tensor(0,3,n_op)
+
+    if ten.dim2 > n_op:
+        m = {}
+        for i in range(3):
+            if xyz:
+                names = ['m_x','m_y','m_z']
+                name = names[i]
+            else:
+                name = 'm%s' % i
+            m[i] = sympy.symbols(name)
+        for ind in ten:
+            M = 1
+            for i in range(n_op,len(ind)):
+                M *= m[ind[i]]
+            ind_m = []
+            for i in range(n_op):
+                ind_m.append(ind[i])
+            ind_m = tuple(ind_m)
+            X[ind_m] += ten[ind]*M
+
+    else:
+        for ind in ten:
+            X[ind] = ten[ind]
+
+    return X
+
+def print_tensor(ten,n_op,latex=False,xyz=False,no_newline=False):
     """
     Prints the expansion tensor in a nice form.
 
     Not tested for higher order than 1!!!
     """
     
-    X = create_rank2(ten,xyz=xyz)
+    X = sub_m(ten,n_op,xyz=xyz)
 
     if not latex:
         X.pprint()
@@ -212,6 +174,122 @@ def index_from_1(X,rank=2):
 
         return X
 
+def is_collinear(mags,prec=1e-5):
+    res = True
+    first = sorted(list(mags.keys()))[0]
+    for i in mags:
+        if abs(mags[first].dot(mags[i])) < 1-prec:
+            res = False
+            break
+
+    return res
+
+def convert_mags(mags,sym):
+    mags_R = {}
+    for atom in mags:
+        mags_R[atom] = convert_vec(mags[atom],sym.get_R('s'))
+    mags_Rp = {}
+    perms = sym.permutations
+    for atom in mags:
+        mags_Rp[perms[atom]] = mags_R[atom]
+
+    return mags_Rp
+
+def get_L_trans(mags,sym,debug=False):
+
+    initial_signs = []
+    
+    first = sorted(list(mags.keys()))[0]
+    for atom in mags:
+        if mags[first].dot(mags[atom]) > 0:
+            initial_signs.append(1)
+        else:
+            initial_signs.append(-1)
+
+    mags_R = convert_mags(mags,sym)
+    signs = []
+    for atom in mags_R:
+        if mags_R[first].dot(mags_R[atom]) > 0:
+            signs.append(1)
+        else:
+            signs.append(-1)
+
+    if debug:
+        print ''
+        print 'transformed magnetic moments:'
+        for atom in  sorted(list(mags_R.keys())):
+            print atom, ":"
+            sympy.pprint(mags_R[atom])
+
+        print 'initial signs of magnetic moments'
+        print initial_signs
+
+        print 'signs of the trasnformed moments'
+        print signs
+
+    if initial_signs != signs:
+        return None
+    else:
+        mag_0_R = convert_vec(mags[first],sym.get_R('s'))
+        sign_0 = mag_0_R.dot(mags[first])
+        if sign_0 > 0:
+            sign = 1
+        else:
+            sign = -1
+        return sign * sym.get_R('s')
+
+def def_syms_L(mags,syms,prec=1e-5,debug=False):
+
+    #select nonzero magnetic moments
+    mags_dict = {}
+    for i,mag in enumerate(mags):
+        if mag.norm() > prec:
+            mags_dict[i+1] = mag
+
+    if debug:
+        print 'Starting defining L transformation'
+        print 'Nonzero magnetic moments'
+        print mags,mags_dict
+        for atom in  sorted(list(mags_dict.keys())):
+            print atom, ":"
+            sympy.pprint(mags_dict[atom])
+
+    if len(mags_dict) == 0:
+        print "!!!Warning!!!: no magnetic moments defined in the input. Assuming a ferromagnetic system."
+        for sym in syms:
+            sym.def_custom_R('L',sym.get_R('s'))
+        syms_L = syms
+
+    else:
+
+        if not is_collinear(mags_dict,prec):
+            raise Exception("Expansions only work for collinear magnetic systems")
+
+        syms_L = []
+        for sym in syms:
+
+            if debug:
+                print ''
+                print 'Taking symmetry:'
+                print sym
+
+            L_trans = get_L_trans(mags_dict,sym,debug=debug)
+            if debug:
+                print 'L_trans:'
+                print L_trans
+            if L_trans is not None:
+                sym.def_custom_R('L',L_trans)
+                syms_L.append(sym)
+
+    return syms_L
+
+
+
+
+
+
+
+            
 
 
 

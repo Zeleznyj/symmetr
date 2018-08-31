@@ -5,6 +5,26 @@ import re
 import sys
 import os
 
+def find_group(name):
+
+    dirname, filename = os.path.split(os.path.abspath(__file__))
+    with open(dirname+'/../findsym/mag_groups.txt') as f:
+        lines = f.readlines()
+    
+    found = False
+    for line in lines:
+        line = line.split(',',1)
+        name_text = line[0].split()[2]
+        name_num = line[0].split()[1]
+        if name == name_text or name == name_num:
+            found = True
+            break
+
+    if not found:
+        return None,None
+    else:
+        return name_text,name_num
+
 def group_sym(name,debug=False):
     """Returns symmetry operations for a given group.
 

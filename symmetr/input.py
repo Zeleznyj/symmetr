@@ -60,18 +60,6 @@ class options:
             if self['equiv'] and self['group']:
                 raise InputError('Equivalent configurations are not possible with group name input. Use findsym input file.')
 
-            if self['op3'] and self['equiv']:
-                raise InputError('Equivalent configurations not implemented for three component response function.')
-
-            if self['op3'] and (self['exp'] != -1):
-                raise InputError('Expansions are not implemented for three component response function.')
-
-            if self['op3'] and (self['atom2'] != -1):
-                raise InputError('Second site projection not implemented for three component response function.')
-
-            if self['op3'] and (self['equiv']):
-                raise InputError('Equivalent magnetic configurations are not implemented for three operators.')
-
             if self['noso'] and self['group']:
                 raise InputError('Spin-orbit coupling cannot be ignored when group name is used as an input.')
 
@@ -84,11 +72,6 @@ class options:
             if self['equiv'] and ( self['exp'] != -1 ):
                 raise InputError('You cannot use --equiv and --exp together. Equivalent configurations not supported\
                         for expansions.')
-            if self['op1'] == self['op2'] and self['op3'] == None and self['group'] and not self['ig_op1eqop2']:
-                raise InputError('You have to set \'--ignore-op1e1op2\' when using group name input and two same operators \
-                            since this is not implemented yet.')
-            if self['res_general'] and (self['equiv'] or self['op3'] or self['exp'] != -1 or self['atom2'] != -1):
-                        raise InputError('This is not implemented yet')
         if self['mode'] == 'mham':
             if self['group'] is not None:
                 raise InputError('group input is not allowed for mham')
@@ -105,7 +88,6 @@ def parse(clargs=None):
     Args:
         clargs (optional[string]): The input arguments to be parsed.
     """
-
 
     parser_parent = argparse.ArgumentParser(add_help=False)
     parser_parent.add_argument('-f','--findsym',help='Findsym input file',default=None,dest='inp')
@@ -125,6 +107,9 @@ def parse(clargs=None):
     parser_parent.add_argument('--latex',action='store_const',const=True,default=False,help='If set, the matrices are printed also in a latex format.')
     parser_parent.add_argument('--print-pos',action='store_const',const=True,default=False,help='If set prints the atomic sites used in\
             findsym.')
+    parser_parent.add_argument('--symbolic',action='store_true',default=False)
+    parser_parent.add_argument('--num-prec',dest='num_prec',default=1e-3)
+    parser_parent.add_argument('--print-format',dest='print_format',default=None,type=int)
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,\
             description=textwrap.dedent('''\
@@ -135,7 +120,6 @@ def parse(clargs=None):
     subparsers = parser.add_subparsers(dest='mode')
     parser_res = subparsers.add_parser('res',parents=[parser_parent])
     parser_mham = subparsers.add_parser('mham',parents=[parser_parent])
-
 
     parser_res.add_argument('op1', help='The opeator of which response we are evaluating.',metavar='A')
     parser_res.add_argument('op2', help='The field which induces the response.',metavar='F')
@@ -156,6 +140,11 @@ def parse(clargs=None):
     parser_res.add_argument('--noso',action='store_const',const=True,default=False,help='Symmetry without spin-orbit coupling.')
     parser_res.add_argument('--ignore-op1eqop2',action='store_const',const=True,default=False,help='When op1=op2, the even part has to be \
             symmetric and the odd part antisymmetric. If this is selected, this property is ignored.',dest='ig_op1eqop2')
+    parser_res.add_argument('--same-op-sym',dest='same_op_sym',action='store_true',default=None)
+    parser_res.add_argument('--ignore-same-op-sym',dest='same_op_sym',action='store_false',default=None)
+    parser_res.add_argument('--sym-inds',default=None,help='')
+    parser_res.add_argument('--asym-inds',default=None,help='')
+    parser_res.add_argument('--remove-zeros',action='store_const',const=True,default=False)
 
     parser_mham.add_argument('-s','--sites',help='Atomic sites for which the Magnetic Hamiltonian is considered.\
             List of integeres separated by commas with no spaces, e.g. 1,2. Corresponds to the order of the \
@@ -164,7 +153,6 @@ def parse(clargs=None):
     parser_mham.add_argument('-e','--equivalent',action='store_const',const=True,default=False,\
             help='Finds the magnetic Hamiltonian also magnetic sites related to the input one by a symmetry operation.',\
             dest='equiv')
-    parser_res.add_argument('--generalized-mode',action='store_const',const=True,default=False,help='')
 
     if clargs != None:
         args = parser.parse_args(clargs.split())
@@ -222,38 +210,52 @@ def parse(clargs=None):
             return op2
 
     if args_dict['mode'] == 'res':
-        if '.' in args_dict['op2'] or args_dict['op2'] == '0' or args_dict['generalized_mode']:
-            args_dict['res_general'] = True
-            op_types1 = args_dict['op1'].split('.')
-            for i,op in enumerate(op_types1):
-                op_types1[i] = convert_op1(op)
-            if args_dict['op2'] == '0':
-                op_types2 = []
-            else:
-                op_types2 = args_dict['op2'].split('.')
-                for i,op in enumerate(op_types2):
-                    op_types2[i] = convert_op2(op)
-            args_dict['op_types'] = op_types1 + op_types2
-            args_dict['op_lengths'] = (len(op_types1),len(op_types2))
-            args_dict['op3'] = None
+        op_types1 = args_dict['op1'].split('.')
+        for i,op in enumerate(op_types1):
+            op_types1[i] = convert_op1(op)
+        if args_dict['op2'] == '0':
+            op_types2 = []
         else:
-            args_dict['res_general'] = False
-            args_dict['op2'] = convert_op2(args_dict['op2'])
-            if '.' in args_dict['op1']:
-                op1s = args_dict['op1'].split('.')
-                args_dict['op3'] = args_dict['op2']
-                args_dict['op1'] = convert_op1(op1s[0])
-                args_dict['op2'] = convert_op1(op1s[1])
+            op_types2 = args_dict['op2'].split('.')
+            for i,op in enumerate(op_types2):
+                op_types2[i] = convert_op2(op)
+        args_dict['op_types'] = op_types1 + op_types2
+        args_dict['op_lengths'] = (len(op_types1),len(op_types2))
+        args_dict['op3'] = None
+
+    if args_dict['mode'] == 'res':
+        if args_dict['same_op_sym'] is None:
+            if len(args_dict['op_types']) == 2:
+                args_dict['same_op_sym'] = True
             else:
-                args_dict['op3'] = None
-                args_dict['op1'] = convert_op1(args_dict['op1'])
+                args_dict['same_op_sym'] = False
+
+    if args_dict['symbolic']:
+        args_dict['num_prec'] = None
+    else:
+        args_dict['num_prec'] = float(args_dict['num_prec'])
+
+    def parse_sym_inds(sym_inds):
+        if sym_inds is not None:
+            sym_inds_c = args_dict['sym_inds'].split('::')
+            sym_inds_c[0] = sym_inds_c[0].split(':')
+            sym_inds_c[1] = sym_inds_c[1].split(':')
+            sym_inds = [[],[]]
+            for i in range(2):
+                for ind in sym_inds_c[i]:
+                    if ind != '':
+                        (j,Pj) = ind.split(',')
+                        sym_inds[i].append((int(j),int(Pj)))
+
+        return sym_inds
+
+    if args_dict['mode'] == 'res':
+        sym_inds = parse_sym_inds(args_dict['sym_inds'])
+        asym_inds = parse_sym_inds(args_dict['asym_inds'])
 
     opt = options(args_dict)
 
     if (not opt['transform_result']) and (not opt['transform_syms']):
-        if opt['mode'] == 'res' and opt['op3'] is None:
-            opt['transform_result'] = True
-        else:
             opt['transform_syms'] = True
 
     return opt
