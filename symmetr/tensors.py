@@ -298,7 +298,7 @@ class tensor:
         for ind in self:
             symbols = self[ind].free_symbols
             for symbol in symbols:
-                if abs(self[ind].coeff(symbol)) < 1e-14:
+                if abs(self[ind].coeff(symbol)) < 1e-6:
                     self[ind] = self[ind].subs(symbol,0)
 
     def evalf(self,acc=15):
