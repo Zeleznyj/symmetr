@@ -40,10 +40,13 @@ def read_fs_inp(inp,clean=True):
 def run_fs(inp):
     dirname, filename = os.path.split(os.path.abspath(__file__))
     fin_c = read_fs_inp(inp)
+    my_env = os.environ.copy()
+    my_env["ISODATA"] = dirname + '/../findsym/'
     try:  
-        fs = subprocess.Popen([dirname+'/../findsym/findsym'],stdin=subprocess.PIPE,stdout=subprocess.PIPE)
+        fs = subprocess.Popen([dirname+'/../findsym/findsym'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,env=my_env)
         out = fs.communicate(input=''.join(fin_c))[0]
         lines = out.split('\n')
+        print lines
     except:
         sys.exit('Error in findsym input') 
     return lines
@@ -64,7 +67,9 @@ def run_fs_nonmag(inp):
     
     #sends the nonmagnetic input file to findsym
     dirname, filename = os.path.split(os.path.abspath(__file__))
-    fs = subprocess.Popen([dirname+'/../findsym/findsym'],stdin=subprocess.PIPE,stdout=subprocess.PIPE)
+    my_env = os.environ.copy()
+    my_env["ISODATA"] = dirname + '/../findsym/'
+    fs = subprocess.Popen([dirname+'/../findsym/findsym'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,env=my_env)
     out_nm = fs.communicate(input=''.join(fin_cnm))[0]
     lines_nm = out_nm.split('\n')
 
