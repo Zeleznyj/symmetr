@@ -129,6 +129,9 @@ def find_equiv(Xs,mag,syms,atom,debug=False):
     if debug:
         print 'starting find_equiv'
 
+    for sym in syms:
+        print sym
+
     #extracts the starting configuration, only the magnetic moments are needed
     start_conf = {}
     for i in range(len(mag)):

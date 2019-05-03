@@ -228,8 +228,14 @@ def sym_mham(opt,printit=False):
         #H = mham.convert_mag_ham(H,T)
         H.convert(T)
 
+    if opt['remove_zeros']:
+        H.remove_zeros()
+
     if opt['equiv']:
         H_E = mham.equiv(H,opt['sites'],syms,T)
+        if opt['remove_zeros']:
+            for sites in H_E:
+                H_E[sites].remove_zeros()
 
     if printit:
         if H.dim2 == 2:

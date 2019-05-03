@@ -110,6 +110,7 @@ def parse(clargs=None):
     parser_parent.add_argument('--symbolic',action='store_true',default=False)
     parser_parent.add_argument('--num-prec',dest='num_prec',default=1e-3)
     parser_parent.add_argument('--print-format',dest='print_format',default=None,type=int)
+    parser_parent.add_argument('--remove-zeros',action='store_const',const=True,default=False)
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,\
             description=textwrap.dedent('''\
@@ -144,7 +145,6 @@ def parse(clargs=None):
     parser_res.add_argument('--ignore-same-op-sym',dest='same_op_sym',action='store_false',default=None)
     parser_res.add_argument('--sym-inds',default=None,help='')
     parser_res.add_argument('--asym-inds',default=None,help='')
-    parser_res.add_argument('--remove-zeros',action='store_const',const=True,default=False)
 
     parser_mham.add_argument('-s','--sites',help='Atomic sites for which the Magnetic Hamiltonian is considered.\
             List of integeres separated by commas with no spaces, e.g. 1,2. Corresponds to the order of the \
