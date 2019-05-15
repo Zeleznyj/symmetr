@@ -1,22 +1,24 @@
-even part of the response tensor:
+Symmetry restricted form of the tensor, even part
 [ 0   x01  0]
 [           ]
 [x10   0   0]
 [           ]
 [ 0    0   0]
-odd part of the response tensor:
+
+Symmetry restricted form of the tensor, odd part
 [ 0   0  x02]
 [           ]
 [ 0   0   0 ]
 [           ]
 [x20  0   0 ]
-First part of the response tensor, atom 2
+
+Symmetry restricted form of the tensor, even part, atom 2
 [ 0    -x01  0]
 [             ]
 [-x10   0    0]
 [             ]
 [ 0     0    0]
-Second part of the response tensor, atom 2
+Symmetry restricted form of the tensor, odd part, atom 2
 [ 0   0  x02]
 [           ]
 [ 0   0   0 ]

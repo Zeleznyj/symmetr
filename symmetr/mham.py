@@ -6,15 +6,13 @@ Module for finding a symmetrical form of classical magnetic Hamiltonians.
 """
 import sympy as sp
 
-from symmetrize import symmetr
-from funcs import *
+from symmetrize import symmetr,SymmetrOpt
 from tensors import tensor
 
 #testing
 import sys
 import os
 import subprocess
-import funcs
 
 import sympy
 
@@ -35,7 +33,7 @@ def convert_mag_ham(H,T):
     """
 
     Ti = T.inv()
-    H_T = tensor(0,H.dim1,H.dim2)
+    H_T = H.copy0()
     for ind1 in H:
         for ind2 in H_T:
             factor = 1
@@ -54,10 +52,9 @@ class params_trans_ham:
 
 def trans_sites(sites,sym):
     sites_t = []
+    perms = sym.permutations
     for s in sites:
-        for t in sym[4]:
-            if t[0] == s:
-                sites_t.append(t[1])
+        sites_t.append(perms[s])
     return sites_t
 
 def trans_mag_ham(H,sym,params):
@@ -92,12 +89,8 @@ def trans_mag_ham(H,sym,params):
         if sorted(sites) != sorted(sites_t):
             return None
 
-    R = sym2mat(sym) # converts the symmetry operation to a matrix format
-    # if params.T is set then transform to a different basis by T
-    if params.T is not None:
-        R_T = funcs.convert_sym_mat(R,params.T)
-        R = R_T
-    R = R[2] # select the matrix corresponding the spin transformation
+    R = sym.get_R('s') # select the matrix corresponding the spin transformation
+    RiT = R.inv().T
     if params.debug:
         print 'symmetry:'
         print sym
@@ -133,12 +126,12 @@ def trans_mag_ham(H,sym,params):
         return tuple(ind_p)
 
     # transforms the tensor, taking the permutatin of atoms into account
-    H_t = tensor(0,H.dim1,H.dim2)
+    H_t = H.copy0()
     for ind in H_t:
         for ind2 in H_t:
             factor = 1
             for i in range(len(ind)):
-                factor *= R[ind[i],ind2[i]]
+                factor *= RiT[ind[i],ind2[i]]
             if params.check_sym:
                 ind_n = perm_ind(ind,perm)
             else:
@@ -187,7 +180,7 @@ def trans_mag_Ham_perms(H,perm,params):
         H_T: the transformed Hamiltonian
     
     """
-    H_t = tensor(0,H.dim1,H.dim2)
+    H_t = H.copy0()
     for ind in H:
         ind_t = list(ind)
         ind_t[perm[0]] = ind[perm[1]]
@@ -223,7 +216,7 @@ def equiv(H,sites,syms,T=None,debug=False):
 
     return Asites
 
-def sym_mag_ham(sites,syms,T=None,debug=False):
+def sym_mag_ham(sites,syms,T=None,s_opt=None):
     """Returns the symmetrized magnetic Hamiltonian
 
     Args:
@@ -236,14 +229,15 @@ def sym_mag_ham(sites,syms,T=None,debug=False):
     """
 
     order = len(sites)
-    H = tensor('s',3,order)
+    ind_types = (-1,)*len(sites)
+    H = tensor('s',3,order,ind_types=ind_types)
     
-    params = params_trans_ham(sites,debug=debug,T=T,check_sym=True)
+    params = params_trans_ham(sites,debug=s_opt.debug,T=T,check_sym=True)
     # first symmetrize with normal symmetry operation
-    Hs = symmetr(syms,H,trans_mag_ham,params)
+    Hs = symmetr(syms,H,trans_mag_ham,params,s_opt)
     # The Hamiltonian must also be symmetric under any permutation of identical atoms
     perms = find_perms(sites)
-    Hs = symmetr(perms,Hs,trans_mag_Ham_perms,params,debug=False)
+    Hs = symmetr(perms,Hs,trans_mag_Ham_perms,params,s_opt)
 
     return Hs
 

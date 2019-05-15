@@ -1,7 +1,8 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
-from funcs import *
+
+import sympy
 
 class confs:
     """
@@ -54,7 +55,7 @@ class confs:
 
         return out
 
-    def pprint(self,eo,m=-1,latex=False):
+    def pprint(self,eo=None,m=-1,latex=False,print_format=None):
         #prints everything in a (somewhat) nice form
         #if m is set it prints only configuration m
 
@@ -71,12 +72,12 @@ class confs:
             for p in self.confs[n]:
                 print 'atom %s, m = %s, %s, %s' %(p,self.confs[n][p][0].round(4),self.confs[n][p][1].round(4),self.confs[n][p][2].round(4))
                 #print 'atom %s, m = %s, %s, %s' %(p,self.confs[n][p][0],self.confs[n][p][1],self.confs[n][p][2])
-            print '%s part:' % eo[0]
-            self.Xs[n][0].pprint()
+            print 'First part of the response tensor'
+            self.Xs[n][0].pprint(print_format=print_format)
             if latex:
                 self.Xs[n][0].pprint(latex=True)
-            print '%s part:\n' % eo[1]
-            self.Xs[n][1].pprint()
+            print 'Second part of the response tensor'
+            self.Xs[n][1].pprint(print_format=print_format)
             if latex:
                 self.Xs[n][1].pprint(latex=True)
             print ''
@@ -106,8 +107,7 @@ class confs:
 
         return confs_t
 
-
-def find_equiv(X,op1,op2,atom,syms,mag,op3=None,debug=False):
+def find_equiv(Xs,mag,syms,atom,debug=False,round_prec=None):
     """
     Takes a tensor and a list of nonmagnetic symmetries and find the form of the tensor for all equivalent configurations.
 
@@ -140,7 +140,7 @@ def find_equiv(X,op1,op2,atom,syms,mag,op3=None,debug=False):
 
     #creates a conf class, which stores all the configurations and adds the starting one
     C = confs()
-    C.add(start_conf,X)
+    C.add(start_conf,Xs)
 
     if debug:
         C.pprint(0)
@@ -148,20 +148,21 @@ def find_equiv(X,op1,op2,atom,syms,mag,op3=None,debug=False):
     for sym in syms: #a loop over all symmetries
         
         #if there is a projection take only the symmetry that keeps the atom invariant
-        if atom == -1 or atom == sym_type(atom,sym):
+        if atom == -1 or sym.permutations[atom] == atom:
 
             if debug:
-                print 'taking sym (in the nonmagnetic basis): '
-                sympy.pprint(sym)
+                print ''
+                print 'taking sym : '
+                print sym
                 print ''
 
             #transforms the starting configuration by the symmetry
             conf_t = {}
             for p in start_conf:
                 mom = sympy.Matrix([[start_conf[p][0],start_conf[p][1],start_conf[p][2]]])
-                mom_T = sym[2] * mom.T
+                mom_T = sym.get_R('s') * mom.T
                 mom_T = mom_T.T
-                conf_t[sym_type(p,sym)] = sympy.Matrix([[mom_T[0],mom_T[1],mom_T[2]]])
+                conf_t[sym.permutations[p]] = sympy.Matrix([[mom_T[0],mom_T[1],mom_T[2]]])
 
             if debug:
                 print 'symmetry transforms starting configuration to configuration:'
@@ -174,18 +175,17 @@ def find_equiv(X,op1,op2,atom,syms,mag,op3=None,debug=False):
                 if debug:
                     print 'configuration has not been found before'
                 Xt = []
-                for l in range(2):
-                    if op3 == None:
-                        Xt.append(transform_matrix(X[l],sym,op1,op2,l,sym_format='mat'))
-                    else:
-                        Xt.append(transform_tensor_3op(X[l],sym,op1,op2,op3,l,sym_format='mat'))
+                Xt.append(Xs[0].transform(sym))
+                Xt.append(Xs[1].transform(sym))
                 if debug:
                     print 'even part converted to:'
                     Xt[0].pprint()
                     print 'odd part converted to:'
                     Xt[1].pprint()
+                if round_prec is not None:
+                    for X in Xt:
+                        X.round(round_prec)
                 C.add(conf_t,Xt)
     
     return C
-
 

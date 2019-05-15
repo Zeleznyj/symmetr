@@ -8,12 +8,14 @@ import os
 import symmetrize
 import symmetrize_exp as st
 import fslib
-import funcs
 import find_eq
 import symT
 import mham
+import groups
 from tensors import tensor,matrix
+import symmetry
 
+import sympy
 from sympy import sympify as spf
 
 #this finds the location of the main.py file and ads this location to the path where modules are searched
@@ -21,236 +23,135 @@ from sympy import sympify as spf
 dirname, filename = os.path.split(os.path.abspath(__file__))
 sys.path.append(str(dirname))
 
-def same_op_sym(X,T,debug=False,debug_rename=False):
-    """
-    If op1==op2 then additional requirement is that even part of the tensor is symmetric
-    and the odd part antisymmetric.
+def def_symmetr_opt(opt):
+    s_opt = symmetrize.SymmetrOpt(num_prec=opt['num_prec'],
+                                   debug=opt['debug_sym'],
+                                   debug_time=opt['debug_time'],
+                                   debug_Y=opt['debug_symY'],
+                                   round_prec=opt['round_prec'])
+    return s_opt
 
-    Args:
-        X[matrix,matrix]: the tensors to be symmetrized
-        T: transformation matrix to some cartesian basis
+def sym_res_nonexp(opt,printit=False):
 
-    Returns:
-        X_S: the symmetrized (antisymmetrized) part of X
-    """
-
-    if debug:
-        print ''
-        print 'matrix in the original system before (anti-)symmetrizing'
-        print 'even part'
-        X[0].pprint()
-        print 'odd part'
-        X[1].pprint()
-
-    X_C  = funcs.convert_X(X,T,debug=debug_rename)
-
-    if debug:
-        print ''
-        print 'matrix in the cartesian system before (anti-)symmetrizing'
-        print 'even part'
-        X_C[0].pprint()
-        print 'odd part'
-        X_C[1].pprint()
-
-    X_C[0] = funcs.sym_part(X_C[0])
-    X_C[1] = funcs.asym_part(X_C[1])
-
-    if debug:
-        print ''
-        print 'matrix in the cartesian system after (anti-)symmetrizing'
-        print 'even part'
-        X_C[0].pprint()
-        print 'odd part'
-        X_C[1].pprint()
-
-    X_S = funcs.convert_X(X_C,T.inv(),debug=debug_rename,ignore_ren_warning=True)
-
-    if debug:
-        print ''
-        print 'matrix in the original system after (anti-)symmetrizing'
-        print 'even part'
-        X_S[0].pprint()
-        print 'odd part'
-        X_S[1].pprint()
-
-    return X_S
-
-
-def sym_linres(opt,printit=False):
-    """
-    Finds the response tensors for linear response based on the input arguments.
-
-    All the arguments are stored in opt. printit controls whether the output is printed.
-    The number of output arguments depends on input parameters!
-
-    Args:
-        opt (class options): stores all the input arguments. Only some are used here.
-        printit (optional[boolean]): if true this prints the output
-    Returns:
-        X([X1,X2]): where X1 and X2 are the two components of the linear response
-        X_2[X1_2,X2_2): the two componets for second atom. Only outputed if opt['atom2'] is set.
-        C(class confs): The linear response tensors for all equivalent magnetic configurations.
-            Only outputed if opt['equiv'] is set.
-    """
-
-    op1 = opt['op1']
-    op2 = opt['op2']
-    op3 = opt['op3']
-
-    eo =  symmetrize.even_odd(op1,op2,op3)
-    
     #the symmetry operations given in the basis used by findsym
-    syms = symT.get_syms(opt)
+    if opt['noso']:
+        syms = symT.get_syms_noso(opt)
+    else:
+        syms = symT.get_syms(opt)
+
     #transformation matrix from the basis used by findsym to the user defined basis
     T = symT.get_T(opt)
-    if opt['noso']:
-        syms_noso = symT.get_syms_noso(opt)
+    if opt['num_prec'] is not None:
+        T = sympy.N(T)
+    #if transform_result is not set we transform the symmetries
+    if not opt['transform_result']:
+        for sym in syms:
+            sym.convert(T,in_place=True)
 
-    #This is a hacky code that will need to be replaced in the future.
-    if not opt['ig_op1eqop2']:
-        if op1 == op2 and op3 == None:
-            
-            lines = fslib.run_fs(opt['inp'])
-            (vec_a,vec_b,vec_c) = fslib.r_basis(lines)
-            fin = fslib.read_fs_inp(opt['inp'])
+    op_contravar = (1,)*opt['op_lengths'][0] + (-1,)*opt['op_lengths'][1]
 
-            T_m = symT.create_Tm(vec_a,vec_b,vec_c)
-            T_i = symT.create_Ti(fin)
-            T_cart1 = T_i*T_m
-            T_cart2 = T_i*T_m*T.inv()
+    op_types = opt['op_types']
+    X1 = tensor('s',3,len(op_types),ind_types=op_contravar)
+    X1.def_trans(ind_trans=op_types,T_comp=1)
+    X2 = tensor('s',3,len(op_types),ind_types=op_contravar)
+    X2.def_trans(ind_trans=op_types,T_comp=-1)
 
-    #If this option is set then the tensors are symmetrized in the findsym basis and then transformed
+    eo = symmetrize.even_odd([X1,X2])
+
+    same_op_sym = False
+    if opt['same_op_sym']:
+        if len(set(op_types)) == 1:
+            same_op_sym = True
+            #the metric is for the findsym basis
+            G = symT.get_metric(opt)
+            if opt['num_prec'] is not None:
+                G = sympy.N(G)
+            if not opt['transform_result']:
+                G = T * G * T.T
+
+            X1.def_metric(G)
+            X2.def_metric(G)
+
+    s_opt = def_symmetr_opt(opt)
+
+    Xs = []
+    Xs.append(symmetrize.symmetrize_res(syms,X1,opt['atom'],s_opt))
+    Xs.append(symmetrize.symmetrize_res(syms,X2,opt['atom'],s_opt))
+
+    if same_op_sym:
+        for i in range(2):
+            Xs[i] = symmetrize.symmetrize_same_op(Xs[i],s_opt)
+
+    if opt['atom2'] != -1:
+        Xs_2 = symmetrize.symmetr_AB(syms,Xs,opt['atom'],opt['atom2'],round_prec=opt['round_prec'])
+
+    #if transform result is set we convert the symmetrized tensor
     if opt['transform_result']:
-        if not opt['noso']:
-            X = symmetrize.symmetrize_linres(syms,op1,op2,op3=op3,proj=opt['atom'],\
-                    debug=opt['debug_sym'],debug_time=opt['debug_time'],debug_Y=opt['debug_symY'])
-        if opt['noso']:
-            X = symmetrize.symmetrize_linres(syms_noso,op1,op2,op3=op3,proj=opt['atom'],\
-                    debug=opt['debug_sym'],sym_format='mat',debug_time=opt['debug_time'],debug_Y=opt['debug_symY'])
+        for i in range(2):
+            Xs[i].convert(T)
+        if opt['atom2'] != -1:
+            for i in range(2):
+                Xs_2[i].convert(T)
 
-        if not opt['ig_op1eqop2']:
-            if op1 == op2 and op3 == None:
-
-                X = same_op_sym(X,T_cart1,opt['debug_op1eqop2'],opt['debug_rename'])
-
-        if op3 == None:
-            if not opt['no_rename']:
-                X_T = funcs.convert_X(X,T,debug=opt['debug_rename'])
-            else:
-                X_T = funcs.convert_X(X,T,ren=False,debug=opt['debug_rename'])
-        else:
-            X_T = []
-            X_T.append(funcs.convert_tensor_3op(X[0],T))
-            X_T.append(funcs.convert_tensor_3op(X[1],T))
-
-    #If transform_result is not set then the tensors are symmetrized direclty in the basis chosen by user
-    else:
-        if not opt['noso']:
-            X_T = symmetrize.symmetrize_linres(syms,op1,op2,op3=op3,proj=opt['atom'],T=T,\
-                    debug=opt['debug_sym'],debug_time=opt['debug_time'],debug_Y=opt['debug_symY'])
-        if opt['noso']:
-            X_T = symmetrize.symmetrize_linres(syms_noso,op1,op2,op3=op3,proj=opt['atom'],T=T,\
-                    sym_format='mat',debug=opt['debug_sym'],debug_time=opt['debug_time'],debug_Y=opt['debug_symY'])
-
-        if not opt['ig_op1eqop2']:
-            if op1 == op2 and op3 == None:
-
-                X_T = same_op_sym(X_T,T_cart2,opt['debug_op1eqop2'],opt['debug_rename'])
 
     if printit:
-        if op3 == None:
-            print 'Symmetry restricted form of the tensor, %s part' % eo[0]
-            X_T[0].pprint()
-            if opt['latex']:
-                X_T[0].pprint(latex=opt['latex'])
-            print ''
+        print '{0} part of the response tensor:'.format(eo[0])
+        Xs[0].pprint(print_format=opt['print_format'])
+        if opt['latex']:
+            Xs[0].pprint(print_format=opt['print_format'],latex=True)
+        print '{0} part of the response tensor:'.format(eo[1])
+        Xs[1].pprint(print_format=opt['print_format'])
+        if opt['latex']:
+            Xs[1].pprint(print_format=opt['print_format'],latex=True)
 
-            print 'Symmetry restricted form of the tensor, %s part' % eo[1]
-            X_T[1].pprint()
-            if opt['latex']:
-                X_T[1].pprint(latex=opt['latex'])
-            print ''
-
-        else:
-            spins=['x','y','z']
-            print '%s part:' % eo[0]
-            for i in range(3):
-                print 'op1=',spins[i]
-                X_T[0].reduce(0,i).pprint(latex=opt['latex'])
-                print ''
-
-            print '%s part:' % eo[1]
-            for i in range(3):
-                print 'op1=',spins[i]
-                X_T[1].reduce(0,i).pprint(latex=opt['latex'])
-                print ''
-
-    #If atom2 is set then the response tensors for atom1 are transformed to atom2
-    if opt['atom2'] != -1 and op3 == None:
-
-        X_T_2 = symmetrize.symmetr_AB(syms,X_T,op1,op2,opt['atom'],opt['atom2'],T=T)
-
-        if X_T_2 == None:
-            print 'no relation with atom %s found' % opt['atom2']
-        else:
-            if printit:
-                print 'Symmetry restricted form of the tensor, %s part, atom %s' % (eo[0],opt['atom2'])
-                X_T_2[0].pprint()
+        
+        if opt['atom2'] != -1:
+            if Xs_2 is None:
+                print 'no relation with atom %s found' % opt['atom2']
+            else:
+                print 'First part of the response tensor, atom %s' % (opt['atom2'])
+                Xs_2[0].pprint(print_format=opt['print_format'])
                 if opt['latex']:
-                    X_T_2[0].pprint(latex=True)
-                print 'Symmetry restricted form of the tensor, %s part, atom %s' % (eo[1],opt['atom2'])
-                X_T_2[1].pprint()
+                    Xs_2[0].pprint(print_format=opt['print_format'],latex=True)
+                print 'Second part of the response tensor, atom %s' % (opt['atom2'])
+                Xs_2[1].pprint(print_format=opt['print_format'])
                 if opt['latex']:
-                    X_T_2[1].pprint(latex=True)
+                    Xs_2[1].pprint(print_format=opt['print_format'],latex=True)
                 print ''
-
-    #if equiv is set then we transform the tensor to all equivalent magnetic configurations
+    
     if opt['equiv']:
-        fin_c = fslib.read_fs_inp(opt['inp'])
-        mags = fslib.r_mag_fin(fin_c)
-        lines = fslib.run_fs(opt['inp'])
-        lines_nm = fslib.run_fs_nonmag(opt['inp'])
-        [vec_a,vec_b,vec_c] = fslib.r_basis(lines)
-        [vec_a_nm,vec_b_nm,vec_c_nm] = fslib.r_basis(lines_nm)
-        syms_nm = symT.get_syms_nonmag(opt)
 
-        #reads the magnetic moments from the input file
-        mags = fslib.r_mag_fin(fin_c)
-        #transformation matrix from the magnetic basis to the input one
-        Tm = symT.create_Tm(vec_a,vec_b,vec_c)
+        mags = symT.get_mags(opt['inp']) #magnetic moments 
+        syms_nm = symT.get_syms_nonmag(opt) #the symmetry operations for nonmagnetic system
 
-        #transformation matrix from the nonmagnetic basis to the input one
-        Tnm = symT.create_Tm(vec_a_nm,vec_b_nm,vec_c_nm)
+        Tm = symT.get_Tm(opt['inp']) #transformation matrix from the input basis to the basis used by findsym
+        #transformation matrix form the input basis to the basis used by findsym for nonmagnetic system 
+        Tnm = symT.get_Tm(opt['inp'],nonmag=True) 
 
-        #convert the magnetic moments to the selected basis
-        #T*Tm.inv() is a matrix that transforms the magnetic moments to the selected basis because:
-        #Tm.inv() converts to the magnetic basis and then T converts to the selected
-        mags_T = funcs.convert_vecs(mags,T*Tm.inv())
-        #convert the non-magnetic symmetry operations to the chosen basis
-        syms_nm_T = funcs.convert_sym_mat(syms_nm,T*Tm.inv()*Tnm,sym_format='findsym')
+        #magnetic moments are in the input basis, we need to convert them to the user selected basis
+        #First convert to the magnetic findsym basis and from that to the user selected one.
+        mags = symT.convert_vecs(mags,T*Tm.inv())
+        #The symmetry operations are in the findsym uses for nonmagnetic input. We first transform to the input
+        #basis, then to the magnetic findsym basis and then to the user chosen one.
+        T2 = T*Tm.inv()*Tnm
+        for sym in syms_nm:
+            sym.convert(T2,in_place=True)
 
-        #this outputs all the equaivalen configurations
-        #C is a conf class, it contains both the configurations and the transformed tensors
-        C = find_eq.find_equiv(X_T,opt['op1'],opt['op2'],opt['atom'],syms_nm_T,mags_T,op3=opt['op3'],\
-                debug=opt['debug_equiv'])
+        C = find_eq.find_equiv(Xs,mags,syms_nm,opt['atom'],debug=opt['debug_equiv'],round_prec=opt['round_prec'])
         if printit:
             print ''
             print 'Equivalent configurations:'
-            C.pprint(eo,latex=opt['latex'])
-
-    #based on the chosen options different variables are returned
-    if not opt['equiv']:
-        if opt['atom2'] == -1:
-            return X_T
+            C.pprint(print_format=opt['print_format'])
+    
+    if opt['atom2'] == -1:
+        if opt['equiv']:
+            return Xs,C
         else:
-            return X_T,X_T_2
+            return Xs
     else:
-        if opt['atom2'] == -1:
-            return X_T,C
-        else:
-            return X_T,X_T_2,C
+        return Xs,Xs_2
 
-def sym_exp(opt,printit=False):
+def sym_res_exp(opt,printit=False):
     """
     Finds the tensor describing expansion term of linear response in the direction of magnetization.
 
@@ -263,15 +164,38 @@ def sym_exp(opt,printit=False):
         print '!!!The input group must be one of the nonmagnetic point groups, otherwise the ouput will be wrong.!!!' 
         syms_nm = symT.get_syms(opt)
         T = symT.get_T(opt)
+        mags = []
     else:
         T = symT.get_T(opt,nonmag=True)
         syms_nm = symT.get_syms_nonmag(opt)
+        mags = symT.get_mags(opt['inp'])
 
-    X = st.symmetrize_exp(syms_nm,opt['op1'],opt['op2'],opt['exp'],proj=opt['atom'],T=T,\
-            debug=opt['debug_sym'],debug_Y=opt['debug_symY'],debug_time=opt['debug_time'])
+    if not opt['transform_result']:
+        for sym in syms_nm:
+            sym.convert(T,in_place=True)
+        mags = symT.convert_vecs(mags,T)
+
+    syms_L = st.def_syms_L(mags,syms_nm,debug=False)
+
+    op_contravar = (1,)*opt['op_lengths'][0] + (-1,)*opt['op_lengths'][1] + (-1,) * opt['exp']
+    op_types = opt['op_types'] + ['L'] * opt['exp']
+    X = tensor('s',3,len(op_types),ind_types=op_contravar)
+    X.def_trans(ind_trans=op_types,T_comp=1)
+    T_inv = symmetry.create_T()
+    T_inv.def_custom_R('L',T_inv.Rs)
+    if not X.is_even(T_inv):
+        X.def_trans(ind_trans=op_types,T_comp=-1)
+    s_opt = def_symmetr_opt(opt)
+
+    X = symmetrize.symmetrize_res(syms_L,X,opt['atom'],s_opt)
+    
+    if opt['transform_result']:
+        X.convert(T)
+
 
     if printit:
-        st.print_tensor(X)
+        n_op = opt['op_lengths'][0] + opt['op_lengths'][1] 
+        st.print_tensor(X,n_op)
         if opt['latex']:
           st.print_tensor(X,latex=opt['latex'])
 
@@ -284,27 +208,38 @@ def sym_res(opt,printit=False):
         opt (class options): stores all the input arguments. Only some are used here.
         printit (optional[boolean]): if true this prints the output
     """
+    if printit and opt['group'] is not None:
+        group_name,group_num = groups.find_group(opt['group'])
+        print 'group name: ', group_name, 'group number: ', group_num
     if opt['exp'] == -1:
-        return sym_linres(opt,printit=printit)
+        return sym_res_nonexp(opt,printit=printit)
     else:
-        return sym_exp(opt,printit=printit)
+        return sym_res_exp(opt,printit=printit)
 
 def sym_mham(opt,printit=False):
     T = symT.get_T(opt,nonmag=True)
     syms = symT.get_syms_nonmag(opt)
-    if opt['transform_syms']:
-        H_T = mham.sym_mag_ham(opt['sites'],syms,T=T,debug=opt['debug_sym'])
-    else:
-        H = mham.sym_mag_ham(opt['sites'],syms,T=None,debug=opt['debug_sym'])
-        H_T = mham.convert_mag_ham(H,T)
+
+    if not opt['transform_result']:
+        for sym in syms:
+            sym.convert(T,in_place=True)
+
+    s_opt = def_symmetr_opt(opt)
+    H = mham.sym_mag_ham(opt['sites'],syms,None,s_opt)
+
+    if opt['transform_result']:
+        #H = mham.convert_mag_ham(H,T)
+        H.convert(T)
+
     if opt['equiv']:
-        H_E = mham.equiv(H_T,opt['sites'],syms,T)
+        H_E = mham.equiv(H,opt['sites'],syms,T)
+
     if printit:
-        if H_T.dim2 == 2:
+        if H.dim2 == 2:
             print 'Hamiltonian term in matrix form:'
-            H_T.pprint(latex=opt['latex'])
+            H.pprint(latex=opt['latex'])
             print ''
-        mham.print_Ham(H_T,opt['sites'],latex=opt['latex'])
+        mham.print_Ham(H,opt['sites'],latex=opt['latex'])
         if opt['equiv']:
             print ''
             print 'Hamiltonian terms for all equivalent combinations of sites:'
@@ -313,7 +248,7 @@ def sym_mham(opt,printit=False):
                 mham.print_Ham(H_E[sites],sites,latex=opt['latex'])
                 print ''
     if not opt['equiv']:
-        return H_T
+        return H
     else:
-        return H_T,H_E
+        return H,H_E
 

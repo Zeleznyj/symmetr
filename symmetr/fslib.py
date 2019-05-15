@@ -226,11 +226,15 @@ def  r_pos(lines, fix_m=[]):
     return positions
 
 
-def r_sym(lines,debug=False,syms_only=False):
+def r_sym(lines,debug=False,syms_only=False,num_prec=None):
 #read symmetries 
 #format: number of symmetry, space transformation, time transformation, switch controlling
 #if there is time-reversal, list of tuples which show to which position each position transforms
 #under this symmetry
+     if num_prec is None:
+         tolerance = r_tolerance(lines)
+         num_prec = max(1.1e-5,tolerance)
+     debug = False
      for i in range(len(lines)):
          if "_space_group_symop.magn_operation_mxmymz" in lines[i]:
              pos_syms = i
@@ -264,6 +268,7 @@ def r_sym(lines,debug=False,syms_only=False):
                  group = re.findall('[0-9]+\.[0-9]+',lines[i])
 
          positions = r_pos(lines)
+         check_pos_prec(positions,num_prec)
 
          #magnetic group tables
          #needs a file 'tables_wyckoff.txt' which are magnetic tables with all unneccessary information deleted
@@ -317,28 +322,38 @@ def r_sym(lines,debug=False,syms_only=False):
                  print 'taking symmetry', syms[l]
              sym_trans = []
              for i in range(len(positions)):
-                 trans = transform_position(positions[i],syms[l],0.001)
+                 trans = transform_position(positions[i],syms[l],num_prec)
                  if debug:
                      print 'taking position:', positions[i]
                      print 'transformed to:', trans
+                 found_atoms = []
                  for j in range(len(positions)):
-                     if equal_vectors(trans,positions[j][0:6],0.001):
-                         sym_trans.append((positions[i][6],positions[j][6]))
+                     if equal_vectors(trans[0:3],positions[j][0:3],num_prec):
+                         found_atoms.append(positions[j][6])
+                         #sym_trans.append((positions[i][6],positions[j][6]))
                          if debug:
                              print 'transformed atom identified as atom ', positions[j][6], ' with position ', positions[j]
                      else:
                          for k in range(len(shifts)):
                              sym_temp =['',['x+'+str(shifts[k][0]),'y+'+str(shifts[k][1]),'z+'+str(shifts[k][2])],['mx','my','mz']]
-                             pos_shift = transform_position(positions[j][0:6],sym_temp,0.001)
-                             if equal_vectors(trans,pos_shift,0.001):
-                                 sym_trans.append((positions[i][6],positions[j][6]))
+                             pos_shift = transform_position(positions[j][0:6],sym_temp,num_prec)
+                             if equal_vectors(trans[0:3],pos_shift[0:3],num_prec):
+                                 #sym_trans.append((positions[i][6],positions[j][6]))
+                                 found_atoms.append(positions[j][6])
                                  if debug:
                                      print 'transformed atom identified as atom ', positions[j][6], ' with position ', positions[j]
+                 if len(found_atoms) != 1:
+                    print found_atoms
+                    raise Exception('Problem with identifying transformation of atom {0}. '
+                            'Try changing --pos-prec.'.format(positions[i][6]))
+                 else:
+                    sym_trans.append((positions[i][6],found_atoms[0]))
+                        
 
              if len(sym_trans) != len(positions):
                  print syms[l]
                  print sym_trans
-                 sys.exit('Wrong number of transformed atoms. Something\'s wrong')
+                 raise Exception('Wrong number of transformed atoms. Try modifying --pos-prec parameter.')
              syms[l].append(list(sym_trans))
 
      return syms
@@ -366,5 +381,21 @@ def r_mag_fin(fin):
         elif (not start) and 'magnetic' in fin[i]:
             start = True
     return mags
+
+def r_tolerance(lines):
+    for line in lines:
+        if 'Tolerance:' in line:
+            num_prec = float(line.split(':')[1])
+    if abs(num_prec) < 1e-14:
+        num_prec = 1e-6
+    return num_prec
+
+def check_pos_prec(positions,num_prec):
+    for i,pos in enumerate(positions):
+        for j,pos2 in enumerate(positions):
+            if i != j:
+                if equal_vectors(pos[0:3],pos2[0:3],num_prec):
+                    raise Exception(
+                            'Atoms {0} and {1} too close together try lower --pos-prec'.format(pos[6],pos2[6]))
 
 

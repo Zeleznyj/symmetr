@@ -5,12 +5,34 @@
 based on user input.
 """
 
+from copy import deepcopy
+
 import fslib
 import sympy
-import funcs
 from sympy import sympify as spf
 from groups import group_sym
 from noso import noso_syms
+from symmetry import findsym2sym,matsym2sym
+from fractions import Fraction
+
+def make_rational(mat):
+    """Converts sympy matrix to a rational number form.
+
+    This is useful since sympy can work exactly with rational numbers so there are no floating point accuracy issues.
+    """
+
+    ncols = mat.cols
+    nrows = mat.rows
+    mat_r = sympy.zeros(mat.rows,mat.cols)
+
+    for i in range(nrows):
+        for j in range(ncols):
+            if type(mat[i,j]) == str and '\\' in mat[i,j]:
+                mat_r[i,j] = sympy.sympify(Fraction(mat[i,j]))
+            else:
+                mat_r[i,j] = sympy.sympify(Fraction(float(mat[i,j])))
+
+    return mat_r
 
 def create_Tm(vec_a,vec_b,vec_c):
 
@@ -28,7 +50,7 @@ def create_Tm(vec_a,vec_b,vec_c):
     T[1,2] = vec_c[1]
     T[2,2] = vec_c[2]
 
-    T = funcs.make_rational(T)
+    T = make_rational(T)
 
     return T
 
@@ -97,7 +119,7 @@ def get_syms(opt):
     if opt['inp']:
         #runs findsym and reads the output
         lines = fslib.run_fs(opt['inp'])
-        syms = fslib.r_sym(lines)
+        syms = fslib.r_sym(lines,num_prec = opt['pos_prec'])
 
     if opt['group']:
         atom = -1
@@ -120,6 +142,11 @@ def get_syms(opt):
                 syms_new.append(syms[i])
 
         syms = syms_new
+
+    syms_g = []
+    for sym in syms:
+        syms_g.append(findsym2sym(sym))
+    syms = syms_g
 
     return syms
 
@@ -276,6 +303,12 @@ def get_T(opt,nonmag=False):
 def get_syms_nonmag(opt):
     lines = fslib.run_fs_nonmag(opt['inp'])
     syms = fslib.r_sym(lines)
+    
+    syms_g = []
+    for sym in syms:
+        syms_g.append(findsym2sym(sym))
+    syms = syms_g
+
     return syms
 
 def get_syms_noso(opt):
@@ -289,11 +322,12 @@ def get_syms_noso(opt):
 
     Tm = create_Tm(vec_a,vec_b,vec_c)
     Tnm = create_Tm(vec_a_nm,vec_b_nm,vec_c_nm)
-    mags_T = funcs.convert_vecs(mags,Tm.inv())
+    mags_T = convert_vecs(mags,Tm.inv())
     syms_nm = get_syms_nonmag(opt)
-    syms_nm_T = funcs.convert_sym_mat(syms_nm,Tm.inv()*Tnm,sym_format='findsym')
+    for sym in syms_nm:
+        sym.convert(Tm.inv()*Tnm,in_place=True)
     hexag = is_hex(lines)
-    syms_noso = noso_syms(syms_nm_T,mags_T,hexag,debug=opt['debug_noso'])
+    syms_noso = noso_syms(syms_nm,mags_T,hexag,debug=opt['debug_noso'])
 
     if opt['syms_sel_noso'] != -1:
         syms_sel_noso = opt['syms_sel_noso'].split(',')
@@ -313,3 +347,111 @@ def get_syms_noso(opt):
         syms_noso = syms_noso_new
 
     return syms_noso
+
+def get_mags(inp):
+
+    fin_c = fslib.read_fs_inp(inp)
+    mags = fslib.r_mag_fin(fin_c)
+
+    return mags
+
+def convert_vec(vec,T):
+    vec_T = T*vec.T 
+    vec_T = vec_T.T
+    return vec_T
+
+def convert_vecs(mags,T):
+    """Converts a list of vectors by transform matrix T.
+    """
+
+    mags_T = []
+    for i,mag in enumerate(mags): 
+        mag_T = convert_vec(mag,T)
+        mags_T.append(mag_T)
+
+    return mags_T
+
+def get_Tm(inp,nonmag=False):
+
+    if not nonmag:
+        lines = fslib.run_fs(inp)
+    else:
+        lines = fslib.run_fs_nonmag(inp)
+
+    [vec_a,vec_b,vec_c] = fslib.r_basis(lines)
+    Tm = create_Tm(vec_a,vec_b,vec_c)
+
+    return Tm
+
+def get_metric(opt,debug=False):
+
+    if opt['group'] is not None:
+        #the metric tensor is trivial in the cartesian coordinate system
+        G = sympy.Matrix([[1,0,0],[0,1,0],[0,0,1]])
+        opt2 = deepcopy(opt)
+        T = get_T(opt2)
+        G = T.inv() * G * T.inv().T
+
+    else:
+        if debug:
+            print ''
+            print 'Get_metric debug output'
+            print '================================'
+        #read the basis vectors used by findsym
+        #they are given in the basis used in the findsym input
+        lines = fslib.run_fs(opt['inp'])
+        [vec_a,vec_b,vec_c] = fslib.r_basis(lines)
+
+        vec_a = sympy.Matrix(vec_a)
+        vec_b = sympy.Matrix(vec_b)
+        vec_c = sympy.Matrix(vec_c)
+
+        #create transformation matrix from the input basis to a cartesian basis
+        fin = fslib.read_fs_inp(opt['inp'],clean=False)
+        T_i = create_Ti(fin)
+
+        #Transform to a cartesian coordinate system
+        vec_a = T_i * vec_a
+        vec_b = T_i * vec_b
+        vec_c = T_i * vec_c
+
+        #calculate the dual basis vectors
+        V = vec_a.dot(vec_b.cross(vec_c))
+        vec_A = vec_b.cross(vec_c)/V
+        vec_B = vec_c.cross(vec_a)/V
+        vec_C = vec_a.cross(vec_b)/V
+
+        if debug:
+
+            print 'basis vectors'
+            print vec_a,vec_b,vec_c
+            print 'dual basis vectors'
+            print vec_A,vec_B,vec_C
+
+        A_l = vec_a.row_join(vec_b)    
+        A_l = A_l.row_join(vec_c)
+
+        A_L = vec_A.row_join(vec_B)    
+        A_L = A_L.row_join(vec_C)
+
+        G = A_l.LUsolve(A_L)
+        if debug:
+            print 'The metrix tensor'
+            sympy.pprint(G)
+            print 'The inverse of the metrix tensor'
+            sympy.pprint(G.inv())
+
+        if debug:
+            print 'metric tensor test'
+            for i in range(3):
+                a_I = 0*vec_a
+                for j in range(3):
+                    a_I += G.T[i,j]*A_l[:,j]
+                print a_I
+
+            print 'Get metric debug output end'
+            print '================================'
+            print ''
+
+    return G
+

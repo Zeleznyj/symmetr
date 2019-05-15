@@ -5,13 +5,16 @@ import re
 import copy
 import sys
 import math
+import time
 
 import sympy
 import numpy as np
+import numpy.linalg
+import scipy.linalg
+import mpmath   
 
 from tensors import matrix, mat2ten
 from fslib import transform_position
-from funcs import *
 from conv_index import *
 
 class params_trans:
@@ -23,7 +26,40 @@ class params_trans:
         self.T = T
         self.sym_format = sym_format
 
-def symmetr(syms,X,trans_func,params,debug=False,debug_time=False,debug_Y=False):
+def num_rref(Y,prec=15):
+
+    Y = np.matrix(Y)
+
+    pl,U = scipy.linalg.lu(Y,permute_l=True)
+    #P,L,U = mpmath.lu(Y)
+
+    print 'L,U decomposition'
+    print pl
+    print U
+
+    pivots = []
+    for i in range(U.shape[0]):
+        for j in range(U.shape[1]):
+            pivot_found = False
+            if U[i,j] != 0 and not pivot_found:
+                pivots.append(j)
+                U[i,:] /= U[i,j]
+                break
+    try:
+        numpy.linalg.inv(pl)
+    except:
+        print 'The PL matrix is singular. The output of the code may be wrong!!!!'
+    return U,pivots
+
+class SymmetrOpt:
+    def __init__(self,num_prec=None,debug=False,debug_time=False,debug_Y=False,round_prec=None):
+        self.num_prec = num_prec
+        self.debug = debug
+        self.debug_time = debug_time
+        self.debug_Y = debug_Y
+        self.round_prec = round_prec
+
+def symmetr(syms,X,trans_func,params,opt=None):
     """
     This symmetrizes a tensor X given a list of symmetries and a transformation function.
 
@@ -34,13 +70,19 @@ def symmetr(syms,X,trans_func,params,debug=False,debug_time=False,debug_Y=False)
         X: tensor - must be a tensor class
         trans_func: function that transforms the tensor X using symmetry sym
             trans_func must work in the following way:
-            X_trans = trans_func(sym,X,params)
+            X_trans = trans_func(X,sym,params)
             If trans_func returns None then the symmetry operation is ignored
         params: parameters to be sent to function trans_func
 
     Returns:
         X_trans: the symmetry restricted form of tensor X
     """
+    if opt is None:
+        opt = SymmetrOpt()
+    num_prec = opt.num_prec
+    debug = opt.debug
+    debug_time = opt.debug_time
+    debug_Y = opt.debug_Y
 
     if debug:
         print ''
@@ -54,14 +96,6 @@ def symmetr(syms,X,trans_func,params,debug=False,debug_time=False,debug_Y=False)
             print 'Symmetry:' 
             print sym
             print ''
-            try:
-                if params.T != None:
-                    transform_sym = True
-            except:
-                transform_sym = False
-            if transform_sym:
-                print 'transformed symmetry:'
-                print convert_sym_mat(sym,params.T)
 
         X_trans = trans_func(X,sym,params)
         if X_trans is None:
@@ -136,7 +170,10 @@ def symmetr(syms,X,trans_func,params,debug=False,debug_time=False,debug_Y=False)
 
         #this transforms the matrix into the Reduced row echelon form
         #piv are the indeces o the pivot columns
-        [rref,piv] = Y.rref()        
+        if num_prec is None:
+            [rref,piv] = Y.rref()
+        else:
+            [rref,piv] = Y.rref(iszerofunc=lambda x:abs(x)<num_prec)        
 
         if debug_time:
             t2 = time.clock()
@@ -148,7 +185,8 @@ def symmetr(syms,X,trans_func,params,debug=False,debug_time=False,debug_Y=False)
             sympy.pprint(Y)
             print ''
             print 'Reduced row echelon form and indeces of the pivot columns:'
-            sympy.pprint([rref,piv])
+            sympy.pprint(rref)
+            print piv
             print ''
 
         #a loop over all the pivots: it's the pivots that give interesting information
@@ -187,6 +225,9 @@ def symmetr(syms,X,trans_func,params,debug=False,debug_time=False,debug_Y=False)
             X.pprint()
             print ''
 
+    if opt.round_prec is not None:
+        X.round(opt.round_prec)
+        
     if debug:
         print 'Symmetrized tensor:'
         X.pprint()
@@ -195,89 +236,40 @@ def symmetr(syms,X,trans_func,params,debug=False,debug_time=False,debug_Y=False)
 
     return X
 
-def even_odd(op1,op2,op3):
+def even_odd(Xs):
     """Finds whether the first part of the response tensor is even or odd
     
     Args:
         op1,op2,op3: the operator types
         Returns: either ('even','odd') or ('odd','even')
     """
-    sym = [sympy.diag(1,1,1),0,sympy.diag(-1,-1,-1),'-1']
-    params = params_trans(op1,op2,op3,0,sym_format='mat')
-    if op3 is None:
-        X = matrix('s',3)
-    else:
-        X = tensor('s',3,3)
-    X_T = transform_tensor_params(X,sym,params)
-    if X_T == X:
+    if Xs[0].is_even() and not Xs[1].is_even():
         return('even','odd')
-    else:
+    elif not Xs[0].is_even() and Xs[1].is_even():
         return('odd','even')
-
-def symmetrize_linres(symmetries,op1,op2,op3=None,proj=-1,debug=False,debug_time=False,debug_Y=False,\
-        T=None,sym_format='findsym'):
-    """
-    Returns a symmetrical form of a response matrix for a given atom and given list of symmetries.
-
-    Args:
-        symmetries: A list of symmetry operations. In a format outputted by read.py.
-        op1 (string): First operator type.
-            's' for spin
-            'v' for velocity operator
-            'x' for position
-        op2 (string): Second operator type. 
-        proj (Optional[int]): Determines projection on atom. Defaults to -1.
-            If set to -1, there is no projection.
-            If set to positive integer, it determines atom number.
-        debug (Optional[boolean]): Defaults to false. If set to true, additional debug output is printed.
-        T (Default[sympy matrix): A linear response matrix. Defaults to None
-            If it is set, then the linear response matrix is used to transform the symmetry operations.
-            Symmetry operations are given in basis A. T transforms from A to B, ie Tx_A = x_B.
-            Primarily for debugging.
-
-    Outputs:
-        X ([X[0],X[1]]): A list which contains symmetrized form of the even and the odd part of the linear response tensor.
-    """
-
-    #this defines starting response matrix
-    #we repeat it twice, once for the even part and once for the odd part
-    #matrices are stored as tensor class, which is made using sympy
-    #matrix is a sublcass of tensor
-    
-    if op3 == None:
-        X1 = matrix('s',3)
-        X2 = matrix('s',3)
     else:
-        X1 = tensor('s',3,3)
-        X2 = tensor('s',3,3)
+        raise Exception('Wrong transformation under time-reversal')
 
-    X = []
-    X.append(X1)
-    X.append(X2)
 
-    if debug:
-        print ''
-        print '======= Starting symmetrizing ======='
+def symmetrize_res(symmetries,X,proj=-1,s_opt=None):
 
-    #we do a loop over all symmetry operations, for each symmetry, we find what form the response matrix can have, when the system has this symmetry
-    #for next symmetry we take the symmetrized matrix from the previous symmetry as a starting point
     syms_sel = []
     for sym in symmetries:
         
-        if debug:
+        if s_opt.debug:
             print 'Symmetry:' 
             print sym
             print ''
             if proj != -1:
-                print 'Symmetry transforms the atom ', proj, ' into atom ', sym_type(proj,sym)
-                if sym_type(proj,sym) != proj:
+                print 'Symmetry transforms the atom ', proj, ' into atom ', sym.permutations[proj]
+                if  sym.permutations[proj] != proj:
                     print 'Skipping symmetry'
                     print ''
 
         #if there is a projection set up we only consider symmetries that keep the atom invariant
         if proj == -1 :
             take_sym = True
-        elif sym_type(proj,sym) == proj:
+        elif sym.permutations[proj] == proj:
             take_sym = True
         else:
             take_sym = False
@@ -285,15 +277,45 @@ def symmetrize_linres(symmetries,op1,op2,op3=None,proj=-1,debug=False,debug_time
         if take_sym:
             syms_sel.append(sym)
 
-
-    for l in range(2):
-        params = params_trans(op1,op2,op3,l,T,sym_format)
-        X[l] = symmetr(syms_sel,X[l],transform_tensor_params,params,debug=debug,\
-                debug_time=debug_time,debug_Y=debug_Y)
+    def trans_func(X,sym,params):
+        return X.transform(sym)
+    X = symmetr(syms_sel,X,trans_func,None,s_opt)
 
     return X
 
-def symmetr_AB(syms,X,op1,op2,atom1,atom2,T=None):
+def symmetrize_same_op(X,s_opt=None):
+
+    perm = {}
+    perm[0] = 1
+    perm[1] = 0
+    perms=[perm] 
+
+    def trans_func(X,perm,params):
+        X_T = X.copy0()
+
+        for ind in X:
+            ind_T = [0]*len(ind)
+            for i in range(len(ind)):
+                ind_T[i] = ind[perm[i]]
+            ind_T = tuple(ind_T)
+            X_T[ind_T] = X.T_comp * X[ind]
+
+        ind_types = [0] * X.dim2
+        for i in range(X.dim2):
+            ind_types[i] = X.ind_types[perm[i]]
+        X_T.ind_types = tuple(ind_types)
+
+        for i in range(X.dim2):
+            if X_T.ind_types[i] != X.ind_types[i]:
+                X_T.reverse_index(i)
+
+        return X_T
+
+    X = symmetr(perms,X,trans_func,None,s_opt)
+        
+    return X
+
+def symmetr_AB(syms,X,atom1,atom2,round_prec=None):
     """
     Tries to transform the tensor projected on one atom to a different atom
 
@@ -317,13 +339,15 @@ def symmetr_AB(syms,X,op1,op2,atom1,atom2,T=None):
     for sym in syms:
         #there will usually be more symmetries that transform from atom1 to atom2, we need only one, as they all
         #give the same results
-        if sym_type(atom1,sym) == atom2 and not found:
+        if sym.permutations[atom1] == atom2 and not found:
             found = True
             for l in range(2):
-                X_trans.append(transform_matrix(X[l],sym,op1,op2,l,T=T))
+                X_trans.append(X[l].transform(sym))
 
     if found:
+        if round_prec is not None:
+            for X in X_trans:
+                X.round(round_prec)
         return X_trans
     else:
         return None
-

@@ -1,27 +1,30 @@
-even part of the response tensor:
+Symmetry restricted form of the tensor, even part
 [ 0   x01  0]
 [           ]
 [x10   0   0]
 [           ]
 [ 0    0   0]
-odd part of the response tensor:
+
+Symmetry restricted form of the tensor, odd part
 [ 0   0  x02]
 [           ]
 [ 0   0   0 ]
 [           ]
 [x20  0   0 ]
 
+
 Equivalent configurations:
 starting configuration:
 atom 1, m = 3.0000, 0, 0
 atom 2, m = -3.0000, 0, 0
-First part of the response tensor
+even part:
 [ 0   x01  0]
 [           ]
 [x10   0   0]
 [           ]
 [ 0    0   0]
-Second part of the response tensor
+odd part:
+
 [ 0   0  x02]
 [           ]
 [ 0   0   0 ]
@@ -31,13 +34,14 @@ Second part of the response tensor
 configuration 1
 atom 1, m = -3.0000, 0, 0
 atom 2, m = 3.0000, 0, 0
-First part of the response tensor
+even part:
 [ 0   x01  0]
 [           ]
 [x10   0   0]
 [           ]
 [ 0    0   0]
-Second part of the response tensor
+odd part:
+
 [ 0    0  -x02]
 [             ]
 [ 0    0   0  ]
@@ -47,13 +51,14 @@ Second part of the response tensor
 configuration 2
 atom 1, m = 0, 3.0000, 0
 atom 2, m = 0, -3.0000, 0
-First part of the response tensor
+even part:
 [ 0    -x10  0]
 [             ]
 [-x01   0    0]
 [             ]
 [ 0     0    0]
-Second part of the response tensor
+odd part:
+
 [0   0    0 ]
 [           ]
 [0   0   x02]
@@ -63,13 +68,14 @@ Second part of the response tensor
 configuration 3
 atom 1, m = 0, -3.0000, 0
 atom 2, m = 0, 3.0000, 0
-First part of the response tensor
+even part:
 [ 0    -x10  0]
 [             ]
 [-x01   0    0]
 [             ]
 [ 0     0    0]
-Second part of the response tensor
+odd part:
+
 [0   0     0  ]
 [             ]
 [0   0    -x02]
