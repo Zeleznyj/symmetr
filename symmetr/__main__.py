@@ -7,8 +7,12 @@ import funcs_main as fmain
 import symT
 import input
 import fslib
+from version import __version__
 
 opt = input.parse()
+
+if opt['version']:
+    print __version__
     
 if opt['print_syms']:
     syms = symT.get_syms(opt)

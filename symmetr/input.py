@@ -7,6 +7,7 @@ import argparse
 import sys
 import textwrap
 from math import log10
+from version import __version__
 
 class InputError(Exception):
     pass
@@ -123,6 +124,8 @@ def parse(clargs=None):
     The positions are read from the findsym output.\
     Default value is maximum of 1.1e-5 and findsym precision (second line of the findsym input file.')
     parser_parent.add_argument('--print-format',dest='print_format',default=None,type=int,help='Format for printing')
+    parser_parent.add_argument('--version',action='store_const',const=True,default=False,help=
+            'Print version.')
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,\
             description=textwrap.dedent('''\

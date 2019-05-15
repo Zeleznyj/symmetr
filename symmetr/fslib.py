@@ -46,7 +46,6 @@ def run_fs(inp):
         fs = subprocess.Popen([dirname+'/../findsym/findsym'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,env=my_env)
         out = fs.communicate(input=''.join(fin_c))[0]
         lines = out.split('\n')
-        print lines
     except:
         sys.exit('Error in findsym input') 
     return lines
