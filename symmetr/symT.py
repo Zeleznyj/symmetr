@@ -119,7 +119,7 @@ def get_syms(opt):
     if opt['inp']:
         #runs findsym and reads the output
         lines = fslib.run_fs(opt['inp'])
-        syms = fslib.r_sym(lines)
+        syms = fslib.r_sym(lines,num_prec = opt['pos_prec'])
 
     if opt['group']:
         atom = -1

@@ -1,40 +1,44 @@
-odd part of the response tensor:
-X_ijk =
-X_0pq =
+odd part:
+op1= x
 [x000  x110  x110]
 [                ]
 [x010  x100  x210]
 [                ]
 [x010  x210  x100]
-X_1pq =
+
+op1= y
 [x100  x010  x210]
 [                ]
 [x110  x000  x110]
 [                ]
 [x210  x010  x100]
-X_2pq =
+
+op1= z
 [x100  x210  x010]
 [                ]
 [x210  x100  x010]
 [                ]
 [x110  x110  x000]
-even part of the response tensor:
-X_ijk =
-X_0pq =
+
+even part:
+op1= x
 [  0    -x110  x110 ]
 [                   ]
 [x010   -x100  -x210]
 [                   ]
 [-x010  x210   x100 ]
-X_1pq =
+
+op1= y
 [x100   -x010  x210 ]
 [                   ]
 [x110     0    -x110]
 [                   ]
 [-x210  x010   -x100]
-X_2pq =
+
+op1= z
 [-x100  -x210  x010 ]
 [                   ]
 [x210   x100   -x010]
 [                   ]
 [-x110  x110     0  ]
+

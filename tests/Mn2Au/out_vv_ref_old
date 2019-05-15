@@ -1,12 +1,14 @@
-even part of the response tensor:
+Symmetry restricted form of the tensor, even part
 [x00   0    0 ]
 [             ]
 [ 0   x11   0 ]
 [             ]
 [ 0    0   x22]
-odd part of the response tensor:
+
+Symmetry restricted form of the tensor, odd part
 [0  0  0]
 [       ]
 [0  0  0]
 [       ]
 [0  0  0]
+

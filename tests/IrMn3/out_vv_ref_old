@@ -1,0 +1,14 @@
+Symmetry restricted form of the tensor, even part
+[x00  x01  x01]
+[             ]
+[x01  x00  x01]
+[             ]
+[x01  x01  x00]
+
+Symmetry restricted form of the tensor, odd part
+[ 0    x01   -x01]
+[                ]
+[-x01   0    x01 ]
+[                ]
+[x01   -x01   0  ]
+

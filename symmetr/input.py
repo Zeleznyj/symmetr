@@ -6,6 +6,7 @@
 import argparse
 import sys
 import textwrap
+from math import log10
 
 class InputError(Exception):
     pass
@@ -107,10 +108,21 @@ def parse(clargs=None):
     parser_parent.add_argument('--latex',action='store_const',const=True,default=False,help='If set, the matrices are printed also in a latex format.')
     parser_parent.add_argument('--print-pos',action='store_const',const=True,default=False,help='If set prints the atomic sites used in\
             findsym.')
-    parser_parent.add_argument('--symbolic',action='store_true',default=False)
-    parser_parent.add_argument('--num-prec',dest='num_prec',default=1e-3)
-    parser_parent.add_argument('--print-format',dest='print_format',default=None,type=int)
-    parser_parent.add_argument('--remove-zeros',action='store_const',const=True,default=False)
+    parser_parent.add_argument('--symbolic',action='store_true',default=False,help=
+    'If chosen, the symbolical mode will be used. This means that the symmetrization is done exactly without taking \
+     into account finie precision of the input. Use carefully as it can fail in some cases !!!')
+    parser_parent.add_argument('--num-prec',dest='num_prec',default=1e-3,help='The numerical precision.\
+            Within the alghoritm for symmetrizing, two numbers are considered the same when they are closer\
+            then num-prec. Default value 1e-3. Setting this the same as precision for findsym should be a safe choice.' )
+    parser_parent.add_argument('--round-prec',dest='round_prec',default=None,help='In the numerical mode, this gives the \
+            number of digits for rounding. Default value is int(log10(1/num_prec))')
+    parser_parent.add_argument('--dont-round',action='store_const',const=True,default=False,help=
+            'If selected, no rounding is done.')
+    parser_parent.add_argument('--pos-prec',dest='pos_prec',default=None,help='Precision for the positions. \
+    This refers to the positions written in the basis of the unic cell vectors. \
+    The positions are read from the findsym output.\
+    Default value is maximum of 1.1e-5 and findsym precision (second line of the findsym input file.')
+    parser_parent.add_argument('--print-format',dest='print_format',default=None,type=int,help='Format for printing')
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,\
             description=textwrap.dedent('''\
@@ -138,9 +150,8 @@ def parse(clargs=None):
             Only works for ferromagnets and collinear antiferromagnets. In antiferromagnets only for quantities\
             on a sublattice!!!',type=int)
     parser_res.add_argument('--syms-noso',default=-1,help='Like --syms, but fot noso symmetry operations',dest='syms_sel_noso')
-    parser_res.add_argument('--noso',action='store_const',const=True,default=False,help='Symmetry without spin-orbit coupling.')
-    parser_res.add_argument('--ignore-op1eqop2',action='store_const',const=True,default=False,help='When op1=op2, the even part has to be \
-            symmetric and the odd part antisymmetric. If this is selected, this property is ignored.',dest='ig_op1eqop2')
+    parser_res.add_argument('--noso',action='store_const',const=True,default=False,help=
+            'Symmetry without spin-orbit coupling. Very experimental.')
     parser_res.add_argument('--same-op-sym',dest='same_op_sym',action='store_true',default=None)
     parser_res.add_argument('--ignore-same-op-sym',dest='same_op_sym',action='store_false',default=None)
     parser_res.add_argument('--sym-inds',default=None,help='')
@@ -234,6 +245,17 @@ def parse(clargs=None):
         args_dict['num_prec'] = None
     else:
         args_dict['num_prec'] = float(args_dict['num_prec'])
+
+    if not args_dict['symbolic']:
+        if args_dict['round_prec'] is None:
+            args_dict['round_prec'] = int(log10(1/args_dict['num_prec']))
+        else:
+            args_dict['round_prec'] = int(args_dict['round_prec'])
+        if args_dict['dont_round']:
+            args_dict['round_prec'] = None
+    
+    if args_dict['pos_prec'] is not None:
+        args_dict['pos_prec'] = float(args_dict['pos_prec'])
 
     def parse_sym_inds(sym_inds):
         if sym_inds is not None:

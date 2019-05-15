@@ -1,14 +1,15 @@
-group name:  P-43m group number:  215.70
 Using a cartesian coordinate system
-even part of the response tensor:
+Symmetry restricted form of the tensor, even part
 [x00   0    0 ]
 [             ]
 [ 0   x00   0 ]
 [             ]
 [ 0    0   x00]
-odd part of the response tensor:
+
+Symmetry restricted form of the tensor, odd part
 [x00   0    0 ]
 [             ]
 [ 0   x00   0 ]
 [             ]
 [ 0    0   x00]
+

@@ -55,7 +55,7 @@ class confs:
 
         return out
 
-    def pprint(self,eo=None,m=-1,latex=False,remove_zeros=False,print_format=None):
+    def pprint(self,eo=None,m=-1,latex=False,print_format=None):
         #prints everything in a (somewhat) nice form
         #if m is set it prints only configuration m
 
@@ -73,11 +73,11 @@ class confs:
                 print 'atom %s, m = %s, %s, %s' %(p,self.confs[n][p][0].round(4),self.confs[n][p][1].round(4),self.confs[n][p][2].round(4))
                 #print 'atom %s, m = %s, %s, %s' %(p,self.confs[n][p][0],self.confs[n][p][1],self.confs[n][p][2])
             print 'First part of the response tensor'
-            self.Xs[n][0].pprint(print_format=print_format,remove_zeros=remove_zeros)
+            self.Xs[n][0].pprint(print_format=print_format)
             if latex:
                 self.Xs[n][0].pprint(latex=True)
             print 'Second part of the response tensor'
-            self.Xs[n][1].pprint(print_format=print_format,remove_zeros=remove_zeros)
+            self.Xs[n][1].pprint(print_format=print_format)
             if latex:
                 self.Xs[n][1].pprint(latex=True)
             print ''
@@ -107,7 +107,7 @@ class confs:
 
         return confs_t
 
-def find_equiv(Xs,mag,syms,atom,debug=False):
+def find_equiv(Xs,mag,syms,atom,debug=False,round_prec=None):
     """
     Takes a tensor and a list of nonmagnetic symmetries and find the form of the tensor for all equivalent configurations.
 
@@ -128,9 +128,6 @@ def find_equiv(Xs,mag,syms,atom,debug=False):
     
     if debug:
         print 'starting find_equiv'
-
-    for sym in syms:
-        print sym
 
     #extracts the starting configuration, only the magnetic moments are needed
     start_conf = {}
@@ -185,6 +182,9 @@ def find_equiv(Xs,mag,syms,atom,debug=False):
                     Xt[0].pprint()
                     print 'odd part converted to:'
                     Xt[1].pprint()
+                if round_prec is not None:
+                    for X in Xt:
+                        X.round(round_prec)
                 C.add(conf_t,Xt)
     
     return C

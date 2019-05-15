@@ -24,6 +24,6 @@ cd NiMnSb
 cd ..
 
 cd groups
-../../exec/symmetr res j E -g P-43m --ignore-op1eqop2 > out_jE_-43m
+../../exec/symmetr res j E -g P-43m --ignore-same-op-sym > out_jE_-43m
 ../../exec/symmetr res s E -g P4mm --exp 1 > out_sE_4mm_exp1
 cd ..

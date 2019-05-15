@@ -27,7 +27,8 @@ def def_symmetr_opt(opt):
     s_opt = symmetrize.SymmetrOpt(num_prec=opt['num_prec'],
                                    debug=opt['debug_sym'],
                                    debug_time=opt['debug_time'],
-                                   debug_Y=opt['debug_symY'])
+                                   debug_Y=opt['debug_symY'],
+                                   round_prec=opt['round_prec'])
     return s_opt
 
 def sym_res_nonexp(opt,printit=False):
@@ -40,6 +41,8 @@ def sym_res_nonexp(opt,printit=False):
 
     #transformation matrix from the basis used by findsym to the user defined basis
     T = symT.get_T(opt)
+    if opt['num_prec'] is not None:
+        T = sympy.N(T)
     #if transform_result is not set we transform the symmetries
     if not opt['transform_result']:
         for sym in syms:
@@ -61,6 +64,8 @@ def sym_res_nonexp(opt,printit=False):
             same_op_sym = True
             #the metric is for the findsym basis
             G = symT.get_metric(opt)
+            if opt['num_prec'] is not None:
+                G = sympy.N(G)
             if not opt['transform_result']:
                 G = T * G * T.T
 
@@ -78,7 +83,7 @@ def sym_res_nonexp(opt,printit=False):
             Xs[i] = symmetrize.symmetrize_same_op(Xs[i],s_opt)
 
     if opt['atom2'] != -1:
-        Xs_2 = symmetrize.symmetr_AB(syms,Xs,opt['atom'],opt['atom2'])
+        Xs_2 = symmetrize.symmetr_AB(syms,Xs,opt['atom'],opt['atom2'],round_prec=opt['round_prec'])
 
     #if transform result is set we convert the symmetrized tensor
     if opt['transform_result']:
@@ -91,27 +96,27 @@ def sym_res_nonexp(opt,printit=False):
 
     if printit:
         print '{0} part of the response tensor:'.format(eo[0])
-        Xs[0].pprint(print_format=opt['print_format'],remove_zeros=opt['remove_zeros'])
+        Xs[0].pprint(print_format=opt['print_format'])
         if opt['latex']:
-            Xs[0].pprint(print_format=opt['print_format'],latex=True,remove_zeros=opt['remove_zeros'])
+            Xs[0].pprint(print_format=opt['print_format'],latex=True)
         print '{0} part of the response tensor:'.format(eo[1])
-        Xs[1].pprint(print_format=opt['print_format'],remove_zeros=opt['remove_zeros'])
+        Xs[1].pprint(print_format=opt['print_format'])
         if opt['latex']:
-            Xs[1].pprint(print_format=opt['print_format'],latex=True,remove_zeros=opt['remove_zeros'])
+            Xs[1].pprint(print_format=opt['print_format'],latex=True)
 
         
         if opt['atom2'] != -1:
-            if Xs_2 == None:
+            if Xs_2 is None:
                 print 'no relation with atom %s found' % opt['atom2']
             else:
                 print 'First part of the response tensor, atom %s' % (opt['atom2'])
-                Xs_2[0].pprint(print_format=opt['print_format'],remove_zeros=opt['remove_zeros'])
+                Xs_2[0].pprint(print_format=opt['print_format'])
                 if opt['latex']:
-                    Xs_2[0].pprint(print_format=opt['print_format'],latex=True,remove_zeros=opt['remove_zeros'])
+                    Xs_2[0].pprint(print_format=opt['print_format'],latex=True)
                 print 'Second part of the response tensor, atom %s' % (opt['atom2'])
-                Xs_2[1].pprint(print_format=opt['print_format'],remove_zeros=opt['remove_zeros'])
+                Xs_2[1].pprint(print_format=opt['print_format'])
                 if opt['latex']:
-                    Xs_2[1].pprint(print_format=opt['print_format'],latex=True,remove_zeros=opt['remove_zeros'])
+                    Xs_2[1].pprint(print_format=opt['print_format'],latex=True)
                 print ''
     
     if opt['equiv']:
@@ -132,11 +137,11 @@ def sym_res_nonexp(opt,printit=False):
         for sym in syms_nm:
             sym.convert(T2,in_place=True)
 
-        C = find_eq.find_equiv(Xs,mags,syms_nm,opt['atom'],debug=opt['debug_equiv'])
+        C = find_eq.find_equiv(Xs,mags,syms_nm,opt['atom'],debug=opt['debug_equiv'],round_prec=opt['round_prec'])
         if printit:
             print ''
             print 'Equivalent configurations:'
-            C.pprint(print_format=opt['print_format'],remove_zeros=opt['remove_zeros'])
+            C.pprint(print_format=opt['print_format'])
     
     if opt['atom2'] == -1:
         if opt['equiv']:
@@ -187,8 +192,6 @@ def sym_res_exp(opt,printit=False):
     if opt['transform_result']:
         X.convert(T)
 
-    if opt['remove_zeros']:
-        X.remove_zeros()
 
     if printit:
         n_op = opt['op_lengths'][0] + opt['op_lengths'][1] 
@@ -228,14 +231,8 @@ def sym_mham(opt,printit=False):
         #H = mham.convert_mag_ham(H,T)
         H.convert(T)
 
-    if opt['remove_zeros']:
-        H.remove_zeros()
-
     if opt['equiv']:
         H_E = mham.equiv(H,opt['sites'],syms,T)
-        if opt['remove_zeros']:
-            for sites in H_E:
-                H_E[sites].remove_zeros()
 
     if printit:
         if H.dim2 == 2:

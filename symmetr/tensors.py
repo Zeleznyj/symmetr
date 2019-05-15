@@ -7,6 +7,7 @@ All the tensors that are symmetrized use this class.
 """
 
 import sympy
+from sympy.core.numbers import Zero
 import numpy as np
 import copy
 from symmetry import create_T
@@ -131,7 +132,6 @@ class tensor:
     def __neg__(self):
         return self*-1
     def __str__(self):
-        self.simplify()
         out = ''
         for ind in self:
             out = out + ind.__str__() + ' ' + self[ind].__str__() + '\n'
@@ -511,6 +511,40 @@ class tensor:
         else:
             return self.reverse_index(i)
 
+    def rename_vars(self,name=None,xyz=False):
+        if name is None:
+            name = self.name
+        if xyz and self.dim1 != 3:
+            raise Exception('xyz allowed only if dim1 == 3')
+
+        new_vars = {} 
+
+        for ind in self:
+            if xyz:
+                new_vars[ind] = sympy.symbols(var_name_xyz(name,ind))
+            else:
+                new_vars[ind] = sympy.symbols(var_name(name,ind,self.dim1))
+        
+        for ind in self:
+            for ind2 in self:
+                self[ind] = self[ind].subs(self.x[ind2],new_vars[ind2])
+
+    def round(self,prec):
+        def float2int(a):
+            if abs(a) > 1e-14:
+                if abs(int(a)/a-1) < 1e-14:
+                    res = int(a)
+                else:
+                    res = a
+            else:
+                res = 0
+            return res
+        def round_expr(expr, num_digits):
+            return expr.xreplace({n : float2int(round(n, num_digits)) for n in expr.atoms(sympy.Number)})
+        for ind in self:
+            if self[ind] != 0:
+                self[ind] = round_expr(self[ind],prec)
+
 class matrix(tensor):
 
      def __init__(self,kind,dim1,name='x'):
@@ -603,6 +637,15 @@ def var_name(name,num,dim):
 
      return s_tot 
 
+def var_name_xyz(name,num):
+    xyz = ['x','y','z']
+    s_ind = ''
+    for i in num:
+        s_ind = s_ind + xyz[i] 
+
+    s_tot = name + '_' + s_ind
+
+    return s_tot
 def mat2ten(mat):
      try:
          ncols = mat.cols

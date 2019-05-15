@@ -1,150 +1,160 @@
-even part of the response tensor:
-[x00  x10  x10]
+Symmetry restricted form of the tensor, even part
+[x00  x01  x01]
 [             ]
-[x10  x00  x10]
+[x01  x00  x01]
 [             ]
-[x10  x10  x00]
-odd part of the response tensor:
-[ 0    -x10  x10 ]
+[x01  x01  x00]
+
+Symmetry restricted form of the tensor, odd part
+[ 0    x01   -x01]
 [                ]
-[x10    0    -x10]
+[-x01   0    x01 ]
 [                ]
-[-x10  x10    0  ]
+[x01   -x01   0  ]
+
 
 Equivalent configurations:
 starting configuration:
 atom 2, m = -3.0000, -3.0000, 6.0000
 atom 3, m = 6.0000, -3.0000, -3.0000
 atom 4, m = -3.0000, 6.0000, -3.0000
-First part of the response tensor
-[x00  x10  x10]
+even part:
+[x00  x01  x01]
 [             ]
-[x10  x00  x10]
+[x01  x00  x01]
 [             ]
-[x10  x10  x00]
-Second part of the response tensor
-[ 0    -x10  x10 ]
+[x01  x01  x00]
+odd part:
+
+[ 0    x01   -x01]
 [                ]
-[x10    0    -x10]
+[-x01   0    x01 ]
 [                ]
-[-x10  x10    0  ]
+[x01   -x01   0  ]
 
 configuration 1
 atom 2, m = -3.0000, 3.0000, -6.0000
 atom 3, m = 6.0000, 3.0000, 3.0000
 atom 4, m = -3.0000, -6.0000, 3.0000
-First part of the response tensor
-[x00   -x10  -x10]
+even part:
+[x00   -x01  -x01]
 [                ]
-[-x10  x00   x10 ]
+[-x01  x00   x01 ]
 [                ]
-[-x10  x10   x00 ]
-Second part of the response tensor
-[ 0    x10  -x10]
+[-x01  x01   x00 ]
+odd part:
+
+[ 0    -x01  x01]
 [               ]
-[-x10   0   -x10]
+[x01    0    x01]
 [               ]
-[x10   x10   0  ]
+[-x01  -x01   0 ]
 
 configuration 2
 atom 2, m = 3.0000, -3.0000, -6.0000
 atom 3, m = -6.0000, -3.0000, 3.0000
 atom 4, m = 3.0000, 6.0000, 3.0000
-First part of the response tensor
-[x00   -x10  x10 ]
+even part:
+[x00   -x01  x01 ]
 [                ]
-[-x10  x00   -x10]
+[-x01  x00   -x01]
 [                ]
-[x10   -x10  x00 ]
-Second part of the response tensor
-[ 0    x10   x10]
+[x01   -x01  x00 ]
+odd part:
+
+[ 0   -x01  -x01]
 [               ]
-[-x10   0    x10]
+[x01   0    -x01]
 [               ]
-[-x10  -x10   0 ]
+[x01  x01    0  ]
 
 configuration 3
 atom 2, m = 3.0000, 3.0000, 6.0000
 atom 3, m = -6.0000, 3.0000, -3.0000
 atom 4, m = 3.0000, -6.0000, -3.0000
-First part of the response tensor
-[x00   x10   -x10]
+even part:
+[x00   x01   -x01]
 [                ]
-[x10   x00   -x10]
+[x01   x00   -x01]
 [                ]
-[-x10  -x10  x00 ]
-Second part of the response tensor
-[ 0   -x10  -x10]
+[-x01  -x01  x00 ]
+odd part:
+
+[ 0    x01  x01 ]
 [               ]
-[x10   0    x10 ]
+[-x01   0   -x01]
 [               ]
-[x10  -x10   0  ]
+[-x01  x01   0  ]
 
 configuration 4
 atom 2, m = 3.0000, 3.0000, -6.0000
 atom 3, m = -6.0000, 3.0000, 3.0000
 atom 4, m = 3.0000, -6.0000, 3.0000
-First part of the response tensor
-[x00  x10  x10]
+even part:
+[x00  x01  x01]
 [             ]
-[x10  x00  x10]
+[x01  x00  x01]
 [             ]
-[x10  x10  x00]
-Second part of the response tensor
-[ 0    x10   -x10]
+[x01  x01  x00]
+odd part:
+
+[ 0    -x01  x01 ]
 [                ]
-[-x10   0    x10 ]
+[x01    0    -x01]
 [                ]
-[x10   -x10   0  ]
+[-x01  x01    0  ]
 
 configuration 5
 atom 2, m = 3.0000, -3.0000, 6.0000
 atom 3, m = -6.0000, -3.0000, -3.0000
 atom 4, m = 3.0000, 6.0000, -3.0000
-First part of the response tensor
-[x00   -x10  -x10]
+even part:
+[x00   -x01  -x01]
 [                ]
-[-x10  x00   x10 ]
+[-x01  x00   x01 ]
 [                ]
-[-x10  x10   x00 ]
-Second part of the response tensor
-[ 0    -x10  x10]
+[-x01  x01   x00 ]
+odd part:
+
+[ 0    x01  -x01]
 [               ]
-[x10    0    x10]
+[-x01   0   -x01]
 [               ]
-[-x10  -x10   0 ]
+[x01   x01   0  ]
 
 configuration 6
 atom 2, m = -3.0000, 3.0000, 6.0000
 atom 3, m = 6.0000, 3.0000, -3.0000
 atom 4, m = -3.0000, -6.0000, -3.0000
-First part of the response tensor
-[x00   -x10  x10 ]
+even part:
+[x00   -x01  x01 ]
 [                ]
-[-x10  x00   -x10]
+[-x01  x00   -x01]
 [                ]
-[x10   -x10  x00 ]
-Second part of the response tensor
-[ 0   -x10  -x10]
+[x01   -x01  x00 ]
+odd part:
+
+[ 0    x01   x01]
 [               ]
-[x10   0    -x10]
+[-x01   0    x01]
 [               ]
-[x10  x10    0  ]
+[-x01  -x01   0 ]
 
 configuration 7
 atom 2, m = -3.0000, -3.0000, -6.0000
 atom 3, m = 6.0000, -3.0000, 3.0000
 atom 4, m = -3.0000, 6.0000, 3.0000
-First part of the response tensor
-[x00   x10   -x10]
+even part:
+[x00   x01   -x01]
 [                ]
-[x10   x00   -x10]
+[x01   x00   -x01]
 [                ]
-[-x10  -x10  x00 ]
-Second part of the response tensor
-[ 0    x10  x10 ]
+[-x01  -x01  x00 ]
+odd part:
+
+[ 0   -x01  -x01]
 [               ]
-[-x10   0   -x10]
+[x01   0    x01 ]
 [               ]
-[-x10  x10   0  ]
+[x01  -x01   0  ]
 

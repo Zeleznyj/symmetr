@@ -52,11 +52,12 @@ def num_rref(Y,prec=15):
     return U,pivots
 
 class SymmetrOpt:
-    def __init__(self,num_prec=None,debug=False,debug_time=False,debug_Y=False):
+    def __init__(self,num_prec=None,debug=False,debug_time=False,debug_Y=False,round_prec=None):
         self.num_prec = num_prec
         self.debug = debug
         self.debug_time = debug_time
         self.debug_Y = debug_Y
+        self.round_prec = round_prec
 
 def symmetr(syms,X,trans_func,params,opt=None):
     """
@@ -224,6 +225,9 @@ def symmetr(syms,X,trans_func,params,opt=None):
             X.pprint()
             print ''
 
+    if opt.round_prec is not None:
+        X.round(opt.round_prec)
+        
     if debug:
         print 'Symmetrized tensor:'
         X.pprint()
@@ -311,7 +315,7 @@ def symmetrize_same_op(X,s_opt=None):
         
     return X
 
-def symmetr_AB(syms,X,atom1,atom2):
+def symmetr_AB(syms,X,atom1,atom2,round_prec=None):
     """
     Tries to transform the tensor projected on one atom to a different atom
 
@@ -341,6 +345,9 @@ def symmetr_AB(syms,X,atom1,atom2):
                 X_trans.append(X[l].transform(sym))
 
     if found:
+        if round_prec is not None:
+            for X in X_trans:
+                X.round(round_prec)
         return X_trans
     else:
         return None
