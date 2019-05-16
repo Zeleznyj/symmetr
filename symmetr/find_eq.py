@@ -129,6 +129,15 @@ def find_equiv(Xs,mag,syms,atom,debug=False,round_prec=None):
     if debug:
         print 'starting find_equiv'
 
+    n_at = []
+    for sym in syms:
+        n_at.append(len(sym.permutations))
+    n_at = list(set(n_at))
+    if len(n_at) != 1:
+        raise Exception('Different number of atoms permutations for different symmetries. Something wrong.')
+    else:
+        n_at = n_at[0]
+
     #extracts the starting configuration, only the magnetic moments are needed
     start_conf = {}
     for i in range(len(mag)):
@@ -137,6 +146,18 @@ def find_equiv(Xs,mag,syms,atom,debug=False,round_prec=None):
         c = mag[i][2]
         if a.round(4) !=0 or b.round(6) !=0 or c.round(6) != 0:
             start_conf[i+1] = sympy.Matrix([[a,b,c]])
+
+    if n_at != len(start_conf):
+        message = ('Warning: nonmagnetic unit cell smaller than the magnetic!\n'
+                  'Output will show values of only some magnetic moments.'
+                  'Furthermore some equivalent configurations will be missing. These correspond to translations.')
+        print ''
+        print message
+        start_conf2 = {}
+        for p in start_conf:
+            if p in syms[0].permutations:
+                start_conf2[p] = start_conf[p]
+        start_conf = start_conf2
 
     #creates a conf class, which stores all the configurations and adds the starting one
     C = confs()
