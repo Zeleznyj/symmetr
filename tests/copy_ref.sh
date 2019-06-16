@@ -16,5 +16,6 @@ files+=('groups/out_jE_-43m')
 files+=('groups/out_sE_4mm_exp1')
 
 for f in ${files[@]};do
+    cp ${f}_ref ${f}_ref_old
     mv $f ${f}_ref
 done

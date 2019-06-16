@@ -150,7 +150,8 @@ def find_equiv(Xs,mag,syms,atom,debug=False,round_prec=None):
     if n_at != len(start_conf):
         message = ('Warning: nonmagnetic unit cell smaller than the magnetic!\n'
                   'Output will show values of only some magnetic moments.'
-                  'Furthermore some equivalent configurations will be missing. These correspond to translations.')
+                  'Furthermore some equivalent configurations will be missing.'
+                  'Use with caution, this is not properly tested.')
         print ''
         print message
         start_conf2 = {}
