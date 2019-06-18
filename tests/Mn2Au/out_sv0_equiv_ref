@@ -11,6 +11,9 @@ odd part of the response tensor:
 [           ]
 [x20  0   0 ]
 
+Warning: nonmagnetic unit cell smaller than the magnetic!
+Output will show values of only some magnetic moments.Furthermore some equivalent configurations will be missing.Use with caution, this is not properly tested.
+
 Equivalent configurations:
 starting configuration:
 atom 1, m = 3.0000, 0, 0

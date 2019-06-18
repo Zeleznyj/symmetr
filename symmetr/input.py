@@ -2,17 +2,22 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """Module for parsing user input."""
+from __future__ import absolute_import
+from __future__ import division
 
+from builtins import range
+from past.utils import old_div
+from builtins import object
 import argparse
 import sys
 import textwrap
 from math import log10
-from version import __version__
+from .version import __version__
 
 class InputError(Exception):
     pass
 
-class options:
+class options(object):
     """Class to store all the input options.
 
     Is meant to be used only in conjuction with the parse function.
@@ -251,7 +256,7 @@ def parse(clargs=None):
 
     if not args_dict['symbolic']:
         if args_dict['round_prec'] is None:
-            args_dict['round_prec'] = int(log10(1/args_dict['num_prec']))
+            args_dict['round_prec'] = int(log10(old_div(1,args_dict['num_prec'])))
         else:
             args_dict['round_prec'] = int(args_dict['round_prec'])
         if args_dict['dont_round']:

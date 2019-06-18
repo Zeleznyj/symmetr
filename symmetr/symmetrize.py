@@ -1,6 +1,10 @@
+from __future__ import print_function
+from __future__ import absolute_import
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+from builtins import range
+from builtins import object
 import re
 import copy
 import sys
@@ -13,11 +17,11 @@ import numpy.linalg
 import scipy.linalg
 import mpmath   
 
-from tensors import matrix, mat2ten
-from fslib import transform_position
-from conv_index import *
+from .tensors import matrix, mat2ten
+from .fslib import transform_position
+from .conv_index import *
 
-class params_trans:
+class params_trans(object):
     def __init__(self,op1,op2,op3,l,T=None,sym_format='findsym'):
         self.op1 = op1
         self.op2 = op2
@@ -33,9 +37,9 @@ def num_rref(Y,prec=15):
     pl,U = scipy.linalg.lu(Y,permute_l=True)
     #P,L,U = mpmath.lu(Y)
 
-    print 'L,U decomposition'
-    print pl
-    print U
+    print('L,U decomposition')
+    print(pl)
+    print(U)
 
     pivots = []
     for i in range(U.shape[0]):
@@ -48,10 +52,10 @@ def num_rref(Y,prec=15):
     try:
         numpy.linalg.inv(pl)
     except:
-        print 'The PL matrix is singular. The output of the code may be wrong!!!!'
+        print('The PL matrix is singular. The output of the code may be wrong!!!!')
     return U,pivots
 
-class SymmetrOpt:
+class SymmetrOpt(object):
     def __init__(self,num_prec=None,debug=False,debug_time=False,debug_Y=False,round_prec=None):
         self.num_prec = num_prec
         self.debug = debug
@@ -85,32 +89,33 @@ def symmetr(syms,X,trans_func,params,opt=None):
     debug_Y = opt.debug_Y
 
     if debug:
-        print ''
-        print '======= Starting symmetrizing ======='
+        print('')
+        print('======= Starting symmetrizing =======')
 
     #we do a loop over all symmetry operations, for each symmetry, we find what form the response matrix can have, when the system has this symmetry
     #for next symmetry we take the symmetrized matrix from the previous symmetry as a starting point
     for sym in syms:
         
         if debug:
-            print 'Symmetry:' 
-            print sym
-            print ''
+            print('Symmetry:') 
+            print(sym)
+            print('')
 
         X_trans = trans_func(X,sym,params)
         if X_trans is None:
             continue
             
         if debug:
-            print ''
-            print 'Current form of the tensor:'
-            print ''
+            print('')
+            print('Current form of the tensor:')
+            print('')
             X.pprint()
-            print ''
-            print 'Transformed tensor:'
-            print ''
+            print('')
+            print('Transformed tensor:')
+            print('')
             X_trans.pprint()
-
+        #X.pprint()
+        #X_trans.pprint()
         #The tensor must be equal to the transformed tensor, this give us a system of linear equations.
         #matrix Y is a matrix that represents this system, ie the system X-X_trans = 0
         #we reverse the order of the rows
@@ -165,7 +170,7 @@ def symmetr(syms,X,trans_func,params,opt=None):
 
         if debug_time:
             t2 = time.clock()
-            print 'Time for constructing Y: ', t2-t1
+            print('Time for constructing Y: ', t2-t1)
             t1 = time.clock()
 
         #this transforms the matrix into the Reduced row echelon form
@@ -173,21 +178,35 @@ def symmetr(syms,X,trans_func,params,opt=None):
         if num_prec is None:
             [rref,piv] = Y.rref()
         else:
-            [rref,piv] = Y.rref(iszerofunc=lambda x:abs(x)<num_prec)        
+            def zerofunc(x):
+                try:
+                    a = abs(x) < num_prec
+                    if a:
+                        result = True
+                    else:
+                        result = False
+                except:
+                    result = None
+                #print(result)
+                return result
+            #sympy.pprint(Y)
+            [rref,piv] = Y.rref()        
+            #[rref,piv] = Y.rref(iszerofunc=lambda x:abs(x)<num_prec)        
+            #[rref,piv] = Y.rref(iszerofunc=zerofunc)        
 
         if debug_time:
             t2 = time.clock()
-            print 'Time for reducing Y to reduced row echelon form: ', t2-t1
+            print('Time for reducing Y to reduced row echelon form: ', t2-t1)
 
         if debug_Y:
-            print ''
-            print 'Matrix representing the linear equation system that has to be satisfied: (right hand side is zero)'
+            print('')
+            print('Matrix representing the linear equation system that has to be satisfied: (right hand side is zero)')
             sympy.pprint(Y)
-            print ''
-            print 'Reduced row echelon form and indeces of the pivot columns:'
+            print('')
+            print('Reduced row echelon form and indeces of the pivot columns:')
             sympy.pprint(rref)
-            print piv
-            print ''
+            print(piv)
+            print('')
 
         #a loop over all the pivots: it's the pivots that give interesting information
         for j in list(reversed(piv)):
@@ -203,8 +222,8 @@ def symmetr(syms,X,trans_func,params,opt=None):
                     i = i-1
             
             if debug:
-                print ''
-                print 'considering pivot ', i,j
+                print('')
+                print('considering pivot ', i,j)
 
             tmp = 0
             #now we just make use of the linear equation that holds for this pivot
@@ -214,25 +233,25 @@ def symmetr(syms,X,trans_func,params,opt=None):
             X = X.subs(X.x[rev_inds[j]],tmp)
 
             if debug:
-                print 'substituting ',
+                print('substituting ', end=' ')
                 sympy.pprint(X.x[rev_inds[j]])
-                print ' for ',
+                print(' for ', end=' ')
                 sympy.pprint(tmp)
-                print ''
+                print('')
 
         if debug:
-            print 'Current form of the tensor:'
+            print('Current form of the tensor:')
             X.pprint()
-            print ''
+            print('')
 
     if opt.round_prec is not None:
         X.round(opt.round_prec)
         
     if debug:
-        print 'Symmetrized tensor:'
+        print('Symmetrized tensor:')
         X.pprint()
-        print ''
-        print '======= End symmetrizing ======='
+        print('')
+        print('======= End symmetrizing =======')
 
     return X
 
@@ -257,14 +276,14 @@ def symmetrize_res(symmetries,X,proj=-1,s_opt=None):
     for sym in symmetries:
         
         if s_opt.debug:
-            print 'Symmetry:' 
-            print sym
-            print ''
+            print('Symmetry:') 
+            print(sym)
+            print('')
             if proj != -1:
-                print 'Symmetry transforms the atom ', proj, ' into atom ', sym.permutations[proj]
+                print('Symmetry transforms the atom ', proj, ' into atom ', sym.permutations[proj])
                 if  sym.permutations[proj] != proj:
-                    print 'Skipping symmetry'
-                    print ''
+                    print('Skipping symmetry')
+                    print('')
 
         #if there is a projection set up we only consider symmetries that keep the atom invariant
         if proj == -1 :

@@ -1,0 +1,14 @@
+group name:  P-43m group number:  215.70
+Using a cartesian coordinate system
+even part of the response tensor:
+⎡x₀₀   0    0 ⎤
+⎢             ⎥
+⎢ 0   x₀₀   0 ⎥
+⎢             ⎥
+⎣ 0    0   x₀₀⎦
+odd part of the response tensor:
+⎡x₀₀   0    0 ⎤
+⎢             ⎥
+⎢ 0   x₀₀   0 ⎥
+⎢             ⎥
+⎣ 0    0   x₀₀⎦

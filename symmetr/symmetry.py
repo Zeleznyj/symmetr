@@ -1,7 +1,13 @@
+from __future__ import print_function
+from __future__ import division
+from builtins import str
+from builtins import range
+from past.utils import old_div
+from builtins import object
 import sympy
 import re
 
-class Symmetry:
+class Symmetry(object):
 
     def __init__(self,R,has_T,Rs=None,permutations=None):
         self.R = R
@@ -35,8 +41,8 @@ class Symmetry:
             R_op = self.custom_Rs[op]
 
         if R_op is None:
-            print self.custom_Rs
-            print op
+            print(self.custom_Rs)
+            print(op)
             raise Exception('wrong op')
         else:
             return R_op
@@ -93,7 +99,7 @@ def findsym2sym(sym_findsym):
     elif sym_findsym[3] == '+1':
         has_T = False
     else:
-        print sym_findsym[3]
+        print(sym_findsym[3])
         raise Exception('Wrong findsym format')
     if len(sym_findsym) > 4:
         permutations = {}
@@ -111,7 +117,7 @@ def matsym2sym(sym):
     elif sym[3] == '+1':
         has_T = False
     else:
-        print sym[3]
+        print(sym[3])
         raise Exception('Wrong findsym format')
     permutations = {}
     for (i,j) in sym[4]:
@@ -169,7 +175,7 @@ def convert_op(sym,op_type):
 
         op = re.sub('-','+-',s)
         op = re.split('\+',op)
-        op = filter(None,op) #remove empty strings from the list  
+        op = [_f for _f in op if _f] #remove empty strings from the list  
         out = []
         for j in range(len(op)):
             match = False
@@ -206,7 +212,7 @@ def convert_op(sym,op_type):
 
         op = re.sub('-','+-',s)
         op = re.split('\+',op)
-        op = filter(None,op) #remove empty strings from the list  
+        op = [_f for _f in op if _f] #remove empty strings from the list  
         out = []
         for j in range(len(op)):
             if re.match('^mx',op[j]):
@@ -237,7 +243,7 @@ def convert_op(sym,op_type):
 
         op = re.sub('-','+-',s)
         op = re.split('\+',op)
-        op = filter(None,op) #remove empty strings from the list  
+        op = [_f for _f in op if _f] #remove empty strings from the list  
         out = []
         for j in range(len(op)):
             match = False
@@ -279,7 +285,7 @@ def convert_op(sym,op_type):
 
         op = re.sub('-','+-',s)
         op = re.split('\+',op)
-        op = filter(None,op) #remove empty strings from the list  
+        op = [_f for _f in op if _f] #remove empty strings from the list  
         out = []
         for j in range(len(op)):
             match = False
@@ -313,14 +319,14 @@ def convert_op(sym,op_type):
 
         op = re.sub('-','+-',s)
         op = re.split('\+',op)
-        op = filter(None,op) #remove empty strings from the list  
+        op = [_f for _f in op if _f] #remove empty strings from the list  
         out = []
         for j in range(len(op)):
             match = False
             if re.match('-?[0-9]*[./]?[0-9]+',op[j]):
                 if re.match('-?[0-9.]+/[0-9.]+',op[j]):
                     op_s = op[j].split('/')
-                    op[j] = float(op_s[0]) / float(op_s[1])
+                    op[j] = old_div(float(op_s[0]), float(op_s[1]))
                     match = True
             if match:
                 out.append(op[j])

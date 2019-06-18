@@ -1,12 +1,16 @@
+from __future__ import print_function
+from __future__ import absolute_import
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+from builtins import str
+from builtins import range
 import re
 
 import sympy
 import numpy
-from tensors import matrix, mat2ten, tensor
-from conv_index import *
+from .tensors import matrix, mat2ten, tensor
+from .conv_index import *
 
 
 def should_rename(X,X_t):
@@ -42,15 +46,15 @@ def rename(X,name,debug=False,ignore_ren_warning=False):
     Y = matrix(0,3)
 
     if debug:
-        print ''
-        print '======= Start renaming ======='
-        print 'Input matrix:'
+        print('')
+        print('======= Start renaming =======')
+        print('Input matrix:')
         sympy.pprint(X.mat())
 
-        print ''
-        print 'independent components:'
-        print list(set(re.findall(r'x[0-9]+',sympy.srepr(X))))
-        print ''
+        print('')
+        print('independent components:')
+        print(list(set(re.findall(r'x[0-9]+',sympy.srepr(X)))))
+        print('')
 
     #a loop over all components of  the input matrix
     for i in range(3):
@@ -62,15 +66,15 @@ def rename(X,name,debug=False,ignore_ren_warning=False):
             else:
 
                 if debug:
-                    print ''
-                    print 'component: ', i, j, ' = ',
+                    print('')
+                    print('component: ', i, j, ' = ', end=' ')
                     sympy.pprint(X[i,j])
 
                 pos = convert_index(i,j)
                 if pos == 0: #we always rename the first component of the matrix (unless it's zero)
                     Y[i,j] = V.x[i,j]
                     if debug:
-                        print 'renaming to:', ' ',
+                        print('renaming to:', ' ', end=' ')
                         sympy.pprint(V.x[i,j])
                 # if we don't have the first component we try if the component is not a linear combination
                 # of the previous
@@ -94,7 +98,7 @@ def rename(X,name,debug=False,ignore_ren_warning=False):
                             Z[o,p] = tmp
                     
                     if debug:
-                        print 'linear equations system: (last column is the right hand side)'
+                        print('linear equations system: (last column is the right hand side)')
                         sympy.pprint(Z)
 
                     #this will give a solution to the linear equation system
@@ -109,15 +113,15 @@ def rename(X,name,debug=False,ignore_ren_warning=False):
                         sol = False
 
                     if debug:
-                        print 'solution of the system:'
-                        print solution
+                        print('solution of the system:')
+                        print(solution)
 
                     #if the component is not a linear combination of previous components we rename it
                     if not solution:
                         Y[i,j] = V.x[i,j]
 
                         if debug:
-                            print 'renaming to:', ' ',
+                            print('renaming to:', ' ', end=' ')
                             sympy.pprint(V.x[i,j])
 
                     #if it is we set it equal to the linear combination
@@ -125,29 +129,29 @@ def rename(X,name,debug=False,ignore_ren_warning=False):
                         for r in range(len(solution)):
                             Y[i,j] = Y[i,j] + solution[r] * Y[inconvert_index(r)[0],inconvert_index(r)[1]]
                         if debug:
-                            print 'renaming to:', ' ',
+                            print('renaming to:', ' ', end=' ')
                             sympy.pprint(Y[i,j])
                     
 
     if debug:
-        print ''
-        print 'Input matrix:'
+        print('')
+        print('Input matrix:')
         sympy.pprint(X.mat())
-        print ''
-        print 'renamed matrix:'
+        print('')
+        print('renamed matrix:')
         sympy.pprint(Y.mat())
-        print ''
-        print '======= end rename ======='
-        print '' 
+        print('')
+        print('======= end rename =======')
+        print('') 
 
     ninds_new = len(list(set(re.findall(r'x[0-9]+',sympy.srepr(Y)))))
 
     if ninds != ninds_new and not ignore_ren_warning:
-        print '!WARNING! Problem in renaming tensor components. Try --no-rename.' 
-        print 'old number of independent components:', ninds
-        print list(set(re.findall(r'x[0-9]+',sympy.srepr(X))))
-        print 'new number of independent components:', ninds_new
-        print list(set(re.findall(r'x[0-9]+',sympy.srepr(Y))))
+        print('!WARNING! Problem in renaming tensor components. Try --no-rename.') 
+        print('old number of independent components:', ninds)
+        print(list(set(re.findall(r'x[0-9]+',sympy.srepr(X)))))
+        print('new number of independent components:', ninds_new)
+        print(list(set(re.findall(r'x[0-9]+',sympy.srepr(Y)))))
 
     return Y
 

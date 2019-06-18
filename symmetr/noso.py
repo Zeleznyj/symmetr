@@ -1,14 +1,18 @@
+from __future__ import print_function
+from __future__ import absolute_import
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+from builtins import str
+from builtins import range
 import sys
 import os
 import re
 import numpy as np
 import sympy 
-from tensors import matrix
-from fslib import r_sym
-from symmetry import Symmetry,findsym2sym
+from .tensors import matrix
+from .fslib import r_sym
+from .symmetry import Symmetry,findsym2sym
 
 dirname, filename = os.path.split(os.path.abspath(__file__))
 sys.path.append(str(dirname))
@@ -96,26 +100,26 @@ def noso_syms(syms,mag_conf,hexag,prec=1e-5,debug=False):
 
     if debug:
         if hexag:
-            print 'The conventional coordinate system is hexagonal.'
+            print('The conventional coordinate system is hexagonal.')
         else:
-            print 'The conventional coordinate system is not hexagonal.'
-        print ''
+            print('The conventional coordinate system is not hexagonal.')
+        print('')
 
     if debug:
-        print 'Magnetic moments are:'
+        print('Magnetic moments are:')
         for i,mag in enumerate(mag_conf):
-            print i+1,' ',
+            print(i+1,' ', end=' ')
             sympy.pprint(mag)
 
     mats = read_all_syms(hexag)
     if debug:
-        print ''
-        print 'list of all crystallographic symmetry operations:'
+        print('')
+        print('list of all crystallographic symmetry operations:')
         for i,mat in enumerate(mats):
-            print ''
-            print i+1
+            print('')
+            print(i+1)
             sympy.pprint(mat)
-            print ''
+            print('')
 
     syms_noso = []
     start_new = 0
@@ -123,16 +127,16 @@ def noso_syms(syms,mag_conf,hexag,prec=1e-5,debug=False):
         start_new = len(syms_noso)
 
         if debug:
-            print ''
-            print 'taking symmetry operation ', nsym+1
-            print 'space part:'
+            print('')
+            print('taking symmetry operation ', nsym+1)
+            print('space part:')
             sympy.pprint(sym[0])
-            print 'magnetic part:'
+            print('magnetic part:')
             sympy.pprint(sym[2])
-            print 'time reversal:'
+            print('time reversal:')
             sympy.pprint(sym[3])
-            print 'permutations:'
-            print sym[4]
+            print('permutations:')
+            print(sym[4])
 
         nmag = 0
         mag_is = []
@@ -151,29 +155,29 @@ def noso_syms(syms,mag_conf,hexag,prec=1e-5,debug=False):
                 Y[i*3+j,9] = mag_conf[sym.permutations[mag_is[i]+1]-1][j]
 
         if debug: 
-            print ''
-            print 'Matrix of the system to be solved.'
+            print('')
+            print('Matrix of the system to be solved.')
             sympy.pprint(Y)
         
         Rs = matrix('s',3,name='R') 
         sol = sympy.solve_linear_system(Y,Rs.x[0,0],Rs.x[0,1],Rs.x[0,2],Rs.x[1,0],Rs.x[1,1],Rs.x[1,2],Rs.x[2,0],\
                                          Rs.x[2,1],Rs.x[2,2])
         if debug:
-            print 'solution of the system'
-            print sol
+            print('solution of the system')
+            print(sol)
 
         for s in sol:
             Rs.subs(s,sol[s])
 
         if debug:
-            print ''
-            print 'general form of transformation matrix that keeps the magnetic order invariant:'
+            print('')
+            print('general form of transformation matrix that keeps the magnetic order invariant:')
             sympy.pprint(Rs.mat())
-            print ''
+            print('')
 
         for mat in mats:
             if debug:
-                print 'Considering the matrix:'
+                print('Considering the matrix:')
                 sympy.pprint(mat)
             fits = True
             for i in range(3):
@@ -184,32 +188,32 @@ def noso_syms(syms,mag_conf,hexag,prec=1e-5,debug=False):
 
             if debug:
                 if fits:
-                    print 'The matrix is compatible with the magnetic order.'
+                    print('The matrix is compatible with the magnetic order.')
                 else:
-                    print 'The matrix is not compatible with the magnetic order.'
+                    print('The matrix is not compatible with the magnetic order.')
 
             if fits:
                 if mat.det() == 1 and sym.has_T:
                     fits = False
                     if debug:
-                        print 'Improper spin rotation, thus not taking this matrix.'
+                        print('Improper spin rotation, thus not taking this matrix.')
             if fits:
                 sym_new = sym.copy()
                 sym_new.Rs = mat
                 syms_noso.append(sym_new)
 
         if debug:
-            print 'original symmetry operation:'
-            print 'space part:'
+            print('original symmetry operation:')
+            print('space part:')
             sympy.pprint(sym[0])
-            print 'magnetic part:'
+            print('magnetic part:')
             sympy.pprint(sym[2])
-            print ''
+            print('')
 
-            print 'new symmetry operations (magnetic part only):'
+            print('new symmetry operations (magnetic part only):')
             for sm in syms_noso[start_new:]:
                 sympy.pprint(sm[2])
-                print ''
+                print('')
 
     return syms_noso
 

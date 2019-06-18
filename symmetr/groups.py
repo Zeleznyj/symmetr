@@ -1,6 +1,8 @@
+from __future__ import print_function
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+from builtins import range
 import re
 import sys
 import os
@@ -68,8 +70,8 @@ def group_sym(name,debug=False):
             ops = [x[2:-1] for x in re.findall('\'\([12346xyzm\-]+\|',line[1])]
             ops_T = [x[2:-1] for x in re.findall('\"\([12346xyzm\-]+\|',line[1])]
             if debug:
-                print 'operations without time-reversal:', ops
-                print 'operations with time-reversal:', ops_T
+                print('operations without time-reversal:', ops)
+                print('operations with time-reversal:', ops_T)
             hex_group = False
             for op in ops + ops_T:
                 if op in hex_syms:
@@ -100,10 +102,10 @@ def group_sym(name,debug=False):
         opm = opm.split(',')
 
         if debug:
-            print 'no time reversal'
-            print 'operator', op
-            print 'symmetry operation:', [j,ops,opm,'+1']
-            print ''
+            print('no time reversal')
+            print('operator', op)
+            print('symmetry operation:', [j,ops,opm,'+1'])
+            print('')
 
         syms.append([j,ops,opm,'+1'])
 
@@ -143,10 +145,10 @@ def group_sym(name,debug=False):
                     opm[i] = 'mz'
 
         if debug:
-            print 'time reversal'
-            print 'operator', op
-            print 'symmetry operation:', [n+j,ops,opm,'-1']
-            print ''
+            print('time reversal')
+            print('operator', op)
+            print('symmetry operation:', [n+j,ops,opm,'-1'])
+            print('')
 
         syms.append([n+j,ops,opm,'-1'])
 
