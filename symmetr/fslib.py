@@ -21,6 +21,17 @@ import subprocess
 from fractions import Fraction
 import sympy
 
+def get_newfilename(path,filename):
+    if not os.path.exists(path+'/'+filename):
+        return filename
+    else:
+        new_filename = filename + '1'
+        i = 1
+        while os.path.exists(path+'/'+new_filename):
+            i += 1
+            new_filename = filename + '{}'.format(i)
+    return new_filename
+
 def read_fs_inp(inp,clean=True):
     with open(inp,'r') as f:
 
@@ -42,18 +53,47 @@ def read_fs_inp(inp,clean=True):
     else:
         return fin
 
-def run_fs(inp):
+def run_fs_fin(fin):
     dirname, filename = os.path.split(os.path.abspath(__file__))
-    fin_c = read_fs_inp(inp)
     my_env = os.environ.copy()
-    my_env["ISODATA"] = dirname + '/../findsym/'
-    #try:  
-    fs = subprocess.Popen([dirname+'/../findsym/findsym'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,env=my_env)
-    out = fs.communicate(input=''.join(fin_c).encode())[0]
-    lines = out.decode().split('\n')
-    #except:
-    #    sys.exit('Error in findsym input') 
+    isodata_path = dirname + '/findsym/'
+
+    #findsym fails if the ISODATA variable is too long.
+    #This is a simple fix, which tries to create a symbolic link in the current working directory
+    try:
+        cwd = os.getcwd()
+        findsym_name = get_newfilename(cwd,'findsym')
+        os.symlink(isodata_path,cwd+'/'+findsym_name)
+        my_env["ISODATA"] = findsym_name+'/'
+        link_created = True
+    except:
+        print('Cannot create a subdirectory in a current working directory. \
+            Findym may fail if the path to findsym is too long.')
+        my_env["ISODATA"] = isodata_path
+        link_created = False
+
+    try:  
+        fs = subprocess.Popen([dirname+'/findsym/findsym'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,env=my_env)
+        out = fs.communicate(input=''.join(fin).encode())[0]
+        lines = out.decode().split('\n')
+        if link_created:
+            try:
+                os.unlink(findsym_name)
+            except:
+                print('Couldn not remove symlink {}'.format(cwd+'/'+findsym_name))
+    except:
+        if link_created:
+            try:
+                os.unlink(findsym_name)
+            except:
+                print('Couldn not remove symlink {}'.format(cwd+'/'+findsym_name))
+        raise Exception('Error in findsym input') 
+
     return lines
+
+def run_fs(inp):
+    fin_c = read_fs_inp(inp)
+    return run_fs_fin(fin_c)
 
 def run_fs_nonmag(inp):
     
@@ -69,17 +109,7 @@ def run_fs_nonmag(inp):
         else:
             fin_cnm.append(fin_c[i])
     
-    #sends the nonmagnetic input file to findsym
-    dirname, filename = os.path.split(os.path.abspath(__file__))
-    my_env = os.environ.copy()
-    my_env["ISODATA"] = dirname + '/../findsym/'
-    fs = subprocess.Popen([dirname+'/../findsym/findsym'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,env=my_env)
-    out_nm = fs.communicate(input=''.join(fin_cnm).encode())[0]
-    lines_nm = out_nm.decode().split('\n')
-
-    return lines_nm
-
-
+    return run_fs_fin(fin_cnm)
 
 #tests if two vectors are equal with precision prec
 def equal_vectors(vec1,vec2,prec):
@@ -277,7 +307,7 @@ def r_sym(lines,debug=False,syms_only=False,num_prec=None):
          #magnetic group tables
          #needs a file 'tables_wyckoff.txt' which are magnetic tables with all unneccessary information deleted
          dirname, filename = os.path.split(os.path.abspath(__file__))
-         tables_loc = str(dirname)+'/../findsym/tables_wyckoff.txt'
+         tables_loc = str(dirname)+'/findsym/tables_wyckoff.txt'
          tables=open(tables_loc)
 
          #read shifts of wickoff positions

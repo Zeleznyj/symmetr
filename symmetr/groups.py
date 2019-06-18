@@ -10,7 +10,7 @@ import os
 def find_group(name):
 
     dirname, filename = os.path.split(os.path.abspath(__file__))
-    with open(dirname+'/../findsym/mag_groups.txt') as f:
+    with open(dirname+'/findsym/mag_groups.txt') as f:
         lines = f.readlines()
     
     found = False
@@ -43,13 +43,13 @@ def group_sym(name,debug=False):
 
     dirname, filename = os.path.split(os.path.abspath(__file__))
 
-    with open(dirname+'/../findsym/syms_table.dat') as f:
+    with open(dirname+'/findsym/syms_table.dat') as f:
         lines = f.readlines()
         syms_t = {}
         for line in lines:
             syms_t[line.split()[0]] = (line.split()[1],line.split()[2])
 
-    with open(dirname+'/../findsym/syms_table_hex.dat') as f:
+    with open(dirname+'/findsym/syms_table_hex.dat') as f:
         lines = f.readlines()
         syms_t_hex = {}
         for line in lines:
@@ -57,7 +57,7 @@ def group_sym(name,debug=False):
 
     hex_syms = ['6z','3z','3z-1','6z-1','21','22','23','-6z','-3z','-3z-1','-6z-1','m1','m2','m3']
 
-    with open(dirname+'/../findsym/mag_groups.txt') as f:
+    with open(dirname+'/findsym/mag_groups.txt') as f:
         lines = f.readlines()
     
     found = False

@@ -85,8 +85,8 @@ Second part of the response tensor
 
 configuration 4
 atom 2, m = 3.0000, 3.0000, -6.0000
-atom 4, m = 3.0000, -6.0000, 3.0000
 atom 3, m = -6.0000, 3.0000, 3.0000
+atom 4, m = 3.0000, -6.0000, 3.0000
 First part of the response tensor
 ⎡x₀₀  x₁₀  x₁₀⎤
 ⎢             ⎥
@@ -102,8 +102,8 @@ Second part of the response tensor
 
 configuration 5
 atom 2, m = 3.0000, -3.0000, 6.0000
-atom 4, m = 3.0000, 6.0000, -3.0000
 atom 3, m = -6.0000, -3.0000, -3.0000
+atom 4, m = 3.0000, 6.0000, -3.0000
 First part of the response tensor
 ⎡x₀₀   -x₁₀  -x₁₀⎤
 ⎢                ⎥
@@ -119,8 +119,8 @@ Second part of the response tensor
 
 configuration 6
 atom 2, m = -3.0000, 3.0000, 6.0000
-atom 4, m = -3.0000, -6.0000, -3.0000
 atom 3, m = 6.0000, 3.0000, -3.0000
+atom 4, m = -3.0000, -6.0000, -3.0000
 First part of the response tensor
 ⎡x₀₀   -x₁₀  x₁₀ ⎤
 ⎢                ⎥
@@ -136,8 +136,8 @@ Second part of the response tensor
 
 configuration 7
 atom 2, m = -3.0000, -3.0000, -6.0000
-atom 4, m = -3.0000, 6.0000, 3.0000
 atom 3, m = 6.0000, -3.0000, 3.0000
+atom 4, m = -3.0000, 6.0000, 3.0000
 First part of the response tensor
 ⎡x₀₀   x₁₀   -x₁₀⎤
 ⎢                ⎥

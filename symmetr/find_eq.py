@@ -74,7 +74,7 @@ class confs(object):
                 print('starting configuration:')
             else:
                 print('configuration %s' %n)
-            for p in self.confs[n]:
+            for p in sorted(self.confs[n].keys()):
                 print('atom %s, m = %s, %s, %s' %(p,self.confs[n][p][0].round(4),self.confs[n][p][1].round(4),self.confs[n][p][2].round(4)))
                 #print 'atom %s, m = %s, %s, %s' %(p,self.confs[n][p][0],self.confs[n][p][1],self.confs[n][p][2])
             print('First part of the response tensor')

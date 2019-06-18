@@ -24,6 +24,6 @@ for f in ${files[@]};do
         echo $f ok!
     else
         echo $f differs from ${f}_ref
-        vimdiff $f ${f}_ref
+        vimdiff $f ${f}_ref_py3
     fi
 done
