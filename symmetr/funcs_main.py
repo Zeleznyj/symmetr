@@ -1,19 +1,23 @@
+from __future__ import print_function
+from __future__ import absolute_import
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+from builtins import str
+from builtins import range
 import re
 import sys
 import os
 
-import symmetrize
-import symmetrize_exp as st
-import fslib
-import find_eq
-import symT
-import mham
-import groups
-from tensors import tensor,matrix
-import symmetry
+from . import symmetrize
+from . import symmetrize_exp as st
+from . import fslib
+from . import find_eq
+from . import symT
+from . import mham
+from . import groups
+from .tensors import tensor,matrix
+from . import symmetry
 
 import sympy
 from sympy import sympify as spf
@@ -95,11 +99,11 @@ def sym_res_nonexp(opt,printit=False):
 
 
     if printit:
-        print '{0} part of the response tensor:'.format(eo[0])
+        print('{0} part of the response tensor:'.format(eo[0]))
         Xs[0].pprint(print_format=opt['print_format'])
         if opt['latex']:
             Xs[0].pprint(print_format=opt['print_format'],latex=True)
-        print '{0} part of the response tensor:'.format(eo[1])
+        print('{0} part of the response tensor:'.format(eo[1]))
         Xs[1].pprint(print_format=opt['print_format'])
         if opt['latex']:
             Xs[1].pprint(print_format=opt['print_format'],latex=True)
@@ -107,17 +111,17 @@ def sym_res_nonexp(opt,printit=False):
         
         if opt['atom2'] != -1:
             if Xs_2 is None:
-                print 'no relation with atom %s found' % opt['atom2']
+                print('no relation with atom %s found' % opt['atom2'])
             else:
-                print 'First part of the response tensor, atom %s' % (opt['atom2'])
+                print('First part of the response tensor, atom %s' % (opt['atom2']))
                 Xs_2[0].pprint(print_format=opt['print_format'])
                 if opt['latex']:
                     Xs_2[0].pprint(print_format=opt['print_format'],latex=True)
-                print 'Second part of the response tensor, atom %s' % (opt['atom2'])
+                print('Second part of the response tensor, atom %s' % (opt['atom2']))
                 Xs_2[1].pprint(print_format=opt['print_format'])
                 if opt['latex']:
                     Xs_2[1].pprint(print_format=opt['print_format'],latex=True)
-                print ''
+                print('')
     
     if opt['equiv']:
 
@@ -139,8 +143,8 @@ def sym_res_nonexp(opt,printit=False):
 
         C = find_eq.find_equiv(Xs,mags,syms_nm,opt['atom'],debug=opt['debug_equiv'],round_prec=opt['round_prec'])
         if printit:
-            print ''
-            print 'Equivalent configurations:'
+            print('')
+            print('Equivalent configurations:')
             C.pprint(print_format=opt['print_format'])
     
     if opt['atom2'] == -1:
@@ -161,7 +165,7 @@ def sym_res_exp(opt,printit=False):
     """
 
     if opt['group']:
-        print '!!!The input group must be one of the nonmagnetic point groups, otherwise the ouput will be wrong.!!!' 
+        print('!!!The input group must be one of the nonmagnetic point groups, otherwise the ouput will be wrong.!!!') 
         syms_nm = symT.get_syms(opt)
         T = symT.get_T(opt)
         mags = []
@@ -210,7 +214,7 @@ def sym_res(opt,printit=False):
     """
     if printit and opt['group'] is not None:
         group_name,group_num = groups.find_group(opt['group'])
-        print 'group name: ', group_name, 'group number: ', group_num
+        print('group name: ', group_name, 'group number: ', group_num)
     if opt['exp'] == -1:
         return sym_res_nonexp(opt,printit=printit)
     else:
@@ -236,17 +240,17 @@ def sym_mham(opt,printit=False):
 
     if printit:
         if H.dim2 == 2:
-            print 'Hamiltonian term in matrix form:'
+            print('Hamiltonian term in matrix form:')
             H.pprint(latex=opt['latex'])
-            print ''
+            print('')
         mham.print_Ham(H,opt['sites'],latex=opt['latex'])
         if opt['equiv']:
-            print ''
-            print 'Hamiltonian terms for all equivalent combinations of sites:'
+            print('')
+            print('Hamiltonian terms for all equivalent combinations of sites:')
             for sites in H_E:
-                print str(sites)+':'
+                print(str(sites)+':')
                 mham.print_Ham(H_E[sites],sites,latex=opt['latex'])
-                print ''
+                print('')
     if not opt['equiv']:
         return H
     else:

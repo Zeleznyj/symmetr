@@ -4,10 +4,15 @@
 """
 Module for finding a symmetrical form of classical magnetic Hamiltonians.
 """
+from __future__ import print_function
+from __future__ import absolute_import
+from builtins import str
+from builtins import range
+from builtins import object
 import sympy as sp
 
-from symmetrize import symmetr,SymmetrOpt
-from tensors import tensor
+from .symmetrize import symmetr,SymmetrOpt
+from .tensors import tensor
 
 #testing
 import sys
@@ -42,7 +47,7 @@ def convert_mag_ham(H,T):
             H_T[ind1] += factor*H[ind2]
     return H_T
 
-class params_trans_ham:
+class params_trans_ham(object):
     """Class for storing parameters of the transformation function."""
     def __init__(self,sites,debug=None,T=None,check_sym=False):
         self.sites = sites
@@ -92,9 +97,9 @@ def trans_mag_ham(H,sym,params):
     R = sym.get_R('s') # select the matrix corresponding the spin transformation
     RiT = R.inv().T
     if params.debug:
-        print 'symmetry:'
-        print sym
-        print 'symmetry in the matrix form'
+        print('symmetry:')
+        print(sym)
+        print('symmetry in the matrix form')
         sp.pprint(R)
 
     if params.check_sym:
@@ -111,12 +116,12 @@ def trans_mag_ham(H,sym,params):
                 perm[p] = pos_st[s][i] 
 
     if params.debug:
-        print 'sites:'
-        print sites
-        print 'transformed sites:'
-        print sites_t
-        print 'the permutation:'
-        print perm
+        print('sites:')
+        print(sites)
+        print('transformed sites:')
+        print(sites_t)
+        print('the permutation:')
+        print(perm)
 
     # permutes the tensor index according to the permutatin of the atoms
     def perm_ind(ind,perm):
@@ -139,10 +144,10 @@ def trans_mag_ham(H,sym,params):
             H_t[ind_n] += factor*H[ind2]
 
     if params.debug:
-        print 'original tensor:'
-        print H
-        print 'transformed tensor:'
-        print H_t
+        print('original tensor:')
+        print(H)
+        print('transformed tensor:')
+        print(H_t)
 
     return H_t
 
@@ -261,4 +266,4 @@ def print_Ham(H,sites,latex=False):
     if not latex:
         sp.pprint(Hsymb)
     else:
-        print sp.latex(Hsymb)
+        print(sp.latex(Hsymb))

@@ -5,16 +5,25 @@
 
 All the tensors that are symmetrized use this class.
 """
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+
+from builtins import str
+from builtins import range
+from builtins import object
+from past.utils import old_div
+from  six import string_types
 
 import sympy
 from sympy.core.numbers import Zero
 import numpy as np
 import copy
-from symmetry import create_T
+from .symmetry import create_T
 import prettytable
 from prettytable import PrettyTable
 
-class tensor:
+class tensor(object):
     """
     Creates a symbolic tensor.
 
@@ -87,10 +96,11 @@ class tensor:
     def __getitem__(self,key):
         if type(key) == tuple:
             return self.t[key]
-        if isinstance(key,int):
+        elif isinstance(key,int):
             return self.t[(key,)]
-        if type(key) == str:
+        elif isinstance(key,string_types):
             return self.v[key]
+        raise Exception('Unexpected key type for key {} with type {}.'.format(key,type(key)))
     def __setitem__(self,key,value):
         if type(key) != tuple:
             raise TypeError
@@ -98,7 +108,7 @@ class tensor:
             raise TypeError
         else:
             for i in key:
-                if i not in range(self.dim1):
+                if i not in list(range(self.dim1)):
                     raise TypeError
         self.t[key]=value
     def __len__(self):
@@ -121,7 +131,7 @@ class tensor:
     def __div__(self,num):
         out = self.copy0()
         for ind in self.inds:
-            out[ind] = self[ind] / num
+            out[ind] = old_div(self[ind], num)
         return out
     def __radd__(self,other):
         return self + other
@@ -195,20 +205,20 @@ class tensor:
         if remove_zeros:
             self.remove_zeros()
         if ind_types:
-            print self.ind_types
+            print(self.ind_types)
         if self.dim2 == 1:
             vec = [self[i] for i in range(self.dim1)]
             vec = sympy.Matrix([vec])
             if latex:
-                print sympy.latex(vec)
+                print(sympy.latex(vec))
             else:
                 sympy.pprint(vec)
         elif self.dim2 == 2:
             if latex:
                 if no_newline:
-                    print sympy.latex(self.mat()),
+                    print(sympy.latex(self.mat()), end=' ')
                 else:
-                    print sympy.latex(self.mat())
+                    print(sympy.latex(self.mat()))
             else:
                 sympy.pprint(self.mat())
         else:
@@ -221,16 +231,16 @@ class tensor:
 
             if print_format == 0:
 
-                print self
+                print(self)
 
             elif print_format == 1:
 
                 if self.dim2 == 3:
-                    print 'X_ijk' + ' ='
+                    print('X_ijk' + ' =')
                 elif self.dim2 == 4:
-                    print 'X_ijkl' + ' ='
+                    print('X_ijkl' + ' =')
                 else:
-                    print 'X_ij...pq' + ' ='
+                    print('X_ij...pq' + ' =')
 
                 r_inds = makeinds(self.dim1,self.dim2-2)
                 for r_ind in r_inds:
@@ -244,16 +254,16 @@ class tensor:
                         #    out_str += ','
                         out_str += '{0}'.format(r_ind[i])
                     out_str += 'pq ='
-                    print out_str 
+                    print(out_str) 
                     if latex:
-                        print sympy.latex(X.mat())
+                        print(sympy.latex(X.mat()))
                     else:
                         X.pprint()
 
             elif print_format == 2:
 
                 if latex:
-                    print 'WARNING: latex format not supported for print_format = 2, use print_format = 1'
+                    print('WARNING: latex format not supported for print_format = 2, use print_format = 1')
                     return None
 
                 r_inds = makeinds(self.dim1,self.dim2-2)
@@ -274,7 +284,7 @@ class tensor:
                     for r_ind2 in r_inds2:
                         ind = r_ind + r_ind2
                         row.append(self[ind])
-                    if i == int(n_r_inds/2):
+                    if i == int(old_div(n_r_inds,2)):
                         if self.dim2 == 3:
                             label = "({0})".format(ind_names[0])
                         elif self.dim2 == 4:
@@ -286,7 +296,7 @@ class tensor:
                         label = ""
                     t.add_row([label]+row)
                 t.hrules = prettytable.ALL
-                print t
+                print(t)
             else:
                 raise Exception('print_format not recognized')
 
@@ -532,7 +542,7 @@ class tensor:
     def round(self,prec):
         def float2int(a):
             if abs(a) > 1e-14:
-                if abs(int(a)/a-1) < 1e-14:
+                if abs(old_div(int(a),a)-1) < 1e-14:
                     res = int(a)
                 else:
                     res = a
@@ -583,7 +593,7 @@ class matrix(tensor):
      def __div__(self,num):
          out = matrix(0,self.dim1,self.dim2)
          for ind in self.inds:
-             out[ind] = self[ind] / num
+             out[ind] = old_div(self[ind], num)
          return out
 
      def __radd__(self,other):
@@ -602,7 +612,7 @@ def makeinds(dim1,dim2):
 
      for d in range(dim2):
          if d == 0:
-             num = range(dim1)
+             num = list(range(dim1))
          else:
              num1 = copy.deepcopy(num)
              num = []
@@ -613,7 +623,7 @@ def makeinds(dim1,dim2):
                      else:
                          num.append([i]+n)
      for i in range(len(num)):
-         if isinstance(num[i], (int,long)):
+         if isinstance(num[i], (int,int)):
              num[i] = (num[i],)
          else:
              num[i] = tuple(num[i])

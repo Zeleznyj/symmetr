@@ -6,7 +6,12 @@
 Includes functions for running findsym, reading findsym input, and extracting
 data from findsym output.
 """
+from __future__ import print_function
+from __future__ import division
 
+from builtins import str
+from builtins import range
+from past.utils import old_div
 import re
 import math
 import sys
@@ -42,12 +47,12 @@ def run_fs(inp):
     fin_c = read_fs_inp(inp)
     my_env = os.environ.copy()
     my_env["ISODATA"] = dirname + '/../findsym/'
-    try:  
-        fs = subprocess.Popen([dirname+'/../findsym/findsym'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,env=my_env)
-        out = fs.communicate(input=''.join(fin_c))[0]
-        lines = out.split('\n')
-    except:
-        sys.exit('Error in findsym input') 
+    #try:  
+    fs = subprocess.Popen([dirname+'/../findsym/findsym'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,env=my_env)
+    out = fs.communicate(input=''.join(fin_c).encode())[0]
+    lines = out.decode().split('\n')
+    #except:
+    #    sys.exit('Error in findsym input') 
     return lines
 
 def run_fs_nonmag(inp):
@@ -69,8 +74,8 @@ def run_fs_nonmag(inp):
     my_env = os.environ.copy()
     my_env["ISODATA"] = dirname + '/../findsym/'
     fs = subprocess.Popen([dirname+'/../findsym/findsym'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,env=my_env)
-    out_nm = fs.communicate(input=''.join(fin_cnm))[0]
-    lines_nm = out_nm.split('\n')
+    out_nm = fs.communicate(input=''.join(fin_cnm).encode())[0]
+    lines_nm = out_nm.decode().split('\n')
 
     return lines_nm
 
@@ -97,7 +102,7 @@ def transform_position(pos,sym,prec):
          op = re.sub('-','+-',sym[1][i])
          transd.append(0)
          op = re.split('\+',op) #op contains a list of all operations we have to do with component
-         op = filter(None,op) #remove empty strings from the list  
+         op = [_f for _f in op if _f] #remove empty strings from the list  
          for j in range(len(op)):
              if re.match('x',op[j]):
                  transd[i] = transd[i] + float(pos[0])
@@ -114,7 +119,7 @@ def transform_position(pos,sym,prec):
              if re.match('-?[0-9]*[./]?[0-9]+',op[j]):
                  if re.match('-?[0-9.]+/[0-9.]+',op[j]):
                      op_s = op[j].split('/')
-                     op[j] = float(op_s[0]) / float(op_s[1])
+                     op[j] = old_div(float(op_s[0]), float(op_s[1]))
                  transd[i] = transd[i] + float(op[j])
 
      #we want all positions to be in the first unit cell, ie they must lie between 0 and 1
@@ -132,7 +137,7 @@ def transform_position(pos,sym,prec):
          op = re.sub('-','+-',sym[2][i])
          transd_m.append(0)
          op = re.split('\+',op) #op contains a list of all operations we have to do with component
-         op = filter(None,op) #remove empty strings from the list  
+         op = [_f for _f in op if _f] #remove empty strings from the list  
          for j in range(len(op)):
              if re.match('mx',op[j]):
                  transd_m[i] = transd_m[i] + float(pos[3])
@@ -149,7 +154,7 @@ def transform_position(pos,sym,prec):
              if re.match('-?[0-9]*[./]?[0-9]+',op[j]):
                  if re.match('-?[0-9.]+/[0-9.]+',op[j]):
                      op_s = op[j].split('/')
-                     op[j] = float(op_s[0]) / float(op_s[1])
+                     op[j] = old_div(float(op_s[0]), float(op_s[1]))
                  transd_m[i] = transd_m[i] + float(op[j])
 
      return list(transd+transd_m)
@@ -220,7 +225,7 @@ def  r_pos(lines, fix_m=[]):
     if fix_m:
         for i in range(len(positions)):
             for l in range(3):
-                positions[i][l+3] = positions[i][l+3]/fix_m[l]
+                positions[i][l+3] = old_div(positions[i][l+3],fix_m[l])
 
     return positions
 
@@ -256,9 +261,9 @@ def r_sym(lines,debug=False,syms_only=False,num_prec=None):
          syms[i][1] = syms[i][1][0:3]
 
      if debug:
-         print 'found symmetries:'
+         print('found symmetries:')
          for sym in syms:
-             print sym
+             print(sym)
 
      if not syms_only:
          #read space group number
@@ -296,7 +301,7 @@ def r_sym(lines,debug=False,syms_only=False,num_prec=None):
                  for i in range(len(shift_sep)):
                      if re.match('[0-9]+/[0-9]+',shift_sep[i]):
                          t = shift_sep[i].split('/')
-                         shift_sep[i] = float(t[0]) / float(t[1])
+                         shift_sep[i] = old_div(float(t[0]), float(t[1]))
                      else:
                          shift_sep[i] = float(shift_sep[i])
                  shifts[l] = shift_sep
@@ -307,31 +312,31 @@ def r_sym(lines,debug=False,syms_only=False,num_prec=None):
                  shifts.pop(0)
 
                  if debug:
-                     print 'found wyckoff shifts:'
+                     print('found wyckoff shifts:')
                      for shift in shifts:
-                         print shift
+                         print(shift)
          
 
          if debug:
-             print 'finding info about sublattice transformations'
+             print('finding info about sublattice transformations')
          #this adds the information about transformation of sublattices 
          for l in range(len(syms)):
              if debug:
-                 print ''
-                 print 'taking symmetry', syms[l]
+                 print('')
+                 print('taking symmetry', syms[l])
              sym_trans = []
              for i in range(len(positions)):
                  trans = transform_position(positions[i],syms[l],num_prec)
                  if debug:
-                     print 'taking position:', positions[i]
-                     print 'transformed to:', trans
+                     print('taking position:', positions[i])
+                     print('transformed to:', trans)
                  found_atoms = []
                  for j in range(len(positions)):
                      if equal_vectors(trans[0:3],positions[j][0:3],num_prec):
                          found_atoms.append(positions[j][6])
                          #sym_trans.append((positions[i][6],positions[j][6]))
                          if debug:
-                             print 'transformed atom identified as atom ', positions[j][6], ' with position ', positions[j]
+                             print('transformed atom identified as atom ', positions[j][6], ' with position ', positions[j])
                      else:
                          for k in range(len(shifts)):
                              sym_temp =['',['x+'+str(shifts[k][0]),'y+'+str(shifts[k][1]),'z+'+str(shifts[k][2])],['mx','my','mz']]
@@ -340,9 +345,9 @@ def r_sym(lines,debug=False,syms_only=False,num_prec=None):
                                  #sym_trans.append((positions[i][6],positions[j][6]))
                                  found_atoms.append(positions[j][6])
                                  if debug:
-                                     print 'transformed atom identified as atom ', positions[j][6], ' with position ', positions[j]
+                                     print('transformed atom identified as atom ', positions[j][6], ' with position ', positions[j])
                  if len(found_atoms) != 1:
-                    print found_atoms
+                    print(found_atoms)
                     raise Exception('Problem with identifying transformation of atom {0}. '
                             'Try changing --pos-prec.'.format(positions[i][6]))
                  else:
@@ -350,8 +355,8 @@ def r_sym(lines,debug=False,syms_only=False,num_prec=None):
                         
 
              if len(sym_trans) != len(positions):
-                 print syms[l]
-                 print sym_trans
+                 print(syms[l])
+                 print(sym_trans)
                  raise Exception('Wrong number of transformed atoms. Try modifying --pos-prec parameter.')
              syms[l].append(list(sym_trans))
 

@@ -1,8 +1,0 @@
-Hamiltonian term in matrix form:
-[x00   0    0 ]
-[             ]
-[ 0   x11   0 ]
-[             ]
-[ 0    0   x00]
-
-M_2x*M_3x*x00 + M_2y*M_3y*x11 + M_2z*M_3z*x00

@@ -1,6 +1,10 @@
+from __future__ import print_function
+from __future__ import absolute_import
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+from builtins import str
+from builtins import range
 import re
 import copy
 import sys
@@ -10,10 +14,10 @@ import time
 import sympy
 import numpy as np
 
-from tensors import matrix, mat2ten, tensor
-from fslib import transform_position
-from symmetrize import symmetr,params_trans
-from symT import convert_vec
+from .tensors import matrix, mat2ten, tensor
+from .fslib import transform_position
+from .symmetrize import symmetr,params_trans
+from .symT import convert_vec
 
 def create_rank2(ten,n_op=2,xyz=False):
     """
@@ -215,17 +219,17 @@ def get_L_trans(mags,sym,debug=False):
             signs.append(-1)
 
     if debug:
-        print ''
-        print 'transformed magnetic moments:'
+        print('')
+        print('transformed magnetic moments:')
         for atom in  sorted(list(mags_R.keys())):
-            print atom, ":"
+            print(atom, ":")
             sympy.pprint(mags_R[atom])
 
-        print 'initial signs of magnetic moments'
-        print initial_signs
+        print('initial signs of magnetic moments')
+        print(initial_signs)
 
-        print 'signs of the trasnformed moments'
-        print signs
+        print('signs of the trasnformed moments')
+        print(signs)
 
     if initial_signs != signs:
         return None
@@ -247,15 +251,15 @@ def def_syms_L(mags,syms,prec=1e-5,debug=False):
             mags_dict[i+1] = mag
 
     if debug:
-        print 'Starting defining L transformation'
-        print 'Nonzero magnetic moments'
-        print mags,mags_dict
+        print('Starting defining L transformation')
+        print('Nonzero magnetic moments')
+        print(mags,mags_dict)
         for atom in  sorted(list(mags_dict.keys())):
-            print atom, ":"
+            print(atom, ":")
             sympy.pprint(mags_dict[atom])
 
     if len(mags_dict) == 0:
-        print "!!!Warning!!!: no magnetic moments defined in the input. Assuming a ferromagnetic system."
+        print("!!!Warning!!!: no magnetic moments defined in the input. Assuming a ferromagnetic system.")
         for sym in syms:
             sym.def_custom_R('L',sym.get_R('s'))
         syms_L = syms
@@ -269,14 +273,14 @@ def def_syms_L(mags,syms,prec=1e-5,debug=False):
         for sym in syms:
 
             if debug:
-                print ''
-                print 'Taking symmetry:'
-                print sym
+                print('')
+                print('Taking symmetry:')
+                print(sym)
 
             L_trans = get_L_trans(mags_dict,sym,debug=debug)
             if debug:
-                print 'L_trans:'
-                print L_trans
+                print('L_trans:')
+                print(L_trans)
             if L_trans is not None:
                 sym.def_custom_R('L',L_trans)
                 syms_L.append(sym)

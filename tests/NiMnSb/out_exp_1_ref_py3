@@ -1,0 +1,6 @@
+!!!Warning!!!: no magnetic moments defined in the input. Assuming a ferromagnetic system.
+⎡   0     m₂⋅x₂₁₀  m₁⋅x₂₁₀⎤
+⎢                         ⎥
+⎢m₂⋅x₂₁₀     0     m₀⋅x₂₁₀⎥
+⎢                         ⎥
+⎣m₁⋅x₂₁₀  m₀⋅x₂₁₀     0   ⎦

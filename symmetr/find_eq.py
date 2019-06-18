@@ -1,10 +1,15 @@
+from __future__ import print_function
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+from builtins import range
+from builtins import object
+
+from collections import OrderedDict
 import sympy
 
-class confs:
+class confs(object):
     """
     Class to store equivalent magnetic configurations and their response tensors.
 
@@ -60,27 +65,27 @@ class confs:
         #if m is set it prints only configuration m
 
         if m == -1:
-            ran = range(self.nconfs)
+            ran = list(range(self.nconfs))
         else:
             ran = [m]
         
         for n in ran:
             if n== 0:
-                print 'starting configuration:'
+                print('starting configuration:')
             else:
-                print 'configuration %s' %n
+                print('configuration %s' %n)
             for p in self.confs[n]:
-                print 'atom %s, m = %s, %s, %s' %(p,self.confs[n][p][0].round(4),self.confs[n][p][1].round(4),self.confs[n][p][2].round(4))
+                print('atom %s, m = %s, %s, %s' %(p,self.confs[n][p][0].round(4),self.confs[n][p][1].round(4),self.confs[n][p][2].round(4)))
                 #print 'atom %s, m = %s, %s, %s' %(p,self.confs[n][p][0],self.confs[n][p][1],self.confs[n][p][2])
-            print 'First part of the response tensor'
+            print('First part of the response tensor')
             self.Xs[n][0].pprint(print_format=print_format)
             if latex:
                 self.Xs[n][0].pprint(latex=True)
-            print 'Second part of the response tensor'
+            print('Second part of the response tensor')
             self.Xs[n][1].pprint(print_format=print_format)
             if latex:
                 self.Xs[n][1].pprint(latex=True)
-            print ''
+            print('')
 
     def convert(self,T,shift):
         #converts to a different coordinate system
@@ -127,7 +132,7 @@ def find_equiv(Xs,mag,syms,atom,debug=False,round_prec=None):
     """
     
     if debug:
-        print 'starting find_equiv'
+        print('starting find_equiv')
 
     n_at = []
     for sym in syms:
@@ -139,7 +144,7 @@ def find_equiv(Xs,mag,syms,atom,debug=False,round_prec=None):
         n_at = n_at[0]
 
     #extracts the starting configuration, only the magnetic moments are needed
-    start_conf = {}
+    start_conf = OrderedDict()
     for i in range(len(mag)):
         a = mag[i][0]
         b = mag[i][1]
@@ -152,9 +157,9 @@ def find_equiv(Xs,mag,syms,atom,debug=False,round_prec=None):
                   'Output will show values of only some magnetic moments.'
                   'Furthermore some equivalent configurations will be missing.'
                   'Use with caution, this is not properly tested.')
-        print ''
-        print message
-        start_conf2 = {}
+        print('')
+        print(message)
+        start_conf2 = OrderedDict()
         for p in start_conf:
             if p in syms[0].permutations:
                 start_conf2[p] = start_conf[p]
@@ -173,13 +178,13 @@ def find_equiv(Xs,mag,syms,atom,debug=False,round_prec=None):
         if atom == -1 or sym.permutations[atom] == atom:
 
             if debug:
-                print ''
-                print 'taking sym : '
-                print sym
-                print ''
+                print('')
+                print('taking sym : ')
+                print(sym)
+                print('')
 
             #transforms the starting configuration by the symmetry
-            conf_t = {}
+            conf_t = OrderedDict()
             for p in start_conf:
                 mom = sympy.Matrix([[start_conf[p][0],start_conf[p][1],start_conf[p][2]]])
                 mom_T = sym.get_R('s') * mom.T
@@ -187,22 +192,22 @@ def find_equiv(Xs,mag,syms,atom,debug=False,round_prec=None):
                 conf_t[sym.permutations[p]] = sympy.Matrix([[mom_T[0],mom_T[1],mom_T[2]]])
 
             if debug:
-                print 'symmetry transforms starting configuration to configuration:'
+                print('symmetry transforms starting configuration to configuration:')
                 for p in conf_t:
-                    print 'atom %s, m = %s, %s, %s' %(p,conf_t[p][0],conf_t[p][1],conf_t[p][2])
+                    print('atom %s, m = %s, %s, %s' %(p,conf_t[p][0],conf_t[p][1],conf_t[p][2]))
             
             #if the configuration has not been found before it transforms the tensor by the symmetry
             #operation and adds everything to C
             if not C.is_in(conf_t):
                 if debug:
-                    print 'configuration has not been found before'
+                    print('configuration has not been found before')
                 Xt = []
                 Xt.append(Xs[0].transform(sym))
                 Xt.append(Xs[1].transform(sym))
                 if debug:
-                    print 'even part converted to:'
+                    print('even part converted to:')
                     Xt[0].pprint()
-                    print 'odd part converted to:'
+                    print('odd part converted to:')
                     Xt[1].pprint()
                 if round_prec is not None:
                     for X in Xt:

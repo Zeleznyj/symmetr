@@ -4,15 +4,20 @@
 """Contains functions for obtaining list of symmetry operations and transformation matrix
 based on user input.
 """
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
 
+from builtins import range
+from past.utils import old_div
 from copy import deepcopy
 
-import fslib
+from . import fslib
 import sympy
 from sympy import sympify as spf
-from groups import group_sym
-from noso import noso_syms
-from symmetry import findsym2sym,matsym2sym
+from .groups import group_sym
+from .noso import noso_syms
+from .symmetry import findsym2sym,matsym2sym
 from fractions import Fraction
 
 def make_rational(mat):
@@ -132,7 +137,7 @@ def get_syms(opt):
         for i in range(len(syms_sel)):
             if '-' in syms_sel[i]:
                 s = syms_sel[i].split('-')
-                syms_sel2 += range(int(s[0]),int(s[1])+1)
+                syms_sel2 += list(range(int(s[0]),int(s[1])+1))
             else:
                 syms_sel2.append(int(syms_sel[i]))
 
@@ -222,19 +227,19 @@ def get_T(opt,nonmag=False):
             normalize = True
             if normalize == True:
                 norm = sympy.sqrt(T_c[0,0]**2 + T_c[1,0]**2 + T_c[2,0]**2)
-                T_c[0,0] = T_c[0,0] / norm
-                T_c[1,0] = T_c[1,0] / norm
-                T_c[2,0] = T_c[2,0] / norm
+                T_c[0,0] = old_div(T_c[0,0], norm)
+                T_c[1,0] = old_div(T_c[1,0], norm)
+                T_c[2,0] = old_div(T_c[2,0], norm)
 
                 norm = sympy.sqrt(T_c[0,1]**2 + T_c[1,1]**2 + T_c[2,1]**2)
-                T_c[0,1] = T_c[0,1] / norm
-                T_c[1,1] = T_c[1,1] / norm
-                T_c[2,1] = T_c[2,1] / norm
+                T_c[0,1] = old_div(T_c[0,1], norm)
+                T_c[1,1] = old_div(T_c[1,1], norm)
+                T_c[2,1] = old_div(T_c[2,1], norm)
 
                 norm = sympy.sqrt(T_c[0,2]**2 + T_c[1,2]**2 + T_c[2,2]**2)
-                T_c[0,2] = T_c[0,2] / norm
-                T_c[1,2] = T_c[1,2] / norm
-                T_c[2,2] = T_c[2,2] / norm
+                T_c[0,2] = old_div(T_c[0,2], norm)
+                T_c[1,2] = old_div(T_c[1,2], norm)
+                T_c[2,2] = old_div(T_c[2,2], norm)
 
             T_m = create_Tm(vec_a,vec_b,vec_c)
 
@@ -278,19 +283,19 @@ def get_T(opt,nonmag=False):
         hex_group,_=group_sym(opt['group'],debug=False)
 
         if 'i' == opt['basis'] or 'abc' == opt['basis']:
-            print 'Using the conventional coordinate system!'
+            print('Using the conventional coordinate system!')
             T = sympy.Matrix(sympy.Identity(3))
 
         if 'cart' == opt['basis']:
 
-            print 'Using a cartesian coordinate system'
+            print('Using a cartesian coordinate system')
             if hex_group:
                 T = sympy.zeros(3)
                 T[0,0] = 1
                 T[0,1] = sympy.sympify(Fraction(-0.5))
                 T[0,2] = 0
                 T[1,0] = 0 
-                T[1,1] = sympy.sqrt(3)/2
+                T[1,1] = old_div(sympy.sqrt(3),2)
                 T[1,2] = 0
                 T[2,0] = 0
                 T[2,1] = 0
@@ -335,7 +340,7 @@ def get_syms_noso(opt):
         for i in range(len(syms_sel_noso)):
             if '-' in syms_sel_noso[i]:
                 s = syms_sel_noso[i].split('-')
-                syms_sel_noso2 += range(int(s[0]),int(s[1])+1)
+                syms_sel_noso2 += list(range(int(s[0]),int(s[1])+1))
             else:
                 syms_sel_noso2.append(int(syms_sel_noso[i]))
 
@@ -394,9 +399,9 @@ def get_metric(opt,debug=False):
 
     else:
         if debug:
-            print ''
-            print 'Get_metric debug output'
-            print '================================'
+            print('')
+            print('Get_metric debug output')
+            print('================================')
         #read the basis vectors used by findsym
         #they are given in the basis used in the findsym input
         lines = fslib.run_fs(opt['inp'])
@@ -417,16 +422,16 @@ def get_metric(opt,debug=False):
 
         #calculate the dual basis vectors
         V = vec_a.dot(vec_b.cross(vec_c))
-        vec_A = vec_b.cross(vec_c)/V
-        vec_B = vec_c.cross(vec_a)/V
-        vec_C = vec_a.cross(vec_b)/V
+        vec_A = old_div(vec_b.cross(vec_c),V)
+        vec_B = old_div(vec_c.cross(vec_a),V)
+        vec_C = old_div(vec_a.cross(vec_b),V)
 
         if debug:
 
-            print 'basis vectors'
-            print vec_a,vec_b,vec_c
-            print 'dual basis vectors'
-            print vec_A,vec_B,vec_C
+            print('basis vectors')
+            print(vec_a,vec_b,vec_c)
+            print('dual basis vectors')
+            print(vec_A,vec_B,vec_C)
 
         A_l = vec_a.row_join(vec_b)    
         A_l = A_l.row_join(vec_c)
@@ -436,22 +441,22 @@ def get_metric(opt,debug=False):
 
         G = A_l.LUsolve(A_L)
         if debug:
-            print 'The metrix tensor'
+            print('The metrix tensor')
             sympy.pprint(G)
-            print 'The inverse of the metrix tensor'
+            print('The inverse of the metrix tensor')
             sympy.pprint(G.inv())
 
         if debug:
-            print 'metric tensor test'
+            print('metric tensor test')
             for i in range(3):
                 a_I = 0*vec_a
                 for j in range(3):
                     a_I += G.T[i,j]*A_l[:,j]
-                print a_I
+                print(a_I)
 
-            print 'Get metric debug output end'
-            print '================================'
-            print ''
+            print('Get metric debug output end')
+            print('================================')
+            print('')
 
     return G
 

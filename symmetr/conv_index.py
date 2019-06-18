@@ -1,6 +1,8 @@
+from __future__ import division
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+from past.utils import old_div
 def convert_index(i,j):
     matrix = ['00','01','02','10','11','12','20','21','22']
     n = i*3+j
@@ -19,8 +21,8 @@ def inconvert_index(n):
     return [i,j]
 
 def inconvert_index_3(n):
-    i = n/9
-    j = (n-i*9)/3
+    i = old_div(n,9)
+    j = old_div((n-i*9),3)
     k = n-i*9-j*3
     return i,j,k
 
