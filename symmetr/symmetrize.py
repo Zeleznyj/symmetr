@@ -14,7 +14,6 @@ import time
 import sympy
 import numpy as np
 import numpy.linalg
-import scipy.linalg
 import mpmath   
 
 from .tensors import matrix, mat2ten
@@ -29,31 +28,6 @@ class params_trans(object):
         self.l = l
         self.T = T
         self.sym_format = sym_format
-
-def num_rref(Y,prec=15):
-
-    Y = np.matrix(Y)
-
-    pl,U = scipy.linalg.lu(Y,permute_l=True)
-    #P,L,U = mpmath.lu(Y)
-
-    print('L,U decomposition')
-    print(pl)
-    print(U)
-
-    pivots = []
-    for i in range(U.shape[0]):
-        for j in range(U.shape[1]):
-            pivot_found = False
-            if U[i,j] != 0 and not pivot_found:
-                pivots.append(j)
-                U[i,:] /= U[i,j]
-                break
-    try:
-        numpy.linalg.inv(pl)
-    except:
-        print('The PL matrix is singular. The output of the code may be wrong!!!!')
-    return U,pivots
 
 class SymmetrOpt(object):
     def __init__(self,num_prec=None,debug=False,debug_time=False,debug_Y=False,round_prec=None):
