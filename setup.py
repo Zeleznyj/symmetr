@@ -1,13 +1,19 @@
 import setuptools
-from symmetr.version import __version__
 
-with open("README.md", "r") as fh:
+with open("README_pypi.md", "r") as fh:
     long_description = fh.read()
+
+def get_version():
+    with open("symmetr/version.py") as f:
+        lines = f.readlines()
+    for line in lines:
+        if 'version' in line:
+            version = line.split('=')[1].strip().lstrip('\'').rstrip('\'')
+            return version
 
 setuptools.setup(
     name="symmetr",
-    #version=__version__,
-    version='0.7.1',
+    version=get_version(),
     author="Jakub Zelezny",
     author_email="jakub.zelezny@gmail.com",
     description="Package for determining symmetry properties of crystals.",
@@ -16,6 +22,7 @@ setuptools.setup(
     url="https://bitbucket.org/zeleznyj/linear-response-symmetry",
     packages=setuptools.find_packages(),
     package_data={'symmetr': ['findsym/*']},
+    data_files=[('',['README_pypi.md'])],
     scripts = ['exec/symmetr'],
     classifiers=[
         "Programming Language :: Python :: 2.7",
