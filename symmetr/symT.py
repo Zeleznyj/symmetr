@@ -388,6 +388,17 @@ def get_Tm(inp,nonmag=False):
 
     return Tm
 
+def get_Tm_fin(inp_list,nonmag=False):
+    if not nonmag:
+        lines = fslib.run_fs_fin(inp_list)
+    else:
+        lines = fslib.run_fs_fin(fslib.make_fsinp_nonmag(inp_list))
+
+    [vec_a,vec_b,vec_c] = fslib.r_basis(lines)
+    Tm = create_Tm(vec_a,vec_b,vec_c)
+
+    return Tm
+
 def get_metric(opt,debug=False):
 
     if opt['group'] is not None:

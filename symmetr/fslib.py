@@ -91,14 +91,7 @@ def run_fs_fin(fin):
 
     return lines
 
-def run_fs(inp):
-    fin_c = read_fs_inp(inp)
-    return run_fs_fin(fin_c)
-
-def run_fs_nonmag(inp):
-    
-    #replaces the magnetic moments by 0
-    fin_c = read_fs_inp(inp)
+def make_fsinp_nonmag(fin_c):
     start = False
     fin_cnm = []
     for i in range(len(fin_c)):
@@ -108,6 +101,17 @@ def run_fs_nonmag(inp):
             fin_cnm.append(re.sub(r'([0-9\.\-]+ +[0-9\.\-]+ +[0-9\.\-]+).+',r'\1 0 0 0',fin_c[i],count=1))
         else:
             fin_cnm.append(fin_c[i])
+    return fin_cnm
+
+def run_fs(inp):
+    fin_c = read_fs_inp(inp)
+    return run_fs_fin(fin_c)
+
+def run_fs_nonmag(inp):
+    
+    fin_c = read_fs_inp(inp)
+    #replaces the magnetic moments by 0
+    fin_cnm = make_fsinp_nonmag(fin_c)
     
     return run_fs_fin(fin_cnm)
 
