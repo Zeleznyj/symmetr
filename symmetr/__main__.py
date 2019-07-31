@@ -5,17 +5,19 @@ from __future__ import absolute_import
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #!/usr/bin/env python
 
+import sys
 from . import funcs_main as fmain
 from . import symT
 from . import input
 from . import fslib
 from .version import __version__
 
+if '--version' in sys.argv:
+    print('Symmetr version: {}'.format(__version__))
+    print('Python version: {}'.format(sys.version))
+
 opt = input.parse()
 
-if opt['version']:
-    print(__version__)
-    
 if opt['print_syms']:
     syms = symT.get_syms(opt)
     print('Symmetry operations:')

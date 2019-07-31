@@ -1,0 +1,12 @@
+even part of the response tensor:
+⎡x₀₀   0    0 ⎤
+⎢             ⎥
+⎢ 0   x₀₀   0 ⎥
+⎢             ⎥
+⎣ 0    0   x₂₂⎦
+odd part of the response tensor:
+⎡0  0  0⎤
+⎢       ⎥
+⎢0  0  0⎥
+⎢       ⎥
+⎣0  0  0⎦

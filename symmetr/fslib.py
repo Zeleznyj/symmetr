@@ -270,8 +270,8 @@ def r_sym(lines,debug=False,syms_only=False,num_prec=None):
 #if there is time-reversal, list of tuples which show to which position each position transforms
 #under this symmetry
      if num_prec is None:
-         tolerance = r_tolerance(lines)
-         num_prec = max(1.1e-5,tolerance)
+         #tolerance = r_tolerance(lines)
+         num_prec = 1.1e-5
      debug = False
      for i in range(len(lines)):
          if "_space_group_symop.magn_operation_mxmymz" in lines[i]:

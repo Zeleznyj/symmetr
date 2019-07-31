@@ -13,6 +13,7 @@ import sys
 import textwrap
 from math import log10
 from .version import __version__
+import sys
 
 class InputError(Exception):
     pass
@@ -179,6 +180,7 @@ def parse(clargs=None):
         args = parser.parse_args()
 
     args_dict = vars(args)
+
 
     args_dict['debug'] = args_dict['debug'].split(',')
 

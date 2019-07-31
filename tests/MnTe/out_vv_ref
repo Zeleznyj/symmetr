@@ -1,0 +1,12 @@
+even part of the response tensor:
+[x00   0    0 ]
+[             ]
+[ 0   x00   0 ]
+[             ]
+[ 0    0   x22]
+odd part of the response tensor:
+[0  0  0]
+[       ]
+[0  0  0]
+[       ]
+[0  0  0]

@@ -164,8 +164,8 @@ def symmetr(syms,X,trans_func,params,opt=None):
                 #print(result)
                 return result
             #sympy.pprint(Y)
-            [rref,piv] = Y.rref()        
-            #[rref,piv] = Y.rref(iszerofunc=lambda x:abs(x)<num_prec)        
+            #[rref,piv] = Y.rref()        
+            [rref,piv] = Y.rref(iszerofunc=lambda x:abs(x)<num_prec)        
             #[rref,piv] = Y.rref(iszerofunc=zerofunc)        
 
         if debug_time:
