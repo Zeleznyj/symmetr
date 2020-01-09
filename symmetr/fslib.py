@@ -308,6 +308,12 @@ def r_sym(lines,debug=False,syms_only=False,num_prec=None):
          positions = r_pos(lines)
          check_pos_prec(positions,num_prec)
 
+         if debug:
+             print('group')
+             print(group)
+             print('positions')
+             for pos in positions:
+                 print(pos)
          #magnetic group tables
          #needs a file 'tables_wyckoff.txt' which are magnetic tables with all unneccessary information deleted
          dirname, filename = os.path.split(os.path.abspath(__file__))
@@ -324,11 +330,18 @@ def r_sym(lines,debug=False,syms_only=False,num_prec=None):
              rx = r"BNS: +" + re.escape(group[0])
              if re.match(rx,line):
                  found = True
+                 if debug:
+                     print(line)
              if found and not end:
-                 if re.match('Wyckoff positions:',line) or re.match('Wyckoff positions (BNS):',line):
+                 if 'Wyckoff positions' in line:
                      end = True
                      shifts = re.findall('\([0-9./]+,[0-9./]+,[0-9./]+\)\+',line)
+                     if debug:
+                         print(line)
 
+         if debug:
+             print('shifts')
+             print(shifts)
          if shifts:
              for l in range(len(shifts)):
                  shift_sep = re.findall('[0-9./]+',shifts[l])
@@ -381,6 +394,7 @@ def r_sym(lines,debug=False,syms_only=False,num_prec=None):
                                  if debug:
                                      print('transformed atom identified as atom ', positions[j][6], ' with position ', positions[j])
                  if len(found_atoms) != 1:
+                    print(syms[l])
                     print(found_atoms)
                     raise Exception('Problem with identifying transformation of atom {0}. '
                             'Try changing --pos-prec.'.format(positions[i][6]))

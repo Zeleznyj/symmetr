@@ -130,13 +130,13 @@ def noso_syms(syms,mag_conf,hexag,prec=1e-5,debug=False):
             print('')
             print('taking symmetry operation ', nsym+1)
             print('space part:')
-            sympy.pprint(sym[0])
+            sympy.pprint(sym.R)
             print('magnetic part:')
-            sympy.pprint(sym[2])
+            sympy.pprint(sym.Rs)
             print('time reversal:')
-            sympy.pprint(sym[3])
+            sympy.pprint(sym.has_T)
             print('permutations:')
-            print(sym[4])
+            print(sym.permutations)
 
         nmag = 0
         mag_is = []
@@ -205,14 +205,14 @@ def noso_syms(syms,mag_conf,hexag,prec=1e-5,debug=False):
         if debug:
             print('original symmetry operation:')
             print('space part:')
-            sympy.pprint(sym[0])
+            sympy.pprint(sym.R)
             print('magnetic part:')
-            sympy.pprint(sym[2])
+            sympy.pprint(sym.Rs)
             print('')
 
             print('new symmetry operations (magnetic part only):')
             for sm in syms_noso[start_new:]:
-                sympy.pprint(sm[2])
+                sympy.pprint(sm.Rs)
                 print('')
 
     return syms_noso
