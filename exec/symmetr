@@ -2,7 +2,7 @@
 
 import sys
 import os
-from runpy import run_module
+from runpy import run_module,run_path
 
 dirname, filename = os.path.split(os.path.abspath(__file__))
 
