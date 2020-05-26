@@ -235,14 +235,18 @@ def get_L_trans(mags,sym,debug=False):
         return None
     else:
         mag_0_R = convert_vec(mags[first],sym.get_R('s'))
-        sign_0 = mag_0_R.dot(mags[first])
+        sign_0 = mag_0_R.dot(mags_R[first])
         if sign_0 > 0:
             sign = 1
         else:
             sign = -1
+        if debug:
+            print('sign: {}'.format(sign))
         return sign * sym.get_R('s')
 
 def def_syms_L(mags,syms,prec=1e-5,debug=False):
+
+    debug = False
 
     #select nonzero magnetic moments
     mags_dict = {}
