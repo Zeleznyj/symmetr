@@ -6,38 +6,29 @@ Symmetr is a program for determining various symmetry properties of magnetic and
 How to install
 --------------
 
+The easiest way how to install the program is using pip, simply run:
+
+::
+    
+    pip install symmetr
+    
+    
 The program currently only works on linux. If you use a different OS, you can run the program using docker, see `here <https://bitbucket.org/zeleznyj/linear-response-symmetry/wiki/docker>`__ . Although the program itself could be run on any operating system since it's written in python, most of the features rely on the findsym code from the `isotropy suite <http://stokes.byu.edu/iso/isolinux.php>`__, which only works on linux. Findsym is now included in the repository so it does not have
-to be installed separately. See the findsym/findsym.txt file for info on the input format for findsym.
+to be installed separately. See the symmetr/findsym/findsym.txt file for info on the input format for findsym or check the various input files present in tests/.
 
-For running the code python 2.7 is required, in addition to sympy and nympy libraries. Sympy is a symbolic library for python.
-Sympy is in the repositories of most distributions or you can download
-the latest version from `github <https://github.com/sympy/sympy>`__. If
-installing sympy from github, you will probably also need to install
-`mpmath <https://github.com/fredrik-johansson/mpmath#1-download--installation>`__
+The program currently works both in Python2 and Python3
 
-Download the repository as a zip file from `this link <https://bitbucket.org/zeleznyj/linear-response-symmetry/get/7d569d9b5dbe.zip>`__ or use git:
+If you don't want to use pip, you can directly download the repository as a zip file from `this link <https://bitbucket.org/zeleznyj/linear-response-symmetry/get/7d569d9b5dbe.zip>`__ or use git:
 
 ::
 
     git clone https://zeleznyj@bitbucket.org/zeleznyj/linear-response-symmetry.git 
 
-This will create a folder called linear-response-symmetry.
-
-To use findsym, you need to set up environment variable ISODATA. In bash you do this by
+This will create a folder called linear-response-symmetry. To install you can then run:
 
 ::
 
-    export ISODATA=install_dir/findsym/
-
-where install_dir is the directory in which the code is located.
-
-If you want to later update the code, run:
-
-::
-
-    git pull origin master
-
-from the folder where the code is located.
+    python setup.py
 
 How to use
 ----------
@@ -276,7 +267,7 @@ License
 This code is distributed under the `MPL 2.0
 license <https://www.mozilla.org/en-US/MPL/2.0/FAQ/>`__.
 
-If the code is used in any research that leads to a publication, it would be appreciated if the code would be cited in the publication. 
+If the code is used in any research that leads to a publication, you should cite this website.
 
 Contact
 --------
