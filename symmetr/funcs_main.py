@@ -66,15 +66,21 @@ def sym_res_nonexp(opt,printit=False):
     if opt['same_op_sym']:
         if len(set(op_types)) == 1:
             same_op_sym = True
-            #the metric is for the findsym basis
-            G = symT.get_metric(opt)
-            if opt['num_prec'] is not None:
-                G = sympy.N(G)
-            if not opt['transform_result']:
-                G = T * G * T.T
+    if (opt['sym_inds'] is not None) or (opt['asym_inds'] is not None):
+        symmetrize_sym_inds = True
+    else:
+        symmetrize_sym_inds = False
 
-            X1.def_metric(G)
-            X2.def_metric(G)
+    if same_op_sym or symmetrize_sym_inds:
+        #the metric is for the findsym basis
+        G = symT.get_metric(opt)
+        if opt['num_prec'] is not None:
+            G = sympy.N(G)
+        if not opt['transform_result']:
+            G = T * G * T.T
+
+        X1.def_metric(G)
+        X2.def_metric(G)
 
     s_opt = def_symmetr_opt(opt)
 
@@ -85,6 +91,10 @@ def sym_res_nonexp(opt,printit=False):
     if same_op_sym:
         for i in range(2):
             Xs[i] = symmetrize.symmetrize_same_op(Xs[i],s_opt)
+    
+    if symmetrize_sym_inds:
+        for i in range(2):
+            Xs[i] = symmetrize.symmetrize_sym_inds(Xs[i],opt['sym_inds'],opt['asym_inds'],s_opt)
 
     if opt['atom2'] != -1:
         Xs_2 = symmetrize.symmetr_AB(syms,Xs,opt['atom'],opt['atom2'],round_prec=opt['round_prec'])
@@ -181,6 +191,7 @@ def sym_res_exp(opt,printit=False):
 
     syms_L = st.def_syms_L(mags,syms_nm,debug=False)
 
+
     op_contravar = (1,)*opt['op_lengths'][0] + (-1,)*opt['op_lengths'][1] + (-1,) * opt['exp']
     op_types = opt['op_types'] + ['L'] * opt['exp']
     X = tensor('s',3,len(op_types),ind_types=op_contravar)
@@ -191,19 +202,38 @@ def sym_res_exp(opt,printit=False):
         X.def_trans(ind_trans=op_types,T_comp=-1)
     s_opt = def_symmetr_opt(opt)
 
+    if (opt['sym_inds'] is not None) or (opt['asym_inds'] is not None):
+        symmetrize_sym_inds = True
+    else:
+        symmetrize_sym_inds = False
+
+    if symmetrize_sym_inds:
+        #the metric is for the findsym basis
+        G = symT.get_metric(opt)
+        if opt['num_prec'] is not None:
+            G = sympy.N(G)
+        if not opt['transform_result']:
+            G = T * G * T.T
+
+        X.def_metric(G)
+
     X = symmetrize.symmetrize_res(syms_L,X,opt['atom'],s_opt)
+
+    if symmetrize_sym_inds:
+            X = symmetrize.symmetrize_sym_inds(X,opt['sym_inds'],opt['asym_inds'],s_opt)
     
     if opt['transform_result']:
         X.convert(T)
 
+    n_op = opt['op_lengths'][0] + opt['op_lengths'][1] 
+    Xm = st.sub_m(X,n_op)
 
     if printit:
-        n_op = opt['op_lengths'][0] + opt['op_lengths'][1] 
-        st.print_tensor(X,n_op)
+        Xm.pprint()
         if opt['latex']:
-          st.print_tensor(X,latex=opt['latex'])
+            Xm.pprint(latex=True,no_newline=no_newline)  
 
-    return X
+    return Xm
 
 def sym_res(opt,printit=False):
     """A wrapper function that returns the appropriate response tensor based on the input options.

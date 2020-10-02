@@ -182,7 +182,7 @@ def is_collinear(mags,prec=1e-5):
     res = True
     first = sorted(list(mags.keys()))[0]
     for i in mags:
-        if abs(mags[first].dot(mags[i])) < 1-prec:
+        if abs(mags[first].dot(mags[i]))/mags[first].norm()/mags[i].norm() < 1-prec:
             res = False
             break
 
