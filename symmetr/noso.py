@@ -55,7 +55,7 @@ def read_all_syms(hexag):
 
     return mats
 
-def noso_syms(syms,mag_conf,hexag,prec=1e-5,debug=False):
+def noso_syms(syms,mag_conf,hexag,prec=1e-5,num_prec=1e-3,debug=False):
     """
     Takes symmetry operations in a nonmagnetic crystal and returns symmetry operations of a
         magnetic crystal without spin-orbit coupling.
@@ -160,8 +160,14 @@ def noso_syms(syms,mag_conf,hexag,prec=1e-5,debug=False):
             sympy.pprint(Y)
         
         Rs = matrix('s',3,name='R') 
-        sol = sympy.solve_linear_system(Y,Rs.x[0,0],Rs.x[0,1],Rs.x[0,2],Rs.x[1,0],Rs.x[1,1],Rs.x[1,2],Rs.x[2,0],\
-                                         Rs.x[2,1],Rs.x[2,2])
+        if num_prec is None:
+            sol = sympy.solve_linear_system(Y,Rs.x[0,0],Rs.x[0,1],Rs.x[0,2],Rs.x[1,0],
+                    Rs.x[1,1],Rs.x[1,2],Rs.x[2,0],Rs.x[2,1],Rs.x[2,2])
+        else:
+            sol = sympy.solve_linear_system(Y,Rs.x[0,0],Rs.x[0,1],Rs.x[0,2],Rs.x[1,0],
+                    Rs.x[1,1],Rs.x[1,2],Rs.x[2,0],Rs.x[2,1],Rs.x[2,2],
+                    iszerofunc=lambda x:abs(x) < num_prec)
+
         if debug:
             print('solution of the system')
             print(sol)

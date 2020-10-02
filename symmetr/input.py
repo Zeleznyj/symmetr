@@ -269,21 +269,21 @@ def parse(clargs=None):
 
     def parse_sym_inds(sym_inds):
         if sym_inds is not None:
-            sym_inds_c = args_dict['sym_inds'].split('::')
-            sym_inds_c[0] = sym_inds_c[0].split(':')
-            sym_inds_c[1] = sym_inds_c[1].split(':')
-            sym_inds = [[],[]]
-            for i in range(2):
-                for ind in sym_inds_c[i]:
-                    if ind != '':
-                        (j,Pj) = ind.split(',')
-                        sym_inds[i].append((int(j),int(Pj)))
+            #sym_inds_c = args_dict['sym_inds'].split('::')
+            sym_inds_c = sym_inds.split(':')
+            sym_inds = []
+            for ind in sym_inds_c:
+                if ind != '':
+                    (j,Pj) = ind.split(',')
+                    sym_inds.append((int(j),int(Pj)))
 
         return sym_inds
 
     if args_dict['mode'] == 'res':
         sym_inds = parse_sym_inds(args_dict['sym_inds'])
         asym_inds = parse_sym_inds(args_dict['asym_inds'])
+        args_dict['sym_inds'] = sym_inds
+        args_dict['asym_inds'] = asym_inds
 
     opt = options(args_dict)
 

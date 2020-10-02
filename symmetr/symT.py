@@ -117,7 +117,13 @@ def is_hex(lines):
             if int(round(float(angle))) == 120:
                 hexag = True
             else:
-                sys.exit('one of the angles in findsym output is neither 90 nor 120.')
+                for i,line in enumerate(lines):
+                    if 'Space Group' in line:
+                        sg = line.split()[-1]
+                if sg == 'P1' or sg == 'P-1':
+                    hexag = False
+                    break
+                raise Exception('one of the angles in findsym output is neither 90 nor 120.')
     return hexag
 
 def get_syms(opt):

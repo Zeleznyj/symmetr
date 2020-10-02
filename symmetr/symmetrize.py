@@ -308,6 +308,53 @@ def symmetrize_same_op(X,s_opt=None):
         
     return X
 
+def symmetrize_sym_inds(X,sym_inds,asym_inds,s_opt=None):
+
+    def trans_func(X,perm,sign):
+
+        X_T = X.copy0()
+
+        for ind in X:
+            ind_T = [0]*len(ind)
+            for i in range(len(ind)):
+                ind_T[i] = ind[perm[i]]
+            ind_T = tuple(ind_T)
+            X_T[ind_T] = sign * X[ind]
+
+        ind_types = [0] * X.dim2
+        for i in range(X.dim2):
+            ind_types[i] = X.ind_types[perm[i]]
+        X_T.ind_types = tuple(ind_types)
+
+        for i in range(X.dim2):
+            if X_T.ind_types[i] != X.ind_types[i]:
+                X_T.reverse_index(i)
+
+        return X_T
+
+    if sym_inds is not None:
+
+        perms_sym = []
+        for si in sym_inds:
+            perm = list(range(X.dim2))
+            perm[si[0]] = si[1]
+            perm[si[1]] = si[0]
+            perms_sym.append(perm)
+        X = symmetr(perms_sym,X,trans_func,1,s_opt)
+
+    if asym_inds is not None:
+
+        perms_asym = []
+        for si in asym_inds:
+            perm = list(range(X.dim2))
+            perm[si[0]] = si[1]
+            perm[si[1]] = si[0]
+            perms_asym.append(perm)
+
+        X = symmetr(perms_asym,X,trans_func,-1,s_opt)
+
+    return X
+
 def symmetr_AB(syms,X,atom1,atom2,round_prec=None):
     """
     Tries to transform the tensor projected on one atom to a different atom
