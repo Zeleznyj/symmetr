@@ -209,7 +209,7 @@ def sym_res_exp(opt,printit=False):
 
     if symmetrize_sym_inds:
         #the metric is for the findsym basis
-        G = symT.get_metric(opt)
+        G = symT.get_metric(opt,nonmag=True)
         if opt['num_prec'] is not None:
             G = sympy.N(G)
         if not opt['transform_result']:

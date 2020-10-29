@@ -405,7 +405,7 @@ def get_Tm_fin(inp_list,nonmag=False):
 
     return Tm
 
-def get_metric(opt,debug=False):
+def get_metric(opt,debug=False,nonmag=False):
 
     if opt['group'] is not None:
         #the metric tensor is trivial in the cartesian coordinate system
@@ -421,7 +421,10 @@ def get_metric(opt,debug=False):
             print('================================')
         #read the basis vectors used by findsym
         #they are given in the basis used in the findsym input
-        lines = fslib.run_fs(opt['inp'])
+        if not nonmag:
+            lines = fslib.run_fs(opt['inp'])
+        else:
+            lines = fslib.run_fs_nonmag(opt['inp'])
         [vec_a,vec_b,vec_c] = fslib.r_basis(lines)
 
         vec_a = sympy.Matrix(vec_a)
