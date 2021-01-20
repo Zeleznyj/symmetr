@@ -231,22 +231,28 @@ def get_L_trans(mags,sym,debug=False):
         print('signs of the trasnformed moments')
         print(signs)
 
-    if initial_signs != signs:
-        return None
+    #I don't really understand what the code below was supposed to be doing, but 
+    #it seems wrong.
+    #if initial_signs != signs:
+    #    return None
+    #else:
+    #    mag_0_R = convert_vec(mags[first],sym.get_R('s'))
+    #    sign_0 = mag_0_R.dot(mags_R[first])
+    #    if sign_0 > 0:
+    #        sign = 1
+    #    else:
+    #        sign = -1
+    #    if debug:
+    #        print('sign: {}'.format(sign))
+    #    return sym.get_R('s')
+    if signs == initial_signs:
+        return sym.get_R('s')
+    elif signs == [-s for s in initial_signs]:
+        return -sym.get_R('s')
     else:
-        mag_0_R = convert_vec(mags[first],sym.get_R('s'))
-        sign_0 = mag_0_R.dot(mags_R[first])
-        if sign_0 > 0:
-            sign = 1
-        else:
-            sign = -1
-        if debug:
-            print('sign: {}'.format(sign))
-        return sign * sym.get_R('s')
+        return None
 
 def def_syms_L(mags,syms,prec=1e-5,debug=False):
-
-    debug = False
 
     #select nonzero magnetic moments
     mags_dict = {}

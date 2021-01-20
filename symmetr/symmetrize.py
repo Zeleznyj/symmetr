@@ -279,6 +279,8 @@ def symmetrize_res(symmetries,X,proj=-1,s_opt=None):
 def symmetrize_same_op(X,s_opt=None):
 
     perm = {}
+    for i in range(X.dim2):
+        perm[i] = i
     perm[0] = 1
     perm[1] = 0
     perms=[perm] 

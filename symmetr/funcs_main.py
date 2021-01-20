@@ -207,7 +207,12 @@ def sym_res_exp(opt,printit=False):
     else:
         symmetrize_sym_inds = False
 
-    if symmetrize_sym_inds:
+    same_op_sym = False
+    if opt['same_op_sym']:
+        if len(set(opt['op_types'])) == 1:
+            same_op_sym = True
+
+    if same_op_sym or symmetrize_sym_inds:
         #the metric is for the findsym basis
         G = symT.get_metric(opt,nonmag=True)
         if opt['num_prec'] is not None:
@@ -220,7 +225,11 @@ def sym_res_exp(opt,printit=False):
     X = symmetrize.symmetrize_res(syms_L,X,opt['atom'],s_opt)
 
     if symmetrize_sym_inds:
-            X = symmetrize.symmetrize_sym_inds(X,opt['sym_inds'],opt['asym_inds'],s_opt)
+        X = symmetrize.symmetrize_sym_inds(X,opt['sym_inds'],opt['asym_inds'],s_opt)
+
+    if same_op_sym:
+        X = symmetrize.symmetrize_same_op(X,s_opt)
+
     
     if opt['transform_result']:
         X.convert(T)
