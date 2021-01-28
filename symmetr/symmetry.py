@@ -91,6 +91,55 @@ class Symmetry(object):
 
         return out
 
+    def __eq__(self,other):
+        if self.R != other.R:
+            return False
+        if self.has_T != other.has_T:
+            return False
+        if self.Rs != other.Rs:
+            return False
+        if self.permutations is None or other.permutations is None:
+            if not (self.permutation is None and other.permutations is None):
+                return False
+            if self.permutations != other.permutations:
+                return False
+        if self.custom_Rs != other.custom_Rs:
+            return False
+        return True
+
+    def __mul__(self,other):
+        R = self.R * other.R
+        Rs = self.Rs * other.Rs
+        if not self.has_T and not other.has_T:
+            has_T = False
+        elif self.has_T and other.has_T:
+            has_T = False
+        else:
+            has_T = True
+        if self.permutations is None and other.permutation is None:
+            permutations = None
+        else:
+            if self.permutations is None or other.permutations is None:
+                raise Exception('Cannot multiply symmetry operations when only one permutation is defined')
+            permutations = {}
+            for i in other.permutations:
+                permutations[i] = self.permutations[other.permutations[i]]
+        if self.custom_Rs.keys() != other.custom_Rs.keys():
+            raise Exception('For multiplication the custom_Rs must be the same')
+        custom_Rs = {}
+        for name in custom_Rs:
+            custom_Rs[name] = self.custom_Rs[name]*other.custom_Rs[name]
+        out = Symmetry(R,has_T,Rs,permutations)
+        out.custom_Rs = custom_Rs
+        return out
+
+    def pprint(self):
+        sympy.pprint(self.R)
+        sympy.pprint(self.Rs)
+        print('has T:', self.has_T)
+        if self.permutations is not None:
+            print('permutations: ', self.permutations)
+
 def findsym2sym(sym_findsym):
     R = sym2R(sym_findsym)
     Rs = sym2Rs(sym_findsym)

@@ -138,18 +138,10 @@ def get_syms(opt):
 
     #this selects some of the symmetries 
     if opt['syms_sel'] != -1:
-        syms_sel = opt['syms_sel'].split(',')
-        syms_sel2 = []
-        for i in range(len(syms_sel)):
-            if '-' in syms_sel[i]:
-                s = syms_sel[i].split('-')
-                syms_sel2 += list(range(int(s[0]),int(s[1])+1))
-            else:
-                syms_sel2.append(int(syms_sel[i]))
 
         syms_new = []
         for i in range(len(syms)):
-            if i+1 in syms_sel2:
+            if i+1 in opt['syms_sel']:
                 syms_new.append(syms[i])
 
         syms = syms_new
@@ -319,6 +311,15 @@ def get_syms_nonmag(opt):
     for sym in syms:
         syms_g.append(findsym2sym(sym))
     syms = syms_g
+
+    if opt['syms_sel'] != -1:
+
+        syms_new = []
+        for i in range(len(syms)):
+            if i+1 in opt['syms_sel']:
+                syms_new.append(syms[i])
+
+        syms = syms_new
 
     return syms
 

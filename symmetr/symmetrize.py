@@ -12,13 +12,105 @@ import math
 import time
 
 import sympy
+from scipy.linalg import lu,qr
+from scipy.io import savemat
 import numpy as np
 import numpy.linalg
+from numpy.linalg import svd
 import mpmath   
 
 from .tensors import matrix, mat2ten
 from .fslib import transform_position
 from .conv_index import *
+
+def num_rref(Y,prec=15):
+
+    Y = np.matrix(Y)
+
+    pl,U = lu(Y,permute_l=True)
+    #P,L,U = mpmath.lu(Y)
+
+    #print('L,U decomposition')
+    #print(pl)
+    #print(U)
+
+    pivots = []
+    for i in range(U.shape[0]):
+        for j in range(U.shape[1]):
+            pivot_found = False
+            if U[i,j] != 0 and not pivot_found:
+                pivots.append(j)
+                U[i,:] /= U[i,j]
+                break
+    try:
+        np.linalg.inv(pl)
+    except:
+        print('The PL matrix is singular. The output of the code may be wrong!!!!')
+    return U,pivots
+
+def QR_rref(V,num_prec=1e-10):
+    Q,R = qr(V)
+    return U_to_rref(R,num_prec=num_prec)
+
+def U_to_rref(U,num_prec=1e-10):
+    U_out = U.copy()
+    pivots = []
+    for row in range(U_out.shape[0]):
+        found_pivot = False
+        for col in range(U_out.shape[1]):
+            if abs(U_out[row,col]) >= num_prec:
+                if col not in pivots:
+                    pivots.append(col)
+                    U_out[row,:] = U_out[row,:] / U_out[row,col]
+                    found_pivot = True
+                    break
+                else:
+                    U_out[row,:] -= U_out[pivots.index(col),:] * U_out[row,col]
+        if not found_pivot:
+            raise Exception('Did not find pivot!')
+            
+    pivots_i = [(p,i) for i,p in enumerate(pivots)]
+    pivots_i.sort()
+    sorted_pivots,permutation = zip(*pivots_i)
+    if permutation != tuple(range(len(pivots))):
+        U_out_perm = U_out.copy()
+        for row in range(U_out.shape[0]):
+            U_out_perm[row,:] = U_out[permutation[row],:]
+    
+        pivots = sorted_pivots
+        U_out = U_out_perm
+
+    for piv_row,col in enumerate(pivots):
+        for row in range(U_out.shape[0]):
+            if row < piv_row:
+                if abs(U_out[row,col]) >= num_prec:
+                    U_out[row,:] -= U_out[row,col] * U_out[piv_row,:]
+    return U_out,pivots
+
+def get_rref(U,num_prec=1e-10):
+    U_o = U.copy()
+    pivots = []
+    row = 0
+    rows,columns = U.shape
+    for col in range(columns):
+        m,pivot = [np.max(np.abs(U_o[row:,col])),np.argmax(np.abs(U_o[row:,col]))]
+        pivot = pivot + row
+        
+        if m < num_prec:
+            U_o[row:,col] = np.zeros((rows-row))
+        else:
+            pivots.append(col)
+            U_o[[pivot,row],:] = U_o[[row,pivot],:]
+            U_o[row,:] = U_o[row,:] / U_o[row,col]
+            for r in range(rows):
+                if r != row:
+                    U_o[r,:] -= U_o[row,:] * U_o[r,col]
+            if row == rows-1:
+                break
+            else:
+                row += 1
+    
+    return U_o,pivots
 
 class params_trans(object):
     def __init__(self,op1,op2,op3,l,T=None,sym_format='findsym'):
@@ -62,6 +154,13 @@ def symmetr(syms,X,trans_func,params,opt=None):
     debug_time = opt.debug_time
     debug_Y = opt.debug_Y
 
+    if num_prec is None:
+        algo = 1
+        algo_solve = 0
+    else:
+        algo = 3
+        algo_solve = 1
+
     if debug:
         print('')
         print('======= Starting symmetrizing =======')
@@ -75,10 +174,13 @@ def symmetr(syms,X,trans_func,params,opt=None):
             print(sym)
             print('')
 
+        if debug_time:
+            t0 = time.perf_counter()
+
         X_trans = trans_func(X,sym,params)
         if X_trans is None:
             continue
-            
+
         if debug:
             print('')
             print('Current form of the tensor:')
@@ -96,9 +198,23 @@ def symmetr(syms,X,trans_func,params,opt=None):
         # it doesn't really matter but the results are more natural this way
 
         if debug_time:
-            t1 = time.clock()
+            t1 = time.perf_counter()
+            print('Time for transforming the tensor: ',t1-t0) 
+            t0 = time.perf_counter()
 
+        #equal = (X_trans == X)
+        if debug_time:
+            t3= time.perf_counter()
+            print('Time for checking equality: ',t3-t0)
+        #if equal:
+        #    continue
+
+            
+        t21 = time.perf_counter()
         Y = sympy.zeros(X.dim1**X.dim2)
+        t22 = time.perf_counter()
+        td = False
+        if td: print('Time for creating zeros: ', t22-t21)
 
         rev_inds = list(reversed(X.inds))
         #we do a loop over all rows of the matrix Y - ie over all linear equations
@@ -108,26 +224,91 @@ def symmetr(syms,X,trans_func,params,opt=None):
             m = -1
 
             #if this is zero, then we do not have to do any substituting so this saves quite a lot of time
-            if X[ind1]-X_trans[ind1] == 0:
-                is_zero = True
-            else:
-                is_zero = False
 
-            speed_test = True
-            if speed_test:
+
+            #this seems unnecessary
+            #if X[ind1]-X_trans[ind1] == 0:
+            #    is_zero = True
+            #else:
+            #    is_zero = False
+            #if is_zero:
+            #    Y[n,:] = sympy.zeros(1,X.dim1**X.dim2)
+            #    continue
+
+            if algo == 1:
+                t11 = time.perf_counter()
                 inds = re.findall(r'x[0-9]+',sympy.srepr(X[ind1]-X_trans[ind1]))
+                t12 = time.perf_counter()
+                if td: print('Time for findall: ',t12-t11)
                 for ind2 in reversed(inds):
+                    t13 = time.perf_counter()
                     m_index = (int(i) for i in re.findall(r'[0-9]',ind2))
                     m = rev_inds.index(tuple(m_index))
                     Y_p = X[ind1]-X_trans[ind1]
                     #now in the equation we substite 1 to the matrix component that correponds to the column and 0 to all others
+                    t14 = time.perf_counter()
+                    if td: print('Time for 1: ', t14-t13)
+                    t15 = time.perf_counter()
+                    subs = []
                     for ind3 in inds:
                         if ind2 == ind3:
-                            Y_p = Y_p.subs(X[ind3],1)
+                            subs.append((X[ind3],1))
                         else:
-                            Y_p = Y_p.subs(X[ind3],0)
+                            subs.append((X[ind3],0))
+                    Y_p = Y_p.subs(subs)
+                    #for ind3 in inds:
+                    #    if ind2 == ind3:
+                    #        Y_p = Y_p.subs(X[ind3],1)
+                    #    else:
+                    #        Y_p = Y_p.subs(X[ind3],0)
 
                     Y[n,m] = Y_p
+                    #print(n,m,Y[n,m])
+                    t16 = time.perf_counter()
+                    if td: print('Time for subs: ', t16-t15)
+
+            elif algo == 3:
+                t11 = time.perf_counter()
+                Xd = X[ind1]-X_trans[ind1]
+                inds = list(set(re.findall(r'x[0-9]+',sympy.srepr(Xd))))
+                Xinds = [X[ind] for ind in inds]
+                Xdfunc = sympy.lambdify(Xinds,Xd,'numpy')
+                t12 = time.perf_counter()
+                if td: print('Time for findall: ',t12-t11)
+                for ind2 in inds:
+                    t13 = time.perf_counter()
+                    m_index = (int(i) for i in re.findall(r'[0-9]',ind2))
+                    m = rev_inds.index(tuple(m_index))
+                    #now in the equation we substite 1 to the matrix component that correponds to the column and 0 to all others
+                    t14 = time.perf_counter()
+                    if td: print('Time for 1: ', t14-t13)
+                    t15 = time.perf_counter()
+                    subs = []
+                    for ind3 in inds:
+                        if ind2 == ind3:
+                            subs.append(1)
+                        else:
+                            subs.append(0)
+                    Y[n,m] = sympy.sympify(Xdfunc(*subs))
+                    #print(n,m,Y[n,m])
+                    t16 = time.perf_counter()
+                    if td: print('Time for subs: ', t16-t15)
+                t17 = time.perf_counter()
+                if td: print('Time for all ind2: ', t17-t12)
+                if td: print('Time for ind1: ', t17-t11)
+
+            elif algo == 2:
+                Xd = X[ind1]-X_trans[ind1]
+                if Xd.func != sympy.core.add.Add:
+                    raise Exception('Cannot use this algo if expression not add')
+                for aa in Xd.args:
+                    inds = re.findall(r'x[0-9]+',sympy.srepr(aa))
+                    if len(inds) > 1:
+                        print(Xd)
+                        print(aa,sympy.srepr(aa),inds)
+                        raise Exception('Shouldnt be longer than 1')
+                    m = rev_inds.index(tuple([int(i) for i in inds[0][1:]]))
+                    Y[n,m] = aa.subs(X[inds[0]],1)
 
             else:
                 for ind2 in rev_inds:
@@ -143,75 +324,150 @@ def symmetr(syms,X,trans_func,params,opt=None):
                     Y[n,m] = Y_p
 
         if debug_time:
-            t2 = time.clock()
-            print('Time for constructing Y: ', t2-t1)
-            t1 = time.clock()
+            t2 = time.perf_counter()
+            print('Time for constructing Y: ', t2-t3)
+            t1 = time.perf_counter()
 
-        #this transforms the matrix into the Reduced row echelon form
-        #piv are the indeces o the pivot columns
-        if num_prec is None:
-            [rref,piv] = Y.rref()
-        else:
-            def zerofunc(x):
-                try:
-                    a = abs(x) < num_prec
-                    if a:
-                        result = True
+        if algo_solve == 0:
+
+            #this transforms the matrix into the Reduced row echelon form
+            #piv are the indeces o the pivot columns
+            if num_prec is None:
+                [rref,piv] = Y.rref()
+            else:
+                def zerofunc(x):
+                    try:
+                        a = abs(x) < num_prec
+                        if a:
+                            result = True
+                        else:
+                            result = False
+                    except:
+                        result = None
+                    #print(result)
+                    return result
+                #sympy.pprint(Y)
+                [rref,piv] = Y.rref(iszerofunc=lambda x:abs(x)<num_prec)        
+                #[rref,piv ] = num_rref(Y)
+                #[rref,piv] = Y.rref(iszerofunc=zerofunc)        
+
+            if debug_time:
+                t2 = time.perf_counter()
+                print('Time for reducing Y to reduced row echelon form: ', t2-t1)
+
+            if debug_Y:
+                print('')
+                print('Matrix representing the linear equation system that has to be satisfied: (right hand side is zero)')
+                sympy.pprint(Y)
+                print('')
+                print('Reduced row echelon form and indeces of the pivot columns:')
+                sympy.pprint(rref)
+                print(piv)
+                print('')
+
+            #a loop over all the pivots: it's the pivots that give interesting information
+            for j in list(reversed(piv)):
+
+                
+                #find the row of pivot j
+                found = False
+                i = X.dim1**X.dim2-1
+                while found == False:
+                    if rref[i,j] == 1:
+                        found = True
                     else:
-                        result = False
-                except:
-                    result = None
-                #print(result)
-                return result
-            #sympy.pprint(Y)
-            #[rref,piv] = Y.rref()        
-            [rref,piv] = Y.rref(iszerofunc=lambda x:abs(x)<num_prec)        
-            #[rref,piv] = Y.rref(iszerofunc=zerofunc)        
+                        i = i-1
+                
+                if debug:
+                    print('')
+                    print('considering pivot ', i,j)
+
+                tmp = 0
+                #now we just make use of the linear equation that holds for this pivot
+                #keep in mind that the rows are in reversed order
+                for ll in range(j+1,X.dim1**X.dim2):
+                    tmp = tmp - rref[i,ll]*X.x[rev_inds[ll]]
+                X = X.subs(X.x[rev_inds[j]],tmp)
+
+                if debug:
+                    print('substituting ', end=' ')
+                    sympy.pprint(X.x[rev_inds[j]])
+                    print(' for ', end=' ')
+                    sympy.pprint(tmp)
+                    print('')
+
+        elif algo_solve == 1:
+
+            if debug_time:
+                ts0 = time.perf_counter()
+
+            U,S,V = svd(np.array(np.flip(Y,axis=1),dtype=np.float))
+            if debug_time:
+                ts1 = time.perf_counter()
+                print('Time for svd: {}'.format(ts1-ts0))
+            zero_singulars = [i for i,s in enumerate(S) if abs(s) < num_prec]
+
+            #V2 = sympy.zeros(len(zero_singulars),Y.shape[1])
+            V2 = np.zeros((len(zero_singulars),Y.shape[1]))
+            for i in range(len(zero_singulars)):
+                V2[i,:] = V[zero_singulars[i],:]
+            if debug_Y:
+                print('Singular values: ',S)
+                print(V2)
+            #V2_rref,pivs = V2.rref(iszerofunc=lambda x:abs(x)<num_prec,normalize_last=False)
+            #V2_rref,pivs = QR_rref(V2,num_prec)
+            V2_rref,pivs = get_rref(V2,num_prec)
+            #savemat('/home/kuba/Remotes/tarkil/matlab/rref_testing/V3.mat',{'V3':V2,'V3r':V2_rref,'p':pivs})
+            if debug_Y:
+                print(V2_rref)
+            if debug_time:
+                ts0 = time.perf_counter()
+                print('Time for rref: {}'.format(ts0-ts1))
+
+            if len(pivs) != len(zero_singulars):
+                Vn = np.array(V2.evalf(),dtype=np.float)
+                np.save('debug_V.npy',Vn)
+                print(pivs)
+                print(zero_singulars)
+                print([S[i] for i in zero_singulars])
+                for i in range(len(zero_singulars)):
+                    for j in range(Y.shape[1]):
+                        V2[i,j] = round(V2[i,j],3)
+                        V2_rref[i,j] = round(V2_rref[i,j],3)
+                        
+                sympy.pprint(V2)
+                sympy.pprint(V2_rref)
+                raise Warning('Issue with rref of V2, results are likely to be wrong!!!')
+
+            ais = [] 
+            for i in range(len(zero_singulars)):
+                ais.append(X.x[X.inds[pivs[i]]])
+
+            for j in range(Y.shape[1]):
+                if j not in pivs:
+                    tmp = 0
+                    print_debug = False
+                    for i in range(len(zero_singulars)):
+                        coeff = round(V2_rref[i,j],opt.round_prec)
+                        tmp += coeff * ais[i]
+                        #tmp += V2_rref[i,j] * ais[i]
+                        if abs(coeff) > 10 or (abs(coeff) < 0.1 and abs(coeff) > 1e-3):
+                            print('Warning: Large or small coefficient {}, this can signify error'.format(coeff))
+                            print_debug = True
+                    if debug or print_debug:
+                        print('Substituting {} -> {}'.format(X.x[X.inds[j]],tmp))
+                    X = X.subs(X.x[X.inds[j]],tmp)
+            if debug_time:
+                ts1 = time.perf_counter()
+                print('Time for subs: {}'.format(ts1-ts0))
+        else:
+            raise Exception('Unknown algo_solve')
 
         if debug_time:
-            t2 = time.clock()
-            print('Time for reducing Y to reduced row echelon form: ', t2-t1)
-
-        if debug_Y:
-            print('')
-            print('Matrix representing the linear equation system that has to be satisfied: (right hand side is zero)')
-            sympy.pprint(Y)
-            print('')
-            print('Reduced row echelon form and indeces of the pivot columns:')
-            sympy.pprint(rref)
-            print(piv)
+            t1 = time.perf_counter()
+            print('Time for constructing tensor ', t1-t2)
             print('')
 
-        #a loop over all the pivots: it's the pivots that give interesting information
-        for j in list(reversed(piv)):
-
-            
-            #find the row of pivot j
-            found = False
-            i = X.dim1**X.dim2-1
-            while found == False:
-                if rref[i,j] == 1:
-                    found = True
-                else:
-                    i = i-1
-            
-            if debug:
-                print('')
-                print('considering pivot ', i,j)
-
-            tmp = 0
-            #now we just make use of the linear equation that holds for this pivot
-            #keep in mind that the rows are in reversed order
-            for ll in range(j+1,X.dim1**X.dim2):
-                tmp = tmp - rref[i,ll]*X.x[rev_inds[ll]]
-            X = X.subs(X.x[rev_inds[j]],tmp)
-
-            if debug:
-                print('substituting ', end=' ')
-                sympy.pprint(X.x[rev_inds[j]])
-                print(' for ', end=' ')
-                sympy.pprint(tmp)
-                print('')
 
         if debug:
             print('Current form of the tensor:')

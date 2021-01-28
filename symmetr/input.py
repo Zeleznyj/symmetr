@@ -74,7 +74,7 @@ class options(object):
             if self['noso'] and (self['equiv'] or (self['exp'] != -1) or (self['atom2'] != -1)):
                 raise InputError('This is not implemented.')
 
-            if (self['equiv'] or (self['exp'] != -1)) and self['syms_sel'] != -1:
+            if (self['equiv']) and self['syms_sel'] != -1:
                 raise InputError('You cannot select symmetries when exp or equiv is set since this is not implemented')
 
             if self['equiv'] and ( self['exp'] != -1 ):
@@ -286,6 +286,17 @@ def parse(clargs=None):
         args_dict['asym_inds'] = asym_inds
 
     opt = options(args_dict)
+
+    if opt['syms_sel'] != -1:
+        syms_sel = opt['syms_sel'].split(',')
+        syms_sel2 = []
+        for i in range(len(syms_sel)):
+            if '-' in syms_sel[i]:
+                s = syms_sel[i].split('-')
+                syms_sel2 += list(range(int(s[0]),int(s[1])+1))
+            else:
+                syms_sel2.append(int(syms_sel[i]))
+        opt['syms_sel'] = syms_sel2
 
     if (not opt['transform_result']) and (not opt['transform_syms']):
             opt['transform_syms'] = True

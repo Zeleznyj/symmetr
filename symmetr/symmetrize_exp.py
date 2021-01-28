@@ -203,20 +203,39 @@ def get_L_trans(mags,sym,debug=False):
 
     initial_signs = []
     
-    first = sorted(list(mags.keys()))[0]
-    for atom in mags:
+    atoms = sorted(list(mags.keys()))
+    first = atoms[0]
+    initial_signs = {}
+    for atom in atoms:
         if mags[first].dot(mags[atom]) > 0:
-            initial_signs.append(1)
+            initial_signs[atom] = 1
         else:
-            initial_signs.append(-1)
+            initial_signs[atom] = -1
+
+    permuted_signs = {}
+    for atom in atoms:
+        permuted_signs[atom] = initial_signs[sym.permutations[atom]]
+
+    if debug:
+        print(initial_signs)
+        print(permuted_signs)
+    if all(initial_signs[atom] == permuted_signs[atom] for atom in atoms):
+        return sym.Rs
+    elif all(initial_signs[atom] == -permuted_signs[atom] for atom in atoms):
+        return -sym.Rs
+    else:
+        return None
+
+    #the code bellow is old and should be deleted
 
     mags_R = convert_mags(mags,sym)
     signs = []
-    for atom in mags_R:
+    for atom in atoms:
         if mags_R[first].dot(mags_R[atom]) > 0:
             signs.append(1)
         else:
             signs.append(-1)
+
 
     if debug:
         print('')
@@ -231,26 +250,24 @@ def get_L_trans(mags,sym,debug=False):
         print('signs of the trasnformed moments')
         print(signs)
 
-    #I don't really understand what the code below was supposed to be doing, but 
-    #it seems wrong.
-    #if initial_signs != signs:
-    #    return None
-    #else:
-    #    mag_0_R = convert_vec(mags[first],sym.get_R('s'))
-    #    sign_0 = mag_0_R.dot(mags_R[first])
-    #    if sign_0 > 0:
-    #        sign = 1
-    #    else:
-    #        sign = -1
-    #    if debug:
-    #        print('sign: {}'.format(sign))
-    #    return sym.get_R('s')
-    if signs == initial_signs:
-        return sym.get_R('s')
-    elif signs == [-s for s in initial_signs]:
-        return -sym.get_R('s')
-    else:
+    if initial_signs != signs:
         return None
+    else:
+        mag_0_R = convert_vec(mags[first],sym.get_R('s'))
+        sign_0 = mag_0_R.dot(mags_R[first])
+        if sign_0 > 0:
+            sign = 1
+        else:
+            sign = -1
+        if debug:
+            print('sign: {}'.format(sign))
+        return sym.get_R('s')
+    #if signs == initial_signs:
+    #    return sym.get_R('s')
+    #elif signs == [-s for s in initial_signs]:
+    #    return -sym.get_R('s')
+    #else:
+    #    return None
 
 def def_syms_L(mags,syms,prec=1e-5,debug=False):
 
