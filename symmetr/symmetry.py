@@ -20,8 +20,8 @@ class Symmetry(object):
                 factor *= -1
             self.Rs = factor * self.R
         else:
-            if Rs.det() not in {1,-1}:
-                raise Exception('Rs must have determinant +1 or -1')
+            if abs(abs(Rs.det())-1) > 1e-10:
+                raise Warning('Rs must have determinant +1 or -1')
             self.Rs = Rs
         self.permutations = permutations
         self.custom_Rs = {}
@@ -136,9 +136,28 @@ class Symmetry(object):
     def pprint(self):
         sympy.pprint(self.R)
         sympy.pprint(self.Rs)
+        for custom_R in self.custom_Rs:
+            print(custom_R)
+            sympy.pprint(self.custom_Rs[custom_R])
         print('has T:', self.has_T)
         if self.permutations is not None:
             print('permutations: ', self.permutations)
+
+    def inv(self):
+        Ri = self.R.inv()
+        Rsi = self.Rs.inv()
+        has_Ti = self.has_T
+        if self.permutations is not None:
+            permuationsi = {}
+            for p in self.permutations:
+                permuationsi[self.permutations[p]] = p
+        else:
+            permutationsi = None
+        out = Symmetry(Ri,has_Ti,Rsi,permuationsi)
+        for Rc in self.custom_Rs:
+            out.custom_Rs[Rc] = self.custom_Rs[Rc].inv()
+
+        return out
 
 def findsym2sym(sym_findsym):
     R = sym2R(sym_findsym)
@@ -201,6 +220,17 @@ def create_T():
 
     R = sympy.diag(1,1,1)
     return Symmetry(R=R,has_T=True)
+
+def create_I():
+    R = sympy.diag(1,1,1)
+    return Symmetry(R=R,has_T=False)
+
+def create_P():
+    """
+    Note this doesn't contain any permutations, so it's not always correct!
+    """
+    R = -sympy.diag(1,1,1)
+    return Symmetry(R=R,has_T=False)
 
 def convert_op(sym,op_type):
     """

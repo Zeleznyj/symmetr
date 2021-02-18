@@ -14,7 +14,7 @@ import time
 import sympy
 import numpy as np
 
-from .tensors import matrix, mat2ten, tensor
+from .tensors import matrix, mat2ten, Tensor
 from .fslib import transform_position
 from .symmetrize import symmetr,params_trans
 from .symT import convert_vec
@@ -54,7 +54,7 @@ def create_rank2(ten,n_op=2,xyz=False):
 
 def sub_m(ten,n_op,xyz=False):
     
-    X = tensor(0,3,n_op)
+    X = Tensor(0, 3, n_op)
 
     if ten.dim2 > n_op:
         m = {}

@@ -1,23 +1,23 @@
 Hamiltonian term in matrix form:
-[x00   0    0 ]
-[             ]
-[ 0   x00   0 ]
-[             ]
-[ 0    0   x22]
+⎡x₀₀   0    0 ⎤
+⎢             ⎥
+⎢ 0   x₀₀   0 ⎥
+⎢             ⎥
+⎣ 0    0   x₂₂⎦
 
-    2           2           2    
-M_2x *x00 + M_2y *x00 + M_2z *x22
+   2           2           2    
+M₂ₓ ⋅x₀₀ + M_2y ⋅x₀₀ + M_2z ⋅x₂₂
 
 Hamiltonian terms for all equivalent combinations of sites:
+(2, 2):
+   2           2           2    
+M₂ₓ ⋅x₀₀ + M_2y ⋅x₀₀ + M_2z ⋅x₂₂
+
 (4, 4):
-    2           2           2    
-M_4x *x00 + M_4y *x22 + M_4z *x00
+   2           2           2    
+M₄ₓ ⋅x₀₀ + M_4y ⋅x₂₂ + M_4z ⋅x₀₀
 
 (3, 3):
-    2           2           2    
-M_3x *x22 + M_3y *x00 + M_3z *x00
-
-(2, 2):
-    2           2           2    
-M_2x *x00 + M_2y *x00 + M_2z *x22
+   2           2           2    
+M₃ₓ ⋅x₂₂ + M_3y ⋅x₀₀ + M_3z ⋅x₀₀
 

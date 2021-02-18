@@ -1,25 +1,25 @@
 even part of the response tensor:
-[ 0   x01  0]
-[           ]
-[x10   0   0]
-[           ]
-[ 0    0   0]
+⎡ 0   x₀₁  0⎤
+⎢           ⎥
+⎢x₁₀   0   0⎥
+⎢           ⎥
+⎣ 0    0   0⎦
 odd part of the response tensor:
-[ 0   0  x02]
-[           ]
-[ 0   0   0 ]
-[           ]
-[x20  0   0 ]
+⎡ 0   0  x₀₂⎤
+⎢           ⎥
+⎢ 0   0   0 ⎥
+⎢           ⎥
+⎣x₂₀  0   0 ⎦
 First part of the response tensor, atom 2
-[ 0    -x01  0]
-[             ]
-[-x10   0    0]
-[             ]
-[ 0     0    0]
+⎡ 0    -x₀₁  0⎤
+⎢             ⎥
+⎢-x₁₀   0    0⎥
+⎢             ⎥
+⎣ 0     0    0⎦
 Second part of the response tensor, atom 2
-[ 0   0  x02]
-[           ]
-[ 0   0   0 ]
-[           ]
-[x20  0   0 ]
+⎡ 0   0  x₀₂⎤
+⎢           ⎥
+⎢ 0   0   0 ⎥
+⎢           ⎥
+⎣x₂₀  0   0 ⎦
 

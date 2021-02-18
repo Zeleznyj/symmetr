@@ -9,7 +9,7 @@ import re
 
 import sympy
 import numpy
-from .tensors import matrix, mat2ten, tensor
+from .tensors import matrix, mat2ten, Tensor
 from .conv_index import *
 
 

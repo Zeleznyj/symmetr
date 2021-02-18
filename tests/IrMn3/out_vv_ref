@@ -1,12 +1,12 @@
 even part of the response tensor:
-[x00  x10  x10]
-[             ]
-[x10  x00  x10]
-[             ]
-[x10  x10  x00]
+⎡x₀₀  x₁₀  x₁₀⎤
+⎢             ⎥
+⎢x₁₀  x₀₀  x₁₀⎥
+⎢             ⎥
+⎣x₁₀  x₁₀  x₀₀⎦
 odd part of the response tensor:
-[ 0    -x10  x10 ]
-[                ]
-[x10    0    -x10]
-[                ]
-[-x10  x10    0  ]
+⎡ 0    -x₁₀  x₁₀ ⎤
+⎢                ⎥
+⎢x₁₀    0    -x₁₀⎥
+⎢                ⎥
+⎣-x₁₀  x₁₀    0  ⎦

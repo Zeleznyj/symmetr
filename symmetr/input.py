@@ -132,6 +132,19 @@ def parse(clargs=None):
     parser_parent.add_argument('--print-format',dest='print_format',default=None,type=int,help='Format for printing')
     parser_parent.add_argument('--version',action='store_const',const=True,default=False,help=
             'Print version.')
+    parser_parent.add_argument('--no-numX',action='store_const',const=True,default=False,help=
+    '')
+    parser_parent.add_argument('--generators',action='store_const',const=True,default=False,help=
+    'Tries to find the group generators and use only those for the symmetrization since the symmetry'
+    ' is fully determined by the generators. This can increase the speed significantly.'
+    'The algorithm is not guaranteed to always find the smallest group of generators.'
+    )
+    parser_parent.add_argument('--remove-P',action='store_const',const=True,default=False,help=
+    'Removes the inversion symmetry from symmetry operations. Useful for phenomena that '
+    'are inveriant under inversion. Should not be used with projections!')
+    parser_parent.add_argument('--remove-T',action='store_const',const=True,default=False,help=
+    'Removes the inversion symmetry from symmetry operations. Useful for phenomena that '
+    'are inveriant under inversion.')
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,\
             description=textwrap.dedent('''\
@@ -148,7 +161,8 @@ def parse(clargs=None):
     parser_res.add_argument('-p','--projection',help='Sets a projection on an atom.',default=-1,dest='atom',type=int)
     parser_res.add_argument('-p2','--projection2',help='Sets a projection on a second atom. Tries to find a relation between tensors on the first \
             atom and on the second atom.',default=-1,dest='atom2',type=int)
-    parser_res.add_argument('-e','--equivalent',action='store_const',const=True,default=False,help='finds response matrices for equivalent magnetic configurations.',dest='equiv')
+    parser_res.add_argument('-e','--equivalent',action='store_const',const=True,default=False,help=
+            'finds response matrices for equivalent magnetic configurations.',dest='equiv')
     parser_res.add_argument('--no-rename',action='store_true')
     parser_res.add_argument('--debug',help='Controls if debug output is printed. all means all debug output is printed, symmetrize means debug\
             output for symmetrizing, rename for renaming, equiv for finding the equivalent configurations,\
@@ -165,6 +179,7 @@ def parse(clargs=None):
     parser_res.add_argument('--ignore-same-op-sym',dest='same_op_sym',action='store_false',default=None)
     parser_res.add_argument('--sym-inds',default=None,help='')
     parser_res.add_argument('--asym-inds',default=None,help='')
+
 
     parser_mham.add_argument('-s','--sites',help='Atomic sites for which the Magnetic Hamiltonian is considered.\
             List of integeres separated by commas with no spaces, e.g. 1,2. Corresponds to the order of the \
@@ -285,7 +300,16 @@ def parse(clargs=None):
         args_dict['sym_inds'] = sym_inds
         args_dict['asym_inds'] = asym_inds
 
+    if args_dict['generators'] or args_dict['remove_P'] or args_dict['remove_T']:
+        args_dict['simplify_syms'] = True
+    else:
+        args_dict['simplify_syms'] = False
+
     opt = options(args_dict)
+
+    opt['numX'] = not opt['no_numX']
+    if opt['mode'] == 'mham':
+        opt['numX'] = False
 
     if opt['syms_sel'] != -1:
         syms_sel = opt['syms_sel'].split(',')

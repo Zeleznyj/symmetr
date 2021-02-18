@@ -5,7 +5,7 @@ set -e
 set -x
 
 py3=false
-global=false
+global=true
 while [ "$1" != "" ]; do
     PARAM=`echo $1 | awk -F= '{print $1}'`
     VALUE=`echo $1 | awk -F= '{print $2}'`

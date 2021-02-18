@@ -8,6 +8,7 @@ from builtins import range
 import re
 import sys
 import os
+import time
 
 from . import symmetrize
 from . import symmetrize_exp as st
@@ -16,7 +17,7 @@ from . import find_eq
 from . import symT
 from . import mham
 from . import groups
-from .tensors import tensor,matrix
+from .tensors import Tensor,matrix,NumTensor
 from . import symmetry
 
 import sympy
@@ -32,8 +33,15 @@ def def_symmetr_opt(opt):
                                    debug=opt['debug_sym'],
                                    debug_time=opt['debug_time'],
                                    debug_Y=opt['debug_symY'],
-                                   round_prec=opt['round_prec'])
+                                   round_prec=opt['round_prec'],
+                                   numX=opt['numX'])
     return s_opt
+
+def get_tensor_class(opt):
+    if opt['numX']:
+        return NumTensor
+    else:
+        return Tensor
 
 def sym_res_nonexp(opt,printit=False):
 
@@ -55,9 +63,10 @@ def sym_res_nonexp(opt,printit=False):
     op_contravar = (1,)*opt['op_lengths'][0] + (-1,)*opt['op_lengths'][1]
 
     op_types = opt['op_types']
-    X1 = tensor('s',3,len(op_types),ind_types=op_contravar)
+    TensorClass = get_tensor_class(opt)
+    X1 = TensorClass('s', 3, len(op_types), ind_types=op_contravar)
     X1.def_trans(ind_trans=op_types,T_comp=1)
-    X2 = tensor('s',3,len(op_types),ind_types=op_contravar)
+    X2 = TensorClass('s', 3, len(op_types), ind_types=op_contravar)
     X2.def_trans(ind_trans=op_types,T_comp=-1)
 
     eo = symmetrize.even_odd([X1,X2])
@@ -107,6 +116,13 @@ def sym_res_nonexp(opt,printit=False):
             for i in range(2):
                 Xs_2[i].convert(T)
 
+
+    if opt['numX']:
+        for i in range(2):
+            Xs[i] = Xs[i].convert2tensor(opt['num_prec'])
+        if opt['atom2'] != -1:
+            for i in range(2):
+                Xs_2[i] = Xs_2[i].convert2tensor(opt['num_prec'])
 
     if printit:
         print('{0} part of the response tensor:'.format(eo[0]))
@@ -191,10 +207,10 @@ def sym_res_exp(opt,printit=False):
 
     syms_L = st.def_syms_L(mags,syms_nm,debug=False)
 
-
     op_contravar = (1,)*opt['op_lengths'][0] + (-1,)*opt['op_lengths'][1] + (-1,) * opt['exp']
     op_types = opt['op_types'] + ['L'] * opt['exp']
-    X = tensor('s',3,len(op_types),ind_types=op_contravar)
+    TensorClass = get_tensor_class(opt)
+    X = TensorClass('s', 3, len(op_types), ind_types=op_contravar)
     X.def_trans(ind_trans=op_types,T_comp=1)
     T_inv = symmetry.create_T()
     T_inv.def_custom_R('L',T_inv.Rs)
@@ -214,7 +230,7 @@ def sym_res_exp(opt,printit=False):
 
     if same_op_sym or symmetrize_sym_inds:
         #the metric is for the findsym basis
-        G = symT.get_metric(opt,nonmag=True)
+        G = symT.get_metric(opt,False,nonmag=True)
         if opt['num_prec'] is not None:
             G = sympy.N(G)
         if not opt['transform_result']:
@@ -230,11 +246,15 @@ def sym_res_exp(opt,printit=False):
     if same_op_sym:
         X = symmetrize.symmetrize_same_op(X,s_opt)
 
-    
     if opt['transform_result']:
         X.convert(T)
 
-    n_op = opt['op_lengths'][0] + opt['op_lengths'][1] 
+    n_op = opt['op_lengths'][0] + opt['op_lengths'][1]
+    if opt['numX']:
+        t1 = time.perf_counter()
+        X = X.convert2tensor(opt['num_prec'])
+        #X = X.convert2tensor(None)
+        t2 = time.perf_counter()
     Xm = st.sub_m(X,n_op)
 
     if printit:

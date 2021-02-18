@@ -19,7 +19,7 @@ import numpy.linalg
 from numpy.linalg import svd
 import mpmath   
 
-from .tensors import matrix, mat2ten
+from .tensors import matrix, mat2ten, tensor2Y
 from .fslib import transform_position
 from .conv_index import *
 
@@ -88,6 +88,12 @@ def U_to_rref(U,num_prec=1e-10):
     return U_out,pivots
 
 def get_rref(U,num_prec=1e-10):
+    """
+    This transforms the matrix in to a reduced row echelong form. The algorithm is taken
+    from octave and should be exactly the same.
+
+    Columns that are smaller than num_prec are set to zero.
+    """
     U_o = U.copy()
     pivots = []
     row = 0
@@ -122,12 +128,13 @@ class params_trans(object):
         self.sym_format = sym_format
 
 class SymmetrOpt(object):
-    def __init__(self,num_prec=None,debug=False,debug_time=False,debug_Y=False,round_prec=None):
+    def __init__(self,num_prec=None,debug=False,debug_time=False,debug_Y=False,round_prec=None,numX=False):
         self.num_prec = num_prec
         self.debug = debug
         self.debug_time = debug_time
         self.debug_Y = debug_Y
         self.round_prec = round_prec
+        self.numX = numX
 
 def symmetr(syms,X,trans_func,params,opt=None):
     """
@@ -153,6 +160,11 @@ def symmetr(syms,X,trans_func,params,opt=None):
     debug = opt.debug
     debug_time = opt.debug_time
     debug_Y = opt.debug_Y
+    if opt.numX and num_prec is None:
+        raise Exception('In the numX mode, num_prec must be specified!')
+
+    if debug_time:
+        print('Symmetrize starting')
 
     if num_prec is None:
         algo = 1
@@ -209,125 +221,15 @@ def symmetr(syms,X,trans_func,params,opt=None):
         #if equal:
         #    continue
 
-            
-        t21 = time.perf_counter()
-        Y = sympy.zeros(X.dim1**X.dim2)
-        t22 = time.perf_counter()
-        td = False
-        if td: print('Time for creating zeros: ', t22-t21)
+        if not opt.numX:
+            Y = tensor2Y(X-X_trans,Y_format='sympy',algo=algo,reverse=True,td=False)
+        else:
+            Y = X.t - X_trans.t
 
-        rev_inds = list(reversed(X.inds))
-        #we do a loop over all rows of the matrix Y - ie over all linear equations
-        n = -1
-        for ind1 in X:
-            n += 1
-            m = -1
-
-            #if this is zero, then we do not have to do any substituting so this saves quite a lot of time
-
-
-            #this seems unnecessary
-            #if X[ind1]-X_trans[ind1] == 0:
-            #    is_zero = True
-            #else:
-            #    is_zero = False
-            #if is_zero:
-            #    Y[n,:] = sympy.zeros(1,X.dim1**X.dim2)
-            #    continue
-
-            if algo == 1:
-                t11 = time.perf_counter()
-                inds = re.findall(r'x[0-9]+',sympy.srepr(X[ind1]-X_trans[ind1]))
-                t12 = time.perf_counter()
-                if td: print('Time for findall: ',t12-t11)
-                for ind2 in reversed(inds):
-                    t13 = time.perf_counter()
-                    m_index = (int(i) for i in re.findall(r'[0-9]',ind2))
-                    m = rev_inds.index(tuple(m_index))
-                    Y_p = X[ind1]-X_trans[ind1]
-                    #now in the equation we substite 1 to the matrix component that correponds to the column and 0 to all others
-                    t14 = time.perf_counter()
-                    if td: print('Time for 1: ', t14-t13)
-                    t15 = time.perf_counter()
-                    subs = []
-                    for ind3 in inds:
-                        if ind2 == ind3:
-                            subs.append((X[ind3],1))
-                        else:
-                            subs.append((X[ind3],0))
-                    Y_p = Y_p.subs(subs)
-                    #for ind3 in inds:
-                    #    if ind2 == ind3:
-                    #        Y_p = Y_p.subs(X[ind3],1)
-                    #    else:
-                    #        Y_p = Y_p.subs(X[ind3],0)
-
-                    Y[n,m] = Y_p
-                    #print(n,m,Y[n,m])
-                    t16 = time.perf_counter()
-                    if td: print('Time for subs: ', t16-t15)
-
-            elif algo == 3:
-                t11 = time.perf_counter()
-                Xd = X[ind1]-X_trans[ind1]
-                inds = list(set(re.findall(r'x[0-9]+',sympy.srepr(Xd))))
-                Xinds = [X[ind] for ind in inds]
-                Xdfunc = sympy.lambdify(Xinds,Xd,'numpy')
-                t12 = time.perf_counter()
-                if td: print('Time for findall: ',t12-t11)
-                for ind2 in inds:
-                    t13 = time.perf_counter()
-                    m_index = (int(i) for i in re.findall(r'[0-9]',ind2))
-                    m = rev_inds.index(tuple(m_index))
-                    #now in the equation we substite 1 to the matrix component that correponds to the column and 0 to all others
-                    t14 = time.perf_counter()
-                    if td: print('Time for 1: ', t14-t13)
-                    t15 = time.perf_counter()
-                    subs = []
-                    for ind3 in inds:
-                        if ind2 == ind3:
-                            subs.append(1)
-                        else:
-                            subs.append(0)
-                    Y[n,m] = sympy.sympify(Xdfunc(*subs))
-                    #print(n,m,Y[n,m])
-                    t16 = time.perf_counter()
-                    if td: print('Time for subs: ', t16-t15)
-                t17 = time.perf_counter()
-                if td: print('Time for all ind2: ', t17-t12)
-                if td: print('Time for ind1: ', t17-t11)
-
-            elif algo == 2:
-                Xd = X[ind1]-X_trans[ind1]
-                if Xd.func != sympy.core.add.Add:
-                    raise Exception('Cannot use this algo if expression not add')
-                for aa in Xd.args:
-                    inds = re.findall(r'x[0-9]+',sympy.srepr(aa))
-                    if len(inds) > 1:
-                        print(Xd)
-                        print(aa,sympy.srepr(aa),inds)
-                        raise Exception('Shouldnt be longer than 1')
-                    m = rev_inds.index(tuple([int(i) for i in inds[0][1:]]))
-                    Y[n,m] = aa.subs(X[inds[0]],1)
-
-            else:
-                for ind2 in rev_inds:
-                    m += 1
-                    Y_p = X[ind1]-X_trans[ind1]
-                    #now in the equation we substite 1 to the matrix component that correponds to the column and 0 to all others
-                    for ind3 in X.inds:
-                        if ind2 == ind3:
-                            Y_p = Y_p.subs(X.x[ind3],1)
-                        else:
-                            Y_p = Y_p.subs(X.x[ind3],0)
-
-                    Y[n,m] = Y_p
-
-        if debug_time:
-            t2 = time.perf_counter()
-            print('Time for constructing Y: ', t2-t3)
-            t1 = time.perf_counter()
-
+        """
+        algo_solve == 0: We use the sympy rref function. This seems to have issues though even if num_prec is set.
+        algo_solve == 1: We svd decomposition to find the nullspace and the convert to rref using get_rref.
+        """
         if algo_solve == 0:
 
             #this transforms the matrix into the Reduced row echelon form
@@ -397,76 +299,105 @@ def symmetr(syms,X,trans_func,params,opt=None):
                     print('')
 
         elif algo_solve == 1:
+            """
+            We use the svd decomposition to find the nullspace, this is given by V2:
+            rows of V2 are vectors which form the basis of the Y nullspace. This means that 
+            any combination of these vectors is a solution of Yx = 0.
+
+            Therefore any solution of Yx =0, must be written as:
+            x = a_i * v_i,
+            where v_i are the rows of V2. 
+            By transforming V2 into the reduced row echelon form, we can then
+            eliminate some variables from X. The information is extracted from columns of the V2_rref matrix
+            (nor rows like in the case of Y_rref). The pivot rows simply tell us that a_i = x_i, the non-pivot
+            columns then give the relation of the other x_i's in terms of the pivot x_i's.
+            """
 
             if debug_time:
                 ts0 = time.perf_counter()
 
-            U,S,V = svd(np.array(np.flip(Y,axis=1),dtype=np.float))
+            if opt.numX:
+                U,S,V = svd(Y)
+            else:
+                U, S, V = svd(np.array(np.flip(Y, axis=1), dtype=np.float))
             if debug_time:
                 ts1 = time.perf_counter()
                 print('Time for svd: {}'.format(ts1-ts0))
             zero_singulars = [i for i,s in enumerate(S) if abs(s) < num_prec]
 
-            #V2 = sympy.zeros(len(zero_singulars),Y.shape[1])
-            V2 = np.zeros((len(zero_singulars),Y.shape[1]))
-            for i in range(len(zero_singulars)):
-                V2[i,:] = V[zero_singulars[i],:]
-            if debug_Y:
-                print('Singular values: ',S)
-                print(V2)
-            #V2_rref,pivs = V2.rref(iszerofunc=lambda x:abs(x)<num_prec,normalize_last=False)
-            #V2_rref,pivs = QR_rref(V2,num_prec)
-            V2_rref,pivs = get_rref(V2,num_prec)
-            #savemat('/home/kuba/Remotes/tarkil/matlab/rref_testing/V3.mat',{'V3':V2,'V3r':V2_rref,'p':pivs})
-            if debug_Y:
-                print(V2_rref)
-            if debug_time:
-                ts0 = time.perf_counter()
-                print('Time for rref: {}'.format(ts0-ts1))
-
-            if len(pivs) != len(zero_singulars):
-                Vn = np.array(V2.evalf(),dtype=np.float)
-                np.save('debug_V.npy',Vn)
-                print(pivs)
-                print(zero_singulars)
-                print([S[i] for i in zero_singulars])
+            #if there are no singular values, then the tesor has to be zero:
+            #thus we don't have to do any substituting
+            if len(zero_singulars) == 0:
+                X = X.copy0()
+            else:
+                #V2 = sympy.zeros(len(zero_singulars),Y.shape[1])
+                V2 = np.zeros((len(zero_singulars),Y.shape[1]))
                 for i in range(len(zero_singulars)):
-                    for j in range(Y.shape[1]):
-                        V2[i,j] = round(V2[i,j],3)
-                        V2_rref[i,j] = round(V2_rref[i,j],3)
-                        
-                sympy.pprint(V2)
-                sympy.pprint(V2_rref)
-                raise Warning('Issue with rref of V2, results are likely to be wrong!!!')
+                    V2[i,:] = V[zero_singulars[i],:]
+                if debug_Y:
+                    print('Singular values: ',S)
+                    print(V2)
+                V2_rref,pivs = get_rref(V2,num_prec)
+                if debug_Y:
+                    print(V2_rref)
+                if debug_time:
+                    ts0 = time.perf_counter()
+                    print('Time for rref: {}'.format(ts0-ts1))
 
-            ais = [] 
-            for i in range(len(zero_singulars)):
-                ais.append(X.x[X.inds[pivs[i]]])
-
-            for j in range(Y.shape[1]):
-                if j not in pivs:
-                    tmp = 0
-                    print_debug = False
+                #This is a consistency check: the rows of V2 should be linearly indpenedent and so
+                #there should be no zero rows in V2_rref
+                if len(pivs) != len(zero_singulars):
+                    Vn = np.array(V2.evalf(),dtype=np.float)
+                    np.save('debug_V.npy',Vn)
+                    print(pivs)
+                    print(zero_singulars)
+                    print([S[i] for i in zero_singulars])
                     for i in range(len(zero_singulars)):
-                        coeff = round(V2_rref[i,j],opt.round_prec)
-                        tmp += coeff * ais[i]
-                        #tmp += V2_rref[i,j] * ais[i]
-                        if abs(coeff) > 10 or (abs(coeff) < 0.1 and abs(coeff) > 1e-3):
-                            print('Warning: Large or small coefficient {}, this can signify error'.format(coeff))
-                            print_debug = True
-                    if debug or print_debug:
-                        print('Substituting {} -> {}'.format(X.x[X.inds[j]],tmp))
-                    X = X.subs(X.x[X.inds[j]],tmp)
+                        for j in range(Y.shape[1]):
+                            V2[i,j] = round(V2[i,j],3)
+                            V2_rref[i,j] = round(V2_rref[i,j],3)
+
+                    sympy.pprint(V2)
+                    sympy.pprint(V2_rref)
+                    raise Warning('Issue with rref of V2, results are likely to be wrong!!!')
+
+                if not opt.numX:
+                    ais = []
+                    for i in range(len(zero_singulars)):
+                        ais.append(X.x[X.inds[pivs[i]]])
+
+                    for j in range(Y.shape[1]):
+                        if j not in pivs:
+                            tmp = 0
+                            print_debug = False
+                            for i in range(len(zero_singulars)):
+                                coeff = round(V2_rref[i,j],opt.round_prec)
+                                tmp += coeff * ais[i]
+                                #tmp += V2_rref[i,j] * ais[i]
+                                if abs(coeff) > 10 or (abs(coeff) < 0.1 and abs(coeff) > 1e-3):
+                                    print('Warning: Large or small coefficient {}, this can signify error'.format(coeff))
+                                    print_debug = True
+                            if debug or print_debug:
+                                print('Substituting {} -> {}'.format(X.x[X.inds[j]],tmp))
+                            X = X.subs(X.x[X.inds[j]],tmp)
+                else:
+                    for j in range(Y.shape[1]):
+                        if j not in pivs:
+                            sub_vec = np.zeros(Y.shape[1])
+                            for i in range(len(zero_singulars)):
+                                sub_vec[pivs[i]] = V2_rref[i,j]
+                            X.subs(j,sub_vec)
+
             if debug_time:
                 ts1 = time.perf_counter()
                 print('Time for subs: {}'.format(ts1-ts0))
         else:
             raise Exception('Unknown algo_solve')
 
-        if debug_time:
-            t1 = time.perf_counter()
-            print('Time for constructing tensor ', t1-t2)
-            print('')
+        #if debug_time:
+        #    t1 = time.perf_counter()
+        #    print('Time for constructing tensor ', t1-t2)
+        #    print('')
 
 
         if debug:

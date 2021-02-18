@@ -2,8 +2,8 @@ group name:  P4mm group number:  99.163
 !!!The input group must be one of the nonmagnetic point groups, otherwise the ouput will be wrong.!!!
 Using a cartesian coordinate system
 !!!Warning!!!: no magnetic moments defined in the input. Assuming a ferromagnetic system.
-[m2*x002     0     m0*x020]
-[                         ]
-[   0     m2*x002  m1*x020]
-[                         ]
-[m0*x200  m1*x200  m2*x222]
+⎡m₂⋅x₀₀₂     0     m₀⋅x₀₂₀⎤
+⎢                         ⎥
+⎢   0     m₂⋅x₀₀₂  m₁⋅x₀₂₀⎥
+⎢                         ⎥
+⎣m₀⋅x₂₀₀  m₁⋅x₂₀₀  m₂⋅x₂₂₂⎦

@@ -17,7 +17,7 @@ import sympy
 from sympy import sympify as spf
 from .groups import group_sym
 from .noso import noso_syms
-from .symmetry import findsym2sym,matsym2sym
+from .symmetry import findsym2sym, matsym2sym, Symmetry, create_I, create_P, create_T
 from fractions import Fraction
 
 def make_rational(mat):
@@ -150,6 +150,15 @@ def get_syms(opt):
     for sym in syms:
         syms_g.append(findsym2sym(sym))
     syms = syms_g
+
+    if opt['simplify_syms']:
+        idxs,syms = simplify_symmetry_operations(syms,
+                                                 generators=opt['generators'],
+                                                 remove_P=opt['remove_P'],
+                                                 remove_T=opt['remove_T']
+                                                 )
+        idxs1 = [i+1 for i in idxs]
+        print('Using symmetry operations: {}'.format(idxs1))
 
     return syms
 
@@ -321,6 +330,15 @@ def get_syms_nonmag(opt):
 
         syms = syms_new
 
+    if opt['simplify_syms']:
+        idxs,syms = simplify_symmetry_operations(syms,
+                                                 generators=opt['generators'],
+                                                 remove_P=opt['remove_P'],
+                                                 remove_T=opt['remove_T']
+                                                 )
+        idxs1 = [i+1 for i in idxs]
+        print('Using symmetry operations: {}'.format(idxs1))
+
     return syms
 
 def get_syms_noso(opt):
@@ -480,4 +498,86 @@ def get_metric(opt,debug=False,nonmag=False):
             print('')
 
     return G
+
+
+def get_generators(syms):
+    gens = [syms[1]]
+    gens_i = [1]
+    for i, sym in enumerate(syms):
+        is_generated = False
+        for gen1 in gens:
+            if sym == gen1:
+                is_generated = True
+                break
+            if sym == gen1.inv():
+                is_generated = True
+                break
+            for gen2 in gens:
+                if gen1 * gen2 == sym:
+                    is_generated = True
+                    break
+                if gen1 * gen2.inv() == sym:
+                    is_generated = True
+                    break
+            if is_generated:
+                break
+        if not is_generated:
+            for gen1 in gens:
+                for gen2 in gens:
+                    for gen3 in gens:
+                        if gen1 * gen2 * gen3 == sym:
+                            is_generated = True
+        if not is_generated:
+            gens.append(sym)
+            gens_i.append(i)
+
+    return gens_i, gens
+
+def remove_symmetry(syms,R_sym,mode=0):
+    if not isinstance(R_sym,Symmetry):
+        if R_sym == 'P':
+            R_sym = create_P()
+        elif R_sym == 'I':
+            R_sym = create_I()
+        elif R_sym == 'T':
+            R_sym = create_T()
+        else:
+            raise Exception('Wrong R_sym format!')
+    #If R_sym has no permutations we assume it doesn't permute
+    #the atoms. This is correct for I and T, but not necessarily for P!!!
+    if R_sym.permutations is None:
+        R_sym.permutations = {}
+        for key in syms[0].permutations:
+            R_sym.permutations[key] = key
+    syms_out_i = []
+    syms_out = []
+    if mode == 0:
+        for i,sym in enumerate(syms):
+            sym2 = sym * R_sym
+            if sym2 not in syms_out:
+                syms_out.append(sym)
+                syms_out_i.append(i)
+    elif mode == 1:
+        for i,sym in enumerate(syms):
+            if sym != R_sym:
+                syms_out.append(R_sym)
+                syms_out_i.append(i)
+    return syms_out_i,syms_out
+
+def simplify_symmetry_operations(syms,generators=True,remove_P=False,remove_T=False):
+
+    idxs = list(range(len(syms)))
+    syms_g = syms
+    if remove_P:
+        i1, syms_g = remove_symmetry(syms_g, 'P')
+        idxs = [idxs[i] for i in i1]
+    if remove_T:
+        i1, syms_g = remove_symmetry(syms_g, 'T')
+        idxs = [idxs[i] for i in i1]
+    if generators:
+        i1, syms_g = get_generators(syms_g)
+        idxs = [idxs[i] for i in i1]
+
+    return idxs,syms_g
+
 

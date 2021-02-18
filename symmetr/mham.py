@@ -12,7 +12,7 @@ from builtins import object
 import sympy as sp
 
 from .symmetrize import symmetr,SymmetrOpt
-from .tensors import tensor
+from .tensors import Tensor,NumTensor
 
 #testing
 import sys
@@ -30,7 +30,7 @@ def convert_mag_ham(H,T):
     nice to eventually implement in the code.
 
     Args:
-        H (tensor): the magnetic Hamiltonian in basis A
+        H (Tensor): the magnetic Hamiltonian in basis A
         T (matrix): . If it is set, the symmetry operations
             will be transformed by this matrix. T transforms from A to B, ie Tx_A = x_B.
     Returns:
@@ -235,8 +235,8 @@ def sym_mag_ham(sites,syms,T=None,s_opt=None):
 
     order = len(sites)
     ind_types = (-1,)*len(sites)
-    H = tensor('s',3,order,ind_types=ind_types)
-    
+    H = Tensor('s', 3, order, ind_types=ind_types)
+
     params = params_trans_ham(sites,debug=s_opt.debug,T=T,check_sym=True)
     # first symmetrize with normal symmetry operation
     Hs = symmetr(syms,H,trans_mag_ham,params,s_opt)
