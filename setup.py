@@ -37,5 +37,6 @@ setuptools.setup(
         'numpy; python_version>="3"',
         'numpy==1.16.4; python_version<"3"',
         'sympy',
-        'prettytable']
+        'prettytable',
+        'scipy']
 )
