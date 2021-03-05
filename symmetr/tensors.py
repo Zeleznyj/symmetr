@@ -78,7 +78,7 @@ def tensor2Y(X,Y_format='sympy',algo=3,reverse=False,td=False):
     if reverse:
         rev_inds = list(reversed(X.inds))
     else:
-        rev_inds = inds
+        rev_inds = X.inds
     # we do a loop over all rows of the matrix Y - ie over all linear equations
     n = -1
     for ind1 in X:
@@ -789,34 +789,10 @@ class Tensor(GenericTensor):
                 self[ind] = round_expr(self[ind],prec)
 
     def convert2numtensor(self,td=False):
-        t11 = time.perf_counter()
-        Xd = X[ind1] - X_trans[ind1]
-        inds = list(set(re.findall(r'x[0-9]+', sympy.srepr(Xd))))
-        Xinds = [X[ind] for ind in inds]
-        Xdfunc = sympy.lambdify(Xinds, Xd, 'numpy')
-        t12 = time.perf_counter()
-        if td: print('Time for findall: ', t12 - t11)
-        for ind2 in inds:
-            t13 = time.perf_counter()
-            m_index = (int(i) for i in re.findall(r'[0-9]', ind2))
-            m = rev_inds.index(tuple(m_index))
-            # now in the equation we substite 1 to the matrix component that correponds to the column and 0 to all others
-            t14 = time.perf_counter()
-            if td: print('Time for 1: ', t14 - t13)
-            t15 = time.perf_counter()
-            subs = []
-            for ind3 in inds:
-                if ind2 == ind3:
-                    subs.append(1)
-                else:
-                    subs.append(0)
-            Y[n, m] = sympy.sympify(Xdfunc(*subs))
-            # print(n,m,Y[n,m])
-            t16 = time.perf_counter()
-            if td: print('Time for subs: ', t16 - t15)
-        t17 = time.perf_counter()
-        if td: print('Time for all ind2: ', t17 - t12)
-        if td: print('Time for ind1: ', t17 - t11)
+        out = NumTensor(0,self.dim1,self.dim2,ind_types=self.ind_types)
+        Y = tensor2Y(self,'numpy',algo=3)
+        out.t = Y
+        return out
 
     def save(self,fname=None):
         """
