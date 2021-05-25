@@ -99,7 +99,7 @@ class Symmetry(object):
         if self.Rs != other.Rs:
             return False
         if self.permutations is None or other.permutations is None:
-            if not (self.permutation is None and other.permutations is None):
+            if not (self.permutations is None and other.permutations is None):
                 return False
             if self.permutations != other.permutations:
                 return False
