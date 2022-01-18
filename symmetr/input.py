@@ -242,6 +242,8 @@ def parse(clargs=None):
     def convert_op2(op2):
         if op2 == 'E':
             return 'v'
+        elif op2 == 'B':
+            return 's'
         else:
             return op2
 

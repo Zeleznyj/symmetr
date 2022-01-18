@@ -19,6 +19,7 @@ from .groups import group_sym
 from .noso import noso_syms
 from .symmetry import findsym2sym, matsym2sym, Symmetry, create_I, create_P, create_T
 from fractions import Fraction
+import numpy as np
 
 def make_rational(mat):
     """Converts sympy matrix to a rational number form.
@@ -356,6 +357,11 @@ def get_syms_noso(opt):
     syms_nm = get_syms_nonmag(opt)
     for sym in syms_nm:
         sym.convert(Tm.inv()*Tnm,in_place=True)
+
+    perms = get_full_permutations(lines_nm)
+    for i,sym in enumerate(syms_nm):
+        sym.permutations = perms[i]
+
     hexag = is_hex(lines)
     syms_noso = noso_syms(syms_nm,mags_T,hexag,debug=opt['debug_noso'])
 
@@ -580,4 +586,107 @@ def simplify_symmetry_operations(syms,generators=True,remove_P=False,remove_T=Fa
 
     return idxs,syms_g
 
+def get_full_permutations(lines,prec=3):
+    """
+    This function determines permutations for all atoms. This is necessary in cases, where
+    the non-magnetic unit cell is smaller than the magnetic and then the conventional method
+    only determines the permutation for a subset of atoms, which is then a problem for noso.
+
+    The way this works is:
+    1. Get a list of atoms in the input, which are given in teh findsym basis.
+    2. Convert those to the crystallographic basis used in findsym output.
+    3. Transform these by symmetries.
+    4. Transform back to the findsym basis.
+    5. Check the transformations.
+
+    Args:
+        lines: the findsym output, as a list of lines
+        prec: the rounding precision, 3 means 3 digits of rounding and then atomic positions
+            closer than 1e-2 are taken as equal.
+
+    Returns:
+        list of permutations for all symmetry operations
+    """
+
+    origin = np.array(fslib.r_origin(lines),dtype=float)
+    [vec_a,vec_b,vec_c] = fslib.r_basis(lines)
+    Tm = create_Tm(vec_a,vec_b,vec_c)
+    Tmi = np.array(Tm.inv().evalf(),dtype=float)
+    
+    start = False
+    end = False
+    pos_o = []
+    for line in lines:
+        if 'Position and magnetic moment of each atom (dimensionless coordinates)' in line:
+            start = True
+            continue
+        if start and '------------------------------------------' in line:
+            end = True
+            continue
+        if start and not end:
+            pos_o.append([float(i) for i in line.split()[1:4]])          
+    
+    #for p in pos_o:
+    #    print(p)
+    #print('')
+    
+    pos_T = []
+    for p in pos_o:
+        pos_T.append(np.dot(Tmi,p[0:3]-origin))
+    #for p in pos_T:
+    #    print(p)
+    #print('')
+        
+    syms = fslib.r_sym(lines,syms_only=False)
+    
+    out = []
+    for sym in syms:
+        #print('')
+        #print(sym[1])
+        #print(sym[4])
+        #print({x[0]:x[1] for x in sorted(sym[4])})
+        pos_TS = []
+        for pT in pos_T:
+            pTS = []
+            for i in range(3):
+                pTS.append(sym[1][i])
+                for j,s in enumerate(['x','y','z']):
+                    pTS[i] = pTS[i].replace(s,str(pT[j]))
+            pTS = np.array(sympy.sympify(pTS),dtype=float)
+            pos_TS.append(pTS)
+            
+        #for p in pos_TS:
+        #    print(p)
+        #print('')
+            
+        pos_TSTi = []        
+        for p in pos_TS:
+            pos_TSTi.append( np.round( np.dot( np.array(Tm,dtype=float), p) + origin, prec) % 1)
+                
+        #for p in pos_TSTi:
+        #    print(p)
+        #print('')
+        
+        pos_or = np.round(pos_o,prec) % 1
+                
+        permutations = {}
+        for i,p in enumerate(pos_TSTi):
+            found = False
+            for j,po in enumerate(pos_or):
+                if np.linalg.norm(p-po) < 1/(10**(prec-1)):
+                    #print(i,p)
+                    #print(j,po)
+                    #print('')
+                    perm = j
+                    found = True
+                    break
+            if not found:
+                raise Exception('Permutation not found')
+            else:
+                permutations[i+1] = perm+1
+        #print(sym[4])
+        #print(permutations)
+        out.append(permutations)
+        
+    return out
 

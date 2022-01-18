@@ -216,6 +216,15 @@ def sym2Rs(sym):
 
     return sym_s
 
+def sym2trans(sym):
+    out = []
+    for i in range(3):
+        out.append(sym[1][i])
+        for s in ['x','y','z']:
+            out[i] = out[i].replace(s,'0')
+        out[i] = sympy.sympify(out[i])
+    return sympy.Matrix(out)
+
 def create_T():
 
     R = sympy.diag(1,1,1)

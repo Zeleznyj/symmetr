@@ -246,7 +246,7 @@ def sym_mag_ham(sites,syms,T=None,s_opt=None):
 
     return Hs
 
-def print_Ham(H,sites,latex=False):
+def print_Ham(H,sites,latex=False,ret=False):
     """Prints the magnetic Hamiltonian in a nice format.
     """
     sites_un = set(sites)
@@ -267,3 +267,6 @@ def print_Ham(H,sites,latex=False):
         sp.pprint(Hsymb)
     else:
         print(sp.latex(Hsymb))
+
+    if ret:
+        return Hsymb
