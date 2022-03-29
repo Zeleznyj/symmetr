@@ -24,7 +24,7 @@ from fractions import Fraction
 import numpy as np
 from numpy.linalg import norm
 
-from hsnf import smith_normal_form
+from .hsnf import smith_normal_form
 
 def make_rational(mat):
     """Converts sympy matrix to a rational number form.
