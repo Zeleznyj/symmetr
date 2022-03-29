@@ -71,7 +71,8 @@ class options(object):
             if self['noso'] and self['group']:
                 raise InputError('Spin-orbit coupling cannot be ignored when group name is used as an input.')
 
-            if self['noso'] and (self['equiv'] or (self['exp'] != -1) or (self['atom2'] != -1)):
+            #if self['noso'] and (self['equiv'] or (self['exp'] != -1) or (self['atom2'] != -1)):
+            if self['noso'] and (self['equiv'] or (self['exp'] != -1)):
                 raise InputError('This is not implemented.')
 
             if (self['equiv']) and self['syms_sel'] != -1:
@@ -145,6 +146,10 @@ def parse(clargs=None):
     parser_parent.add_argument('--remove-T',action='store_const',const=True,default=False,help=
     'Removes the inversion symmetry from symmetry operations. Useful for phenomena that '
     'are inveriant under inversion.')
+    parser_parent.add_argument('--noso-prec',dest='noso_prec',default=1e-3,type=float)
+    parser_parent.add_argument('--noso-moment-zero',dest='noso_moment_zero',default=1e-3,type=float)
+    parser_parent.add_argument('--noso-debug',dest='noso_debug',default=0,type=int)
+
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,\
             description=textwrap.dedent('''\

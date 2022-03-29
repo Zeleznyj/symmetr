@@ -11,15 +11,20 @@ from __future__ import division
 from builtins import range
 from past.utils import old_div
 from copy import deepcopy
+from itertools import product
 
 from . import fslib
 import sympy
 from sympy import sympify as spf
 from .groups import group_sym
 from .noso import noso_syms
+from .noso_new import NosoSymFinder
 from .symmetry import findsym2sym, matsym2sym, Symmetry, create_I, create_P, create_T
 from fractions import Fraction
 import numpy as np
+from numpy.linalg import norm
+
+from hsnf import smith_normal_form
 
 def make_rational(mat):
     """Converts sympy matrix to a rational number form.
@@ -342,7 +347,114 @@ def get_syms_nonmag(opt):
 
     return syms
 
+def check_nonmag_syms(syms, prec=1e-5):
+    n_syms = len(syms)
+    all_good = True
+
+    syms_fix = []
+    for sym in syms:
+        syms_fix.append(sym.copy())
+
+    if n_syms % 2 != 0:
+        print('odd number of symmetries!!!')
+        return False, None
+
+    sym0 = syms[0]
+    if sym0.has_T:
+        print('first symmetry has time-reversal, that should not happen')
+        return False, None
+
+    found_shift = False
+    for i, sym in enumerate(syms):
+        if ((sym0.R - sym.R).norm() < prec and
+                sym0.permutations == sym.permutations and
+                sym.has_T):
+            found_shift = True
+            shift = i
+            break
+    if not found_shift:
+        print('Time-reversal variant of the first symmetry not found!')
+        return False, None
+
+    for i, sym in enumerate(syms):
+        if i + shift == len(syms):
+            break
+        if sym.has_T:
+            continue
+        sym_op = syms[i + shift]
+        if not sym_op.has_T:
+            print(i,shift)
+            print(sym)
+            print(sym_op)
+            print("Shifted symmetry does not have time-reversal, don't know what to do!")
+            return False, None
+        if (sym.R - sym_op.R).norm() > prec or sym.permutations != sym_op.permutations:
+            print('Findsym problem with non-relativistic symmetry {}, fixing.'.format(i + shift))
+            all_good = False
+            syms_fix[i + shift] = sym.copy()
+            syms_fix[i + shift].has_T = True
+            syms_fix[i + shift].Rs = -sym.Rs
+    return all_good, syms_fix
+
 def get_syms_noso(opt):
+    fin_c = fslib.read_fs_inp(opt['inp'])
+    mags = fslib.r_mag_fin(fin_c)
+    lines = fslib.run_fs(opt['inp'])
+    lines_nm = fslib.run_fs_nonmag(opt['inp'])
+    [vec_a,vec_b,vec_c] = fslib.r_basis(lines)
+    [vec_a_nm, vec_b_nm, vec_c_nm] = fslib.r_basis(lines_nm)
+
+    Tm = create_Tm(vec_a,vec_b,vec_c)
+    Tnm = create_Tm(vec_a_nm,vec_b_nm,vec_c_nm)
+    Ti = create_Ti(fin_c)
+    for mag in mags:
+        for i in range(3):
+            mag[i] = mag[i] / Ti[:,i].norm()
+    mags_T = convert_vecs(mags,Ti)
+    mags_T_np = []
+    for mag in mags_T:
+        mags_T_np.append(np.array(mag, dtype=float).squeeze())
+
+    syms_nm = get_syms_nonmag(opt)
+
+    for sym in syms_nm:
+        sym.convert(Ti*Tnm,in_place=True)
+
+    if len(mags) > len(syms_nm[0].permutations):
+        perms = get_full_permutations(lines_nm,debug=False)
+        syms_nm_full = []
+        for i, sym in enumerate(syms_nm):
+            for j in range(len(perms[i])):
+                sym_n = sym.copy()
+                sym_n.permutations = perms[i][j]
+                syms_nm_full.append(sym_n)
+        syms_nm = syms_nm_full
+
+    #there is a bug in findsym, where sometimes in a non-magnetic case, there is a wrong symmetry
+    #There should be a symmetry with time-reversal for every symmetry without time-reversal, but
+    #sometimes this is not the case
+    #This can fix it, lathough it's more of a hack and ideally we should transition to newer version
+    #of findsym, where this shouldn't happen.
+    #This has to be run after the get_full_permutations!
+    syms_good, syms_nm_fix = check_nonmag_syms(syms_nm)
+    if not syms_good:
+        if syms_nm_fix is None:
+            raise Exception('Problem with non-magnetic symmetries.')
+        else:
+            print('fixing')
+            syms_nm = syms_nm_fix
+
+    symfinder = NosoSymFinder(prec=opt['noso_prec'],moment_zero=opt['noso_moment_zero'],debug=opt['noso_debug'])
+    syms_noso = symfinder.find_noso_syms(syms_nm,mags_T_np)
+
+    #we convert to the magnetic findsym basis, since this is what's used in the code elsewhere
+    #this could be avoided though since we will just transform straight back in most situations
+    for sym in syms_noso:
+        sym.convert(Tm.inv()*Ti.inv(),in_place=True)
+
+    return syms_noso
+
+def get_syms_noso_old(opt):
 
     fin_c = fslib.read_fs_inp(opt['inp'])
     mags = fslib.r_mag_fin(fin_c)
@@ -586,7 +698,7 @@ def simplify_symmetry_operations(syms,generators=True,remove_P=False,remove_T=Fa
 
     return idxs,syms_g
 
-def get_full_permutations(lines,prec=3):
+def get_full_permutations(lines,prec=3,debug=False):
     """
     This function determines permutations for all atoms. This is necessary in cases, where
     the non-magnetic unit cell is smaller than the magnetic and then the conventional method
@@ -608,11 +720,23 @@ def get_full_permutations(lines,prec=3):
         list of permutations for all symmetry operations
     """
 
+    prec2 = 1e-4
+
+    if debug:
+        print('get_full_permutations starting')
+
     origin = np.array(fslib.r_origin(lines),dtype=float)
     [vec_a,vec_b,vec_c] = fslib.r_basis(lines)
-    Tm = create_Tm(vec_a,vec_b,vec_c)
-    Tmi = np.array(Tm.inv().evalf(),dtype=float)
-    
+    Tm = np.array(create_Tm(vec_a,vec_b,vec_c),dtype=float)
+    Tmi = np.array(np.linalg.inv(Tm),dtype=float)
+
+    if norm(np.rint(Tmi) - Tmi) > prec2:
+        raise Exception('Non-integerer transformation matrix: rotation of coordinate system present.')
+
+    ts = find_translations(Tm)
+    if debug:
+        print(ts)
+
     start = False
     end = False
     pos_o = []
@@ -625,68 +749,302 @@ def get_full_permutations(lines,prec=3):
             continue
         if start and not end:
             pos_o.append([float(i) for i in line.split()[1:4]])          
-    
-    #for p in pos_o:
-    #    print(p)
-    #print('')
+
+    if debug:
+        print('pos_o')
+        for p in pos_o:
+            print(p)
+        print('')
     
     pos_T = []
     for p in pos_o:
         pos_T.append(np.dot(Tmi,p[0:3]-origin))
-    #for p in pos_T:
-    #    print(p)
-    #print('')
+
+    if debug:
+        print('pos_T')
+        for p in pos_T:
+            print(p)
+        print('')
         
     syms = fslib.r_sym(lines,syms_only=False)
     
     out = []
-    for sym in syms:
-        #print('')
-        #print(sym[1])
-        #print(sym[4])
-        #print({x[0]:x[1] for x in sorted(sym[4])})
+    for isym,sym in enumerate(syms):
+        if debug:
+            print('')
+            print(isym)
+            print(sym[1])
+            print(sym[4])
+            print({x[0]: x[1] for x in sorted(sym[4])})
+        out_t = []
+        for trans in ts:
+            if debug:
+                print(trans)
+            pos_TS = []
+            for pT in pos_T:
+                pTS = []
+                for i in range(3):
+                    pTS.append(sym[1][i])
+                    for j,s in enumerate(['x','y','z']):
+                        pTS[i] = pTS[i].replace(s,str(pT[j]))
+                pTS = np.array(sympy.sympify(pTS),dtype=float)+trans
+                pos_TS.append(pTS)
+
+            if debug:
+                print('pos_TS')
+                for p in pos_TS:
+                    print(p)
+                print('')
+
+            pos_TSTi = []
+            for p in pos_TS:
+                pos_TSTi.append( np.round( np.dot( np.array(Tm,dtype=float), p) + origin, prec) % 1)
+
+            pos_TSTi_test = []
+            for p in pos_TS:
+                pos_TSTi_test.append( np.dot( np.array(Tm,dtype=float), p) + origin)
+
+            if debug:
+                print('pos_TSTi')
+                for p in pos_TSTi:
+                    print(p)
+                print('')
+
+            if debug:
+                print('pos_TSTi_test')
+                for p in pos_TSTi_test:
+                    print(p)
+                print('')
+
+            pos_or = np.round(pos_o,prec) % 1
+            if debug:
+                print('pos_or')
+                print(pos_or)
+
+            permutations = {}
+            for i,p in enumerate(pos_TSTi):
+                found = False
+                for j,po in enumerate(pos_or):
+                    if np.linalg.norm(p-po) < 1/(10**(prec-1)):
+                        #if debug:
+                        #    print(i,p)
+                        #    print(j,po)
+                        #    print('')
+                        perm = j
+                        found = True
+                        break
+                if not found:
+                    raise Exception('Permutation not found')
+                else:
+                    permutations[i+1] = perm+1
+            #print(sym[4])
+            if debug:
+                print(permutations)
+            out_t.append(permutations)
+        out.append(out_t)
+        
+    return out
+
+def get_integer_solution(A, b, debug=False):
+    B, U, V = smith_normal_form(A)
+    if debug:
+        print(B)
+        print(U)
+        print(V)
+        print(np.dot(U, np.dot(A, V)))
+    c = np.dot(U, b)
+    y = np.zeros(B.shape[1])
+
+    has_solution = True
+    for i in range(B.shape[0]):
+        if B[i, i] == 0:
+            continue
+        if c[i] % B[i, i] == 0:
+            y[i] = c[i] // B[i, i]
+        else:
+            has_solution = False
+            break
+    if not has_solution:
+        return None
+    else:
+        return np.dot(V, y)
+
+def find_translations(T):
+
+    prec = 1e-4
+    Ti_o = np.linalg.inv(T)
+    Ti = np.rint(Ti_o).astype(int)
+
+    if norm(Ti_o - Ti) > prec:
+        raise Exception('Not integer matrix!')
+
+    det = np.rint(np.linalg.det(Ti))
+    abs_det = abs(int(det))
+
+    n_trans = 0
+
+    it = [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5]
+    itt = list(product(it, it, it))
+    itt = sorted(itt, key=norm)
+
+    A = Ti.copy()
+
+    ts = [np.array([0, 0, 0])]
+
+    i = 0
+    # while len(ts) < abs(det):
+    while len(ts) < abs_det and i < len(itt):
+        i += 1
+        t = np.array(itt[i])
+        # print(i)
+        # print(t)
+
+        found = False
+        for ti in ts:
+            x = get_integer_solution(A, t - ti)
+            if x is not None:
+                found = True
+                break
+        if not found:
+            ts.append(t)
+    if len(ts) < abs_det:
+        print(i,len(itt))
+        print(abs_det)
+        print(ts)
+        raise Exception('Did not find all transformations.')
+    return ts
+def get_full_permutations_old(lines, prec=3, debug=False):
+    """
+    This function determines permutations for all atoms. This is necessary in cases, where
+    the non-magnetic unit cell is smaller than the magnetic and then the conventional method
+    only determines the permutation for a subset of atoms, which is then a problem for noso.
+
+    The way this works is:
+    1. Get a list of atoms in the input, which are given in teh findsym basis.
+    2. Convert those to the crystallographic basis used in findsym output.
+    3. Transform these by symmetries.
+    4. Transform back to the findsym basis.
+    5. Check the transformations.
+
+    Args:
+        lines: the findsym output, as a list of lines
+        prec: the rounding precision, 3 means 3 digits of rounding and then atomic positions
+            closer than 1e-2 are taken as equal.
+
+    Returns:
+        list of permutations for all symmetry operations
+    """
+
+    if debug:
+        print('get_full_permutations starting')
+
+    origin = np.array(fslib.r_origin(lines), dtype=float)
+    [vec_a, vec_b, vec_c] = fslib.r_basis(lines)
+    Tm = create_Tm(vec_a, vec_b, vec_c)
+    Tmi = np.array(Tm.inv().evalf(), dtype=float)
+
+    start = False
+    end = False
+    pos_o = []
+    for line in lines:
+        if 'Position and magnetic moment of each atom (dimensionless coordinates)' in line:
+            start = True
+            continue
+        if start and '------------------------------------------' in line:
+            end = True
+            continue
+        if start and not end:
+            pos_o.append([float(i) for i in line.split()[1:4]])
+
+    if debug:
+        print('pos_o')
+        for p in pos_o:
+            print(p)
+        print('')
+
+    pos_T = []
+    for p in pos_o:
+        print('wtttf')
+        pos_T.append(np.dot(Tmi, p[0:3] - origin))
+
+    if debug:
+        print('pos_T')
+        for p in pos_T:
+            print(p)
+        print('')
+
+    syms = fslib.r_sym(lines, syms_only=False)
+
+    out = []
+    for isym, sym in enumerate(syms):
+        if debug:
+            print('')
+            print(isym)
+            print(sym[1])
+            print(sym[4])
+            print({x[0]: x[1] for x in sorted(sym[4])})
         pos_TS = []
         for pT in pos_T:
             pTS = []
             for i in range(3):
                 pTS.append(sym[1][i])
-                for j,s in enumerate(['x','y','z']):
-                    pTS[i] = pTS[i].replace(s,str(pT[j]))
-            pTS = np.array(sympy.sympify(pTS),dtype=float)
+                for j, s in enumerate(['x', 'y', 'z']):
+                    pTS[i] = pTS[i].replace(s, str(pT[j]))
+            pTS = np.array(sympy.sympify(pTS), dtype=float)
             pos_TS.append(pTS)
-            
-        #for p in pos_TS:
-        #    print(p)
-        #print('')
-            
-        pos_TSTi = []        
+
+        if debug:
+            print('pos_TS')
+            for p in pos_TS:
+                print(p)
+            print('')
+
+        pos_TSTi = []
         for p in pos_TS:
-            pos_TSTi.append( np.round( np.dot( np.array(Tm,dtype=float), p) + origin, prec) % 1)
-                
-        #for p in pos_TSTi:
-        #    print(p)
-        #print('')
-        
-        pos_or = np.round(pos_o,prec) % 1
-                
+            pos_TSTi.append(np.round(np.dot(np.array(Tm, dtype=float), p), prec) % 1)
+
+        pos_TSTi_test = []
+        for p in pos_TS:
+            pos_TSTi_test.append(np.dot(np.array(Tm, dtype=float), p))
+
+        if debug:
+            print('pos_TSTi')
+            for p in pos_TSTi:
+                print(p)
+            print('')
+
+        if debug:
+            print('pos_TSTi_test')
+            for p in pos_TSTi:
+                print(p)
+            print('')
+
+        pos_or = np.round(pos_o, prec) % 1
+        if debug:
+            print('pos_or')
+            print(pos_or)
+
         permutations = {}
-        for i,p in enumerate(pos_TSTi):
+        for i, p in enumerate(pos_TSTi):
             found = False
-            for j,po in enumerate(pos_or):
-                if np.linalg.norm(p-po) < 1/(10**(prec-1)):
-                    #print(i,p)
-                    #print(j,po)
-                    #print('')
+            for j, po in enumerate(pos_or):
+                if np.linalg.norm(p - po) < 1 / (10 ** (prec - 1)):
+                    # if debug:
+                    #    print(i,p)
+                    #    print(j,po)
+                    #    print('')
                     perm = j
                     found = True
                     break
             if not found:
                 raise Exception('Permutation not found')
             else:
-                permutations[i+1] = perm+1
-        #print(sym[4])
-        #print(permutations)
+                permutations[i + 1] = perm + 1
+        # print(sym[4])
+        if debug:
+            print(permutations)
         out.append(permutations)
-        
+
     return out
+
 

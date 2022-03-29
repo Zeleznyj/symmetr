@@ -734,7 +734,10 @@ class Tensor(GenericTensor):
                     self[ind] = self[ind].subs(symbol,0)
 
     def evalf(self,acc=15):
-        out = 0
+        out = self.copy()
+        for ind in self:
+            out[ind] = self[ind].evalf(acc)
+        return out
 
     def copy0(self):
         "returns a zero tensor with the same shape and transformation rules"
