@@ -165,7 +165,7 @@ class NosoSymFinder:
                     r = R.from_rotvec(nt * theta)
                     if norm(r.apply(A) - B) > self.prec:
                         r2 = R.from_rotvec(-nt * theta)
-                        if norm(r2.aply(A) - B) < self.prec:
+                        if norm(r2.apply(A) - B) < self.prec:
                             if self.debug > 1:
                                 print('switching axis')
                             rots.append(RotationType('single', -nt, theta))
@@ -173,6 +173,7 @@ class NosoSymFinder:
                             raise Exception('Rotation test failed, somethign is wrong!')
                     else:
                         rots.append(RotationType('single', nt, theta))
+                rots = self.remove_repeated(rots)
                 return rots
 
 
@@ -257,6 +258,11 @@ class NosoSymFinder:
         return None
 
     def get_rotations_overlap_multi(self, r1, r2):
+        if self.debug > 1:
+            print('rotation_overlap_multi:')
+            print('r1',r1)
+            print(type(r2))
+            print('r2',r2)
         overlaps = []
         for ri in r1:
             for rj in r2:
@@ -264,6 +270,7 @@ class NosoSymFinder:
                 if r is not None:
                     overlaps.append(r)
         if len(overlaps) > 0:
+            overlaps = self.remove_repeated(overlaps)
             return overlaps
         else:
             return None
@@ -285,23 +292,42 @@ class NosoSymFinder:
         return rots_u
 
     def merge_rotations(self,rots):
+        if self.debug > 1:
+            print('starting merge')
+            print(rots)
         rots_all = merge_lists(rots)
         if any(x is None for x in rots_all):
+            if self.debug > 1:
+                print('finished merge')
             return None
         rots_merged = None
         if len(rots) == 1:
             rots_merged = rots[0]
         else:
+            if self.debug > 1:
+                print('starting get_rotations_overlap_multi')
             ro = self.get_rotations_overlap_multi(rots[0],rots[1])
+            if self.debug > 1:
+                print('finished get_rotations_overlap_multi')
             if ro is None:
+                if self.debug > 1:
+                    print('finished merge')
                 return None
             rots_merged = ro
             for irot in range(2,len(rots)):
+                    if self.debug > 1:
+                        print('starting get_rotations_overlap_multi')
                     ro = self.get_rotations_overlap_multi(rots_merged,rots[irot])
+                    if self.debug > 1:
+                        print('finished get_rotations_overlap_multi')
                     if ro is None:
+                        if self.debug > 1:
+                            print('finished merge')
                         return None
                     else:
                         rots_merged = ro
+        if self.debug > 1:
+            print('finished merge')
         return rots_merged
 
 
