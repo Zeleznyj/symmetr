@@ -339,12 +339,12 @@ class NosoSymFinder:
         rotations = []
         para = False
         if not hasT:
-            col_dif = max([norm(m + mchain[0]) for m in mchain])
+            col_dif = max([norm(m - mchain[0]) for m in mchain])
             if col_dif < self.prec:
                 para = True
         elif len(mchain) % 2 == 0:
             mchain_f = [2 * (i % 2 - 1 / 2) * m for i, m in enumerate(mchain)]
-            col_dif = max([norm(m + mchain_f[0]) for m in mchain_f])
+            col_dif = max([norm(m - mchain_f[0]) for m in mchain_f])
             if col_dif < self.prec:
                 para = True
 
