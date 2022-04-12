@@ -152,7 +152,7 @@ def find_equiv(Xs,mag,syms,atom,debug=False,round_prec=None):
         if a.round(4) !=0 or b.round(6) !=0 or c.round(6) != 0:
             start_conf[i+1] = sympy.Matrix([[a,b,c]])
 
-    if n_at != len(start_conf):
+    if n_at != len(mag):
         message = ('Warning: nonmagnetic unit cell smaller than the magnetic!\n'
                   'Output will show values of only some magnetic moments.'
                   'Furthermore some equivalent configurations will be missing.'

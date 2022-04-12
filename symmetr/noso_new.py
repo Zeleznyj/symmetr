@@ -16,6 +16,15 @@ def merge_lists(lists):
     return merged
 
 class RotationType:
+    """
+    Class that is used to represent the various rotations types.
+    typ:
+        para: Arbitrary rotation around a given axis
+        anti-para: 180 degree rotation around any axis perpendicular to the given axis
+        single: a rotation given by axis and angle
+        non-mag: completely arbitrary rotation
+        identity: Identity matrix, i.e. zero angle rotation
+    """
 
     def __init__(self, typ, axis=None, angle=None):
         if typ not in ['para', 'anti-para', 'single', 'non-mag','identity']:
@@ -77,6 +86,15 @@ class RotationType:
         raise Exception('Wrong rot type')
 
 class NosoSymFinder:
+    """
+    This class contains the functions that are used for finding the non-relativistic symmetries. They are grouped
+    together in a class just so that all have access to the prec and debug parameters.
+
+    prec: General precision parameter used throughout to determine if two floats are the same
+    moment_zero: A precision parameter that is used to determine if a magnetic moment is zero. Can be used to ignore
+    small moments.
+    debug: Debug 0 means no debug output, 1 means standard debug output, 2 means detailed debug.
+    """
 
     def __init__(self,prec=1e-5,moment_zero=1e-3,debug=0):
         self.prec = prec
@@ -112,6 +130,9 @@ class NosoSymFinder:
         return chain, chain_ok
 
     def get_permutation_chains(self,perm):
+        """
+        Get all permutation chains for given permutation.
+        """
         classified = []
         chains = []
         oks = []
@@ -125,6 +146,9 @@ class NosoSymFinder:
         return tuple(chains), ok_all
 
     def get_AB_rotations(self,A, B, theta):
+        """
+        Finds all rotations that transform A to B by a given angle theta.
+        """
 
         An = A / norm(A)
         Bn = B / norm(B)
@@ -178,6 +202,9 @@ class NosoSymFinder:
 
 
     def get_rotations_overlap(self,r1, r2):
+        """
+        Finds an overlap between two rotation types.
+        """
         if r1 is None or r2 is None:
             return None
         if r1.typ in ['non-mag']:
@@ -258,6 +285,10 @@ class NosoSymFinder:
         return None
 
     def get_rotations_overlap_multi(self, r1, r2):
+        """
+        Finds an overlap between two lists of rotations.
+        That is it finds all overlaps between r1i and r2j where r1i are rotations from r1 and r2j rotations from r2.
+        """
         if self.debug > 1:
             print('rotation_overlap_multi:')
             print('r1',r1)
@@ -292,14 +323,19 @@ class NosoSymFinder:
         return rots_u
 
     def merge_rotations(self,rots):
+        """
+        Takes a list of rotations, where each element is a list of rotations and find a common overlap.
+        """
         if self.debug > 1:
             print('starting merge')
             print(rots)
-        rots_all = merge_lists(rots)
-        if any(x is None for x in rots_all):
-            if self.debug > 1:
-                print('finished merge')
-            return None
+
+        #This part seems wrong and unnecessary
+        #rots_all = merge_lists(rots)
+        #if any(x is None for x in rots_all):
+        #    if self.debug > 1:
+        #        print('finished merge')
+        #    return None
         rots_merged = None
         if len(rots) == 1:
             rots_merged = rots[0]
@@ -332,6 +368,9 @@ class NosoSymFinder:
 
 
     def get_chain_rotations(self, mchain, hasT=False):
+        """
+        Finds spin rotations for a given chain of magnetic moments.
+        """
 
         if self.debug > 1:
             print('Magnetic chain: ', mchain)
@@ -394,6 +433,9 @@ class NosoSymFinder:
         return [m/mchain_norms[i] for i,m in enumerate(mchain)]
 
     def get_permutations_rotations(self, chains, mags, hasT=False):
+        """
+        Finds spin rotations for a give permutation, which is represented by the chains.
+        """
         # chains = get_permutation_chains(perm)
         rots_chains = []
         for chain in chains:

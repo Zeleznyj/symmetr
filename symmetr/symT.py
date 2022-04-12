@@ -711,13 +711,19 @@ def get_full_permutations(lines,prec=3,debug=False):
     4. Transform back to the findsym basis.
     5. Check the transformations.
 
+    In addition, when the non-magnetic unit cell is smaller we need to add additional translations to
+    the original symmetry operations. These are identified by the find_translations function and are
+    added to the non-magnetic symmetry operations.
+
     Args:
         lines: the findsym output, as a list of lines
         prec: the rounding precision, 3 means 3 digits of rounding and then atomic positions
             closer than 1e-2 are taken as equal.
 
     Returns:
-        list of permutations for all symmetry operations
+        out: list of lists such that out[i] contains all the permutations for the non-magnetic symmetry
+        i, that is the permutation for the original non-magnetic symmetry and the permutatinos for all
+        the translations
     """
 
     prec2 = 1e-4
@@ -846,6 +852,10 @@ def get_full_permutations(lines,prec=3,debug=False):
     return out
 
 def get_integer_solution(A, b, debug=False):
+    """
+    Finds an integer solution to a system of linear equtions.
+    If there is no solution returs None.
+    """
     B, U, V = smith_normal_form(A)
     if debug:
         print(B)
@@ -870,6 +880,17 @@ def get_integer_solution(A, b, debug=False):
         return np.dot(V, y)
 
 def find_translations(T):
+    """
+    For matrix T that defines a supercell it finds all lattice translations that needs to be added to the symmetries
+    of the supercell. This is because these translations are Bravais lattice translations in the smaller unit cell, but
+    not in the supercell.
+
+    This works by trying different combinations of the small unit cell lattice vectors and trying if these are an
+    integer linear combination of the large unit cell lattice vectors (that are defined by T) or if they differ from
+    already identified translation by an integer linear combination of the large unit cell lattice vectors.
+
+    If det(T) = n that means the supercell is n-times larger and that should mean there is n translations.
+    """
 
     prec = 1e-4
     Ti_o = np.linalg.inv(T)
@@ -913,6 +934,7 @@ def find_translations(T):
         print(ts)
         raise Exception('Did not find all transformations.')
     return ts
+
 def get_full_permutations_old(lines, prec=3, debug=False):
     """
     This function determines permutations for all atoms. This is necessary in cases, where
