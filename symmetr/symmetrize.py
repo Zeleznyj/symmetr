@@ -319,7 +319,7 @@ def symmetr(syms,X,trans_func,params,opt=None):
             if opt.numX:
                 U,S,V = svd(Y)
             else:
-                U, S, V = svd(np.array(np.flip(Y, axis=1), dtype=np.float))
+                U, S, V = svd(np.array(np.flip(Y, axis=1), dtype=float))
             if debug_time:
                 ts1 = time.perf_counter()
                 print('Time for svd: {}'.format(ts1-ts0))
@@ -347,7 +347,7 @@ def symmetr(syms,X,trans_func,params,opt=None):
                 #This is a consistency check: the rows of V2 should be linearly indpenedent and so
                 #there should be no zero rows in V2_rref
                 if len(pivs) != len(zero_singulars):
-                    Vn = np.array(V2.evalf(),dtype=np.float)
+                    Vn = np.array(V2.evalf(),dtype=float)
                     np.save('debug_V.npy',Vn)
                     print(pivs)
                     print(zero_singulars)

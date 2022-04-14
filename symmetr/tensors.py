@@ -41,7 +41,7 @@ def get_float_vals():
 
     for val in vals[1:]:
         vals.append(-val)
-    return vals,np.array(vals,dtype=np.float)
+    return vals,np.array(vals,dtype=float)
 
 def approximate_float(f,prec,vals=None):
     if vals is None:
@@ -388,7 +388,7 @@ class GenericTensor(object):
                 for i in range(self.dim2):
                     factor *= R_list[i][ind1[i], ind2[i]]
                 if numpy_mode:
-                    factor = np.float(factor)
+                    factor = float(factor)
                 ten_R[ind1] += factor * self[ind2]
 
         return ten_R
@@ -442,7 +442,7 @@ class GenericTensor(object):
                 ind2[i] = j
                 ind2 = tuple(ind2)
                 if numpy_mode:
-                    Gtij = np.float(Gt[ind[i], j])
+                    Gtij = float(Gt[ind[i], j])
                 else:
                     Gtij = Gt[ind[i], j]
                 out[ind] += Gtij * self[ind2]
@@ -900,7 +900,7 @@ class NumTensor(GenericTensor):
 
     def __mul__(self,num):
         try:
-            num = np.float(num)
+            num = float(num)
         except:
             raise Exception('Can only multiply NumTensor by float!')
         out = self.copy0()
@@ -1007,9 +1007,9 @@ class NumTensor(GenericTensor):
             elif self.trans_type == 2:
                 R = sym.R
             if self.is_contravar(i) == 1:
-                R_list.append(np.array(R,dtype=np.float))
+                R_list.append(np.array(R,dtype=float))
             else:
-                R_list.append(np.array(R.inv().T,dtype=np.float))
+                R_list.append(np.array(R.inv().T,dtype=float))
 
         ten_R = self.copy0()
 
@@ -1043,8 +1043,8 @@ class NumTensor(GenericTensor):
             ten_T (tensor): the transformed tensor
         """
 
-        mat1 = np.array(T,dtype=np.float)
-        mat2 = np.array(T.inv().T,dtype=np.float)
+        mat1 = np.array(T,dtype=float)
+        mat2 = np.array(T.inv().T,dtype=float)
 
         if not in_place:
             ten_T = self.copy0()

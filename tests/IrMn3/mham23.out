@@ -1,0 +1,1 @@
+{"X": {"dim1": 3, "dim2": 2, "X": {"00": "Symbol('x00')", "10": "Integer(0)", "20": "Integer(0)", "01": "Integer(0)", "11": "Symbol('x11')", "21": "Integer(0)", "02": "Integer(0)", "12": "Integer(0)", "22": "Symbol('x00')"}, "ind_types": [-1, -1], "name": "x"}}
