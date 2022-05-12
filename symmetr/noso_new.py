@@ -295,6 +295,8 @@ class NosoSymFinder:
             print(type(r2))
             print('r2',r2)
         overlaps = []
+        if r1 is None or r2 is None:
+            return None
         for ri in r1:
             for rj in r2:
                 r = self.get_rotations_overlap(ri,rj)
