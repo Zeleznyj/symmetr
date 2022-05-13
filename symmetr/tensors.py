@@ -848,6 +848,51 @@ class Tensor(GenericTensor):
             out[ind_tuple] = sympy.sympify(inp['X'][ind])
         return out
 
+
+    def subs_tensor(self,Y):
+
+        def get_vars(expr,name):
+            return list(set(re.findall(r'{}[0-9]+'.format(name), sympy.srepr(expr))))
+
+        try:
+            var_name = list(self.v.keys())[0][0]
+        except:
+            var_name = 'x'
+
+        var_names = get_vars(self,var_name)
+        out = self.copy()
+        var_values = {}
+        for ind in out:
+            vars_ind = get_vars(out[ind],var_name)
+            if len(vars_ind) == 1:
+                var = vars_ind[0]
+                sol = sympy.solve(out[ind]-Y[ind],var)
+                if len(sol) == 1:
+                    var_values[var] = sol[0]
+        if len(var_values) != len(var_names):
+            print("Couldn't find variable values, only works for simple tensors!")
+            return None
+
+        for ind in out:
+            for x in var_names:
+                out[ind] = out[ind].subs(x,var_values[x])
+
+        return out
+
+    def convert2numpy(self,acc=None):
+        out = np.zeros((self.dim1,)*self.dim2)
+
+        try:
+            for ind in self:
+                out[ind] = self[ind].evalf(acc)
+        except:
+            out = None
+            print('Conversion failed, conversion is only possible for numeric tensors.')
+
+        return out
+
+
+
 class NumTensor(GenericTensor):
 
     def __init__(self,kind,dim1,dim2,name='x',ind_types=None):
