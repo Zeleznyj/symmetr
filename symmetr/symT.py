@@ -831,7 +831,7 @@ def get_full_permutations(lines,prec=3,debug=False):
             for i,p in enumerate(pos_TSTi):
                 found = False
                 for j,po in enumerate(pos_or):
-                    if np.linalg.norm(p-po) < 1/(10**(prec-1)):
+                    if np.linalg.norm(p-po) < 1.5/(10**(prec)):
                         #if debug:
                         #    print(i,p)
                         #    print(j,po)
@@ -840,6 +840,8 @@ def get_full_permutations(lines,prec=3,debug=False):
                         found = True
                         break
                 if not found:
+                    print(p)
+                    print(pos_or)
                     raise Exception('Permutation not found')
                 else:
                     permutations[i+1] = perm+1

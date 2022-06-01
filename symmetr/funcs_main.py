@@ -107,6 +107,8 @@ def sym_res_nonexp(opt,printit=False):
 
     if opt['atom2'] != -1:
         Xs_2 = symmetrize.symmetr_AB(syms,Xs,opt['atom'],opt['atom2'],round_prec=opt['round_prec'])
+        if Xs_2 is None:
+            raise Exception('Did not find symmetry connecting the two atoms!')
 
     #if transform result is set we convert the symmetrized tensor
     if opt['transform_result']:
