@@ -17,10 +17,12 @@ from  six import string_types
 import time
 import re
 import json
+import random
 
 import sympy
 from sympy.core.numbers import Zero
 import numpy as np
+from numpy.linalg import norm
 import copy
 from .symmetry import create_T
 import prettytable
@@ -55,6 +57,34 @@ def approximate_float(f,prec,vals=None):
         return f
     else:
         return valss[pos[0][0]]
+
+def get_unique_vals(Y,dif_prec=0.1,zero_prec=1e-3):
+    uvals = []
+    for x in np.nditer(Y):
+        if abs(x) > zero_prec:
+            if len(uvals) == 0:
+                uvals = np.append(uvals,x)
+            else:
+                dif = min(abs(uvals-x))
+                if dif > dif_prec:
+                    uvals = np.append(uvals,x)
+    return uvals
+
+def get_unique_vals_symbolic(X, dif_prec=0.1, zero_prec=1e-3):
+    xs = list(set(re.findall(r'x[0-9]+', sympy.srepr(X))))
+
+    random.seed(1)
+    randoms = [(random.random() + i) * (5 * (i + 1)) for i in range(len(xs))]
+
+    sub = tuple([(x, randoms[i]) for i, x in enumerate(xs)])
+    Xst = X.copy()
+    Xst.subs(sub)
+    Xstn = Xst.convert2numpy()
+
+    uvals_s = get_unique_vals(Xstn, dif_prec, zero_prec)
+
+    return uvals_s
+
 
 def tensor2Y(X,Y_format='sympy',algo=3,reverse=False,td=False):
     """
@@ -614,15 +644,26 @@ class Tensor(GenericTensor):
                out[i,j] = self[i,j]
        return out
 
-    def subs(self,old,new='notset'):
-        for ind in self:
-            if new != 'notset':
-                self[ind] = self[ind].subs(old,new)
-            else:
-                self[ind] = self[ind].subs(old)
-        return self
+    def subs(self,old,new='notset',inplace=True):
+        if inplace:
+            #the default behavior is stupid since it modifies a tensor and also returns it
+            #however I'm afraid of changing it since it could break something:)
+            for ind in self:
+                if new != 'notset':
+                    self[ind] = self[ind].subs(old,new)
+                else:
+                    self[ind] = self[ind].subs(old)
+            return self
+        else:
+            out = self.copy0()
+            for ind in self:
+                if new != 'notset':
+                    out[ind] = self[ind].subs(old, new)
+                else:
+                    out[ind] = self[ind].subs(old)
+            return out
 
-    def pprint(self,print_format=None,latex=False,no_newline=False,ind_types=False,remove_zeros=False):
+    def pprint(self,print_format=None,latex=False,no_newline=False,ind_types=False,remove_zeros=False,ret=False):
 
         if remove_zeros:
             self.remove_zeros()
@@ -632,15 +673,21 @@ class Tensor(GenericTensor):
             vec = [self[i] for i in range(self.dim1)]
             vec = sympy.Matrix([vec])
             if latex:
-                print(sympy.latex(vec))
+                if not ret:
+                    print(sympy.latex(vec))
+                else:
+                    return sympy.latex(vec)
             else:
                 sympy.pprint(vec)
         elif self.dim2 == 2:
             if latex:
-                if no_newline:
-                    print(sympy.latex(self.mat()), end=' ')
+                if not ret:
+                    if no_newline:
+                        print(sympy.latex(self.mat()), end=' ')
+                    else:
+                        print(sympy.latex(self.mat()))
                 else:
-                    print(sympy.latex(self.mat()))
+                    return sympy.latex(self.mat())
             else:
                 sympy.pprint(self.mat())
         else:
@@ -878,6 +925,54 @@ class Tensor(GenericTensor):
                 out[ind] = out[ind].subs(x,var_values[x])
 
         return out
+
+    def check_calc_symmetry(self, Xc, scale, verbosity=0):
+
+        X0 = self.copy0()
+        symmetry_ok = True
+        if self == X0:
+
+            if norm(Xc) > scale * 1e-6:
+                symmetry_ok = False
+
+            if verbosity > 0:
+                print('OK') if symmetry_ok else print('Symmetry not OK!')
+
+                if not symmetry_ok:
+                    print('Symmetry tensor is zero')
+                    print('norm: ', norm(Xc))
+
+        else:
+            Xs = self.subs_tensor(Xc)
+            Xsn = Xs.convert2numpy()
+            if verbosity > 1:
+                print(Xsn)
+            if Xsn is None:
+                print('Warning couldnt convert to numpy')
+                return None
+            dif = norm(Xsn - Xc)
+
+            if dif > scale * 1e-4:
+                symmetry_ok = False
+
+            uvals_s = len(get_unique_vals_symbolic(self))
+            uvals_c = len(get_unique_vals(Xc, scale * 1e-3, scale * 1e-6))
+
+            if uvals_s != uvals_c:
+                symmetry_ok = False
+
+            if verbosity > 0:
+                print('OK') if symmetry_ok else print('Symmetry not OK!')
+
+                if not symmetry_ok:
+                    print('Symmetry error: ', dif)
+                    print('norm: ', norm(Xc))
+                    print('Unique vals symmetry: {}, calculation {}'.format(uvals_s, uvals_c))
+
+                    self.pprint()
+                    print(Xc)
+
+        return symmetry_ok
 
     def convert2numpy(self,acc=None):
         out = np.zeros((self.dim1,)*self.dim2)
