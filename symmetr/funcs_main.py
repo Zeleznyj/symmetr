@@ -82,7 +82,7 @@ def sym_res_nonexp(opt,printit=False):
 
     if same_op_sym or symmetrize_sym_inds:
         #the metric is for the findsym basis
-        G = symT.get_metric(opt)
+        G = symT.get_metric(opt,debug=False)
         if opt['num_prec'] is not None:
             G = sympy.N(G)
         if not opt['transform_result']:

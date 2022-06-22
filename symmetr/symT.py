@@ -22,6 +22,7 @@ from .noso_new import NosoSymFinder
 from .symmetry import findsym2sym, matsym2sym, Symmetry, create_I, create_P, create_T
 from fractions import Fraction
 import numpy as np
+from mpmath import lu_solve
 from numpy.linalg import norm
 
 from .hsnf import smith_normal_form
@@ -596,7 +597,25 @@ def get_metric(opt,debug=False,nonmag=False):
         A_L = vec_A.row_join(vec_B)    
         A_L = A_L.row_join(vec_C)
 
-        G = A_l.LUsolve(A_L)
+        if debug:
+            print('A_l')
+            print(A_l)
+            print('A_L')
+            print(A_L)
+
+        if opt['num_prec'] is None:
+            G = A_l.LUsolve(A_L)
+        else:
+            A_ln = np.array(A_l).astype(np.float64)
+            A_Ln = np.array(A_L).astype(np.float64)
+            if debug:
+                print('A_ln')
+                print(A_ln.dtype)
+                print('A_Ln')
+                print(A_Ln.dtype)
+            G = np.linalg.solve(A_ln,A_Ln)
+            G = sympy.Matrix(G)
+
         if debug:
             print('The metrix tensor')
             sympy.pprint(G)
