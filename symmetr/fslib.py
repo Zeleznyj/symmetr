@@ -422,16 +422,23 @@ def r_abc(lines):
      return abc
 
 def r_mag_fin(fin):
+    print(fin)
     start = False
     mags = []
     for i in range(len(fin)):
         if start:
+            n += 1
+            if n > n_at:
+                break
             mag = sympy.zeros(1,3)  
             for j in range(3):
                 mag[j] = sympy.sympify(fin[i].split()[j+3])
             mags.append(mag)
         elif (not start) and 'magnetic' in fin[i]:
             start = True
+            n_at = int(fin[i-2])
+            print(n_at)
+            n = 0
     return mags
 
 def r_tolerance(lines):
