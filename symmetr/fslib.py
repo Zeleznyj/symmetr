@@ -97,8 +97,14 @@ def make_fsinp_nonmag(fin_c):
     for i in range(len(fin_c)):
         if 'magnetic' in fin_c[i]:
             start = True
+            fin_cnm.append(fin_c[i])
+            continue
         if start:
-            fin_cnm.append(re.sub(r'([0-9\.\-]+ +[0-9\.\-]+ +[0-9\.\-]+).+',r'\1 0 0 0',fin_c[i],count=1))
+            regex = r'([0-9\.\-eE]+ +[0-9\.\-eE]+ +[0-9\.\-eE]+) +[0-9\.\-eE]+ +[0-9\.\-eE]+ +[0-9\.\-eE]+'
+            if len(re.findall(regex,fin_c[i])) == 0:
+                print('here', fin_c[i])
+                raise Exception('Problem when substituting zero moments')
+            fin_cnm.append(re.sub(regex,r'\1 0 0 0',fin_c[i],count=1))
         else:
             fin_cnm.append(fin_c[i])
     return fin_cnm
@@ -422,7 +428,6 @@ def r_abc(lines):
      return abc
 
 def r_mag_fin(fin):
-    print(fin)
     start = False
     mags = []
     for i in range(len(fin)):
@@ -437,7 +442,6 @@ def r_mag_fin(fin):
         elif (not start) and 'magnetic' in fin[i]:
             start = True
             n_at = int(fin[i-2])
-            print(n_at)
             n = 0
     return mags
 
