@@ -63,7 +63,7 @@ The findsym input file is specified with:
 
 where *findsym.in* is the name of the findsym input file.
 
-See the `findsym/findsym.txt <https://bitbucket.org/zeleznyj/linear-response-symmetry/src/master/findsym/findsym.txt>`__ file for description of the findsym input format. Examples can be founds in the tests/ directory.
+See the `findsym/findsym.txt <https://bitbucket.org/zeleznyj/linear-response-symmetry/src/master/symmetr/findsym/findsym.txt>`__ file for description of the findsym input format. Examples can be founds in the tests/ directory.
 
 Note that even if you have nonmagnetic system, you have to define the system as magnetic with zero magnetic moments, otherwise the program will not work!
 
