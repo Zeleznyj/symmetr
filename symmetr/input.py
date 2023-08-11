@@ -13,6 +13,7 @@ import sys
 import textwrap
 from math import log10
 from .version import __version__
+from .magndata import get_magndata_structure
 import sys
 
 class InputError(Exception):
@@ -39,7 +40,9 @@ class options(object):
 
     def __setitem__(self,key,value):
         self.args[key] = value
-        self.check()
+        #The checking is a problem when magndata is used and is probably not really necessary
+        #should be enough to do the check on creation
+        #self.check()
 
     def __getitem__(self,key):
         return self.args[key]
@@ -51,16 +54,22 @@ class options(object):
         if self['transform_result'] and self['transform_syms']:
             raise InputError('You cannot specify both --transform-result and --transform-syms')
 
+        inputs = [self['inp'], self['group'], self['inp_magndata']]
+        inputs2 = []
+        for inp in inputs:
+            if inp is not None:
+                inputs2.append(inp)
+
+        if len(inputs2) == 0:
+            raise InputError('You have to specify either input file, magndata id or a group.')
+
+        if len(inputs2) > 1:
+            raise InputError('You have to specify only one of: input file, magndata id or a group.')
+
         if self['mode'] == 'res':
             if self['atom2'] != -1:
                 if self['atom'] == -1:
                     raise InputError('projection2 can be setonly if projection1 is set')
-
-            if self['inp'] and self['group']:
-                raise InputError('You cannot specify both the symmetry group and Findsym input file')
-
-            if (not self['inp']) and (not self['group']):
-                raise InputError('You have to specify either the symmetry group or the Findsym input file')
 
             if ( self['atom'] != -1 or self['atom2'] !=-1 ) and self['group']:
                 raise InputError('Projections not possible with group name input. Use Findsym input instead.')
@@ -84,8 +93,6 @@ class options(object):
         if self['mode'] == 'mham':
             if self['group'] is not None:
                 raise InputError('group input is not allowed for mham')
-            if self['inp'] is None:
-                raise InputError('You need to specify findsym input file')
         if not self['inp'] and self['print_pos']:
             raise InputError('print-pos is only possible with findsym input.')
 
@@ -100,6 +107,8 @@ def parse(clargs=None):
 
     parser_parent = argparse.ArgumentParser(add_help=False)
     parser_parent.add_argument('-f','--findsym',help='Findsym input file',default=None,dest='inp')
+    parser_parent.add_argument('--magndata',help='The id of a structure from MAGNDATA that will be used as an input.',default=None,dest='inp_magndata')
+    parser_parent.add_argument('--magndata-filename',help='The name of the file to which the MAGNDATA input will be saved.',default=None,dest='magndata_fname')
     parser_parent.add_argument('-b','--basis',help='Sets a coordinate basis: abc for conventional crystallographic basis, i for the one used in input \
     (default). cart for a cartesian basis in which the input basis is define. \
     abc_c for orthogonalized crystalographic basis (not tested much).',default='cart')
@@ -200,7 +209,6 @@ def parse(clargs=None):
         args = parser.parse_args()
 
     args_dict = vars(args)
-
 
     args_dict['debug'] = args_dict['debug'].split(',')
 
@@ -314,6 +322,27 @@ def parse(clargs=None):
 
     opt = options(args_dict)
 
+    if opt['inp_magndata'] is not None:
+
+        struct = get_magndata_structure(opt['inp_magndata'])
+
+        if opt['magndata_fname'] is None:
+            fname = 'magndata_{}.in'.format(opt['inp_magndata'])
+        else:
+            fname = opt['magndata_fname']
+
+        print(
+"""Downloading data from MAGNDATA. When using these results you should cite MAGNDATA.
+
+Do not abuse: be careful about not overloading MAGNDATA servers.
+
+The input file is saved in "{}". You should check that it is correct. You can use it directly using the -f parameter.
+""".format(fname)
+        )
+
+        create_symmetr_input(struct, True, fname)
+        opt['inp'] = fname
+
     opt['numX'] = not opt['no_numX']
     if opt['mode'] == 'mham':
         opt['numX'] = False
@@ -333,3 +362,48 @@ def parse(clargs=None):
             opt['transform_syms'] = True
 
     return opt
+
+def create_symmetr_input(struct,magnetic,filename=None,latt_inp_type=2,precision=0.01):
+    lattice_parameters = struct.lattice.abc + struct.lattice.angles
+    atom_list = [a.name for a in struct.species]
+    all_coordinates = [list(a.frac_coords) for a in struct.sites]
+    all_mag_vecs = [a.properties['magmom'] for a in struct.sites]
+    at = atom_list
+    coord = all_coordinates
+    vec = all_mag_vecs
+    input_findsym = []
+    input_findsym.append(' ' + '\n')
+    input_findsym.append(str(precision) + '\n')
+    if latt_inp_type == 2:
+        input_findsym.append('2' + '\n')
+        l_param = ' '.join(str(e) for e in lattice_parameters)
+        input_findsym.append(l_param + '\n')
+    else:
+        input_findsym.append('1' + '\n')
+        latt_vecs_string = np.array2string(struct.lattice.matrix).replace('[','').replace(']','')
+        latt_vecs_string = latt_vecs_string.split('\n')
+        for latt_vec in latt_vecs_string:
+            input_findsym.append(latt_vec+'\n')
+    input_findsym.append('2' + '\n')
+    input_findsym.append('P' + '\n')
+    input_findsym.append(str(len(at)) + '\n')
+    input_findsym.append(' '.join(at) + '\n')
+    if magnetic == True:
+        input_findsym.append('magnetic' + '\n')
+        for i in range(len(at)):
+            if i < len(at) - 1:
+                input_findsym.append(' '.join(str(e) for e in coord[i]) + ' ' + ' '.join(str(e) for e in vec[i]) + '\n')
+            else:
+                input_findsym.append(' '.join(str(e) for e in coord[i]) + ' ' + ' '.join(str(e) for e in vec[i]))
+    elif magnetic == False:
+        input_findsym.append('\n')
+        for i in range(len(at)):
+            if i < len(at) - 1:
+                input_findsym.append(' '.join(str(e) for e in coord[i]) + '\n')
+            else:
+                input_findsym.append(' '.join(str(e) for e in coord[i]))
+    if filename is not None:
+        with open(filename, 'w') as f:
+            for i in input_findsym:
+                f.write(i)
+    return input_findsym
