@@ -38,5 +38,10 @@ setuptools.setup(
         'numpy==1.16.4; python_version<"3"',
         'sympy',
         'prettytable',
-        'scipy']
+        'scipy',
+        'lxml',
+        'pandas',
+        'beautifulsoup4',
+        'pymatgen'
+    ]
 )
