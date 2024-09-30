@@ -37,6 +37,11 @@ class Symmetry(object):
                 R_op = self.R
             else:
                 R_op = -self.R
+        elif op == 't':
+            if not self.has_T:
+                R_op = self.R.det() * self.R
+            else:
+                R_op = -self.R.det() * self.R
         elif op in self.custom_Rs:
             R_op = self.custom_Rs[op]
 

@@ -43,6 +43,20 @@ def get_tensor_class(opt):
     else:
         return Tensor
 
+def reorder_configuration(C,C2):
+    C2_new = find_eq.confs()
+    for conf in C.confs:
+        for conf2 in C2.confs:
+            same = True
+            for mi in C.confs[conf]:
+                dif = C.confs[conf][mi] - C2.confs[conf2][mi]
+                for i in range(3):
+                    if dif[i].round(4) != 0:
+                        same = False
+            if same:
+                C2_new.add(C.confs[conf],C2.Xs[conf2])
+    return C2_new
+
 def sym_res_nonexp(opt,printit=False):
 
     #the symmetry operations given in the basis used by findsym
@@ -170,10 +184,17 @@ def sym_res_nonexp(opt,printit=False):
             sym.convert(T2,in_place=True)
 
         C = find_eq.find_equiv(Xs,mags,syms_nm,opt['atom'],debug=opt['debug_equiv'],round_prec=opt['round_prec'])
+        if opt['atom2'] != -1:
+            C2 = find_eq.find_equiv(Xs_2,mags,syms_nm,opt['atom2'],debug=opt['debug_equiv'],round_prec=opt['round_prec'])
+            #The order of the magnetic configurations in C2 can be different than in C, so we reorder them
+            C2 = reorder_configuration(C,C2)
         if printit:
             print('')
             print('Equivalent configurations:')
             C.pprint(print_format=opt['print_format'])
+            if opt['atom2'] != -1:
+                print('Equivalent configurations for atom 2')
+                C2.pprint(print_format=opt['print_format'])
     
     if opt['atom2'] == -1:
         if opt['equiv']:
@@ -181,7 +202,10 @@ def sym_res_nonexp(opt,printit=False):
         else:
             return Xs
     else:
-        return Xs,Xs_2
+        if opt['equiv']:
+            return Xs,C,Xs_2,C2
+        else:
+            return Xs,Xs_2
 
 def sym_res_exp(opt,printit=False):
     """
