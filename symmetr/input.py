@@ -81,7 +81,8 @@ class options(object):
                 raise InputError('Spin-orbit coupling cannot be ignored when group name is used as an input.')
 
             #if self['noso'] and (self['equiv'] or (self['exp'] != -1) or (self['atom2'] != -1)):
-            if self['noso'] and (self['equiv'] or (self['exp'] != -1)):
+            #if self['noso'] and (self['equiv'] or (self['exp'] != -1)):
+            if self['noso'] and ((self['exp'] != -1)):
                 raise InputError('This is not implemented.')
 
             if (self['equiv']) and self['syms_sel'] != -1:
