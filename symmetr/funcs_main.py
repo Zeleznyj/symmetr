@@ -79,10 +79,25 @@ def sym_res_nonexp(opt,printit=False):
     op_types = opt['op_types']
     TensorClass = get_tensor_class(opt)
     X1 = TensorClass('s', 3, len(op_types), ind_types=op_contravar)
-    X1.def_trans(ind_trans=op_types,T_comp=1)
-    X2 = TensorClass('s', 3, len(op_types), ind_types=op_contravar)
-    X2.def_trans(ind_trans=op_types,T_comp=-1)
 
+    if opt['T_permute_inds']:
+        permutation = {}
+        for i in range(X1.dim2):
+            permutation[i] = i
+        for inds in opt['T_permute_inds']:
+            permutation[inds[0]] = inds[1]
+            permutation[inds[1]] = inds[0]
+    else:
+        permutation = None
+    print(permutation)
+
+    X1.def_trans(ind_trans=op_types, T_comp=1, permute_inds = permutation)
+
+    X2 = TensorClass('s', 3, len(op_types), ind_types=op_contravar)
+    X2.def_trans(ind_trans=op_types, T_comp=-1 ,permute_inds = permutation)
+
+    if permutation is not None:
+        permutation
     eo = symmetrize.even_odd([X1,X2])
 
     same_op_sym = False

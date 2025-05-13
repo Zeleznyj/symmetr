@@ -15,6 +15,7 @@ from math import log10
 from .version import __version__
 from .magndata import get_magndata_structure
 import sys
+import numpy as np
 
 class InputError(Exception):
     pass
@@ -194,6 +195,8 @@ def parse(clargs=None):
     parser_res.add_argument('--ignore-same-op-sym',dest='same_op_sym',action='store_false',default=None)
     parser_res.add_argument('--sym-inds',default=None,help='')
     parser_res.add_argument('--asym-inds',default=None,help='')
+    parser_res.add_argument('--T-permute-inds',default=None,help='')
+
 
 
     parser_mham.add_argument('-s','--sites',help='Atomic sites for which the Magnetic Hamiltonian is considered.\
@@ -315,6 +318,7 @@ def parse(clargs=None):
         asym_inds = parse_sym_inds(args_dict['asym_inds'])
         args_dict['sym_inds'] = sym_inds
         args_dict['asym_inds'] = asym_inds
+        args_dict['T_permute_inds'] = parse_sym_inds(args_dict['T_permute_inds'])
 
     if args_dict['generators'] or args_dict['remove_P'] or args_dict['remove_T']:
         args_dict['simplify_syms'] = True

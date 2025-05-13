@@ -112,6 +112,26 @@ class Symmetry(object):
             return False
         return True
 
+    def eq_numeric(self,other,prec=1e-4):
+        if sympy.N(self.R - other.R).norm() > prec:
+            return False
+        if self.has_T != other.has_T:
+            return False
+        if sympy.N(self.Rs - other.Rs).norm() > prec:
+                return False
+        if self.permutations is None or other.permutations is None:
+            if not (self.permutations is None and other.permutations is None):
+                return False
+            if self.permutations != other.permutations:
+                return False
+        for op in self.custom_Rs:
+            if op not in other.custom_Rs:
+                return False
+            else:
+                if sympy.N(self.custom_Rs[op] - other.custom_Rs[op]).norm() > prec:
+                    return False
+        return True
+
     def __mul__(self,other):
         R = self.R * other.R
         Rs = self.Rs * other.Rs

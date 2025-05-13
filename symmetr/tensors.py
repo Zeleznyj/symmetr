@@ -358,7 +358,7 @@ class GenericTensor(object):
         if not in_place:
             return ten_T
 
-    def def_trans(self, ind_trans=None, T_comp=None, P_trans=None, T_trans=None):
+    def def_trans(self, ind_trans=None, T_comp=None, P_trans=None, T_trans=None, permute_inds=None):
 
         inp_type_1 = ind_trans is not None and T_comp is not None
         inp_type_2 = P_trans is not None and T_trans is not None
@@ -366,7 +366,8 @@ class GenericTensor(object):
             raise Exception('You have to specify either ind_trans and T_comp or P_trans and T_trans')
         if (not inp_type_1) and (not inp_type_2):
             raise Exception('You have to specify either ind_trans and T_comp or P_trans and T_trans')
-
+        if (permute_inds is not None) and (not inp_type_1):
+            raise Exception('permute_inds is only allowed for inp_type = 1 ')
         if inp_type_1:
             self.trans_type = 1
         if inp_type_2:
@@ -375,6 +376,7 @@ class GenericTensor(object):
         self.T_comp = T_comp
         self.P_trans = P_trans
         self.T_trans = T_trans
+        self.permute_inds = permute_inds
 
     def use_numpy_mode(self):
         if isinstance(self, NumTensor):
@@ -419,7 +421,14 @@ class GenericTensor(object):
                     factor *= R_list[i][ind1[i], ind2[i]]
                 if numpy_mode:
                     factor = float(factor)
-                ten_R[ind1] += factor * self[ind2]
+                if self.permute_inds is not None and sym.has_T:
+                    ind2_p = [0] * len(ind2)
+                    for i in range(len(ind2)):
+                        ind2_p[i] = ind2[self.permute_inds[i]]
+                    ind2_p = tuple(ind2_p)
+                else:
+                    ind2_p = ind2
+                ten_R[ind1] += factor * self[ind2_p]
 
         return ten_R
 
@@ -438,6 +447,8 @@ class GenericTensor(object):
         elif X_T == -self:
             return False
         else:
+            self.pprint()
+            X_T.pprint()
             raise Exception('Wrong transformation under time-reversal')
 
     def def_metric(self, G):
@@ -792,7 +803,9 @@ class Tensor(GenericTensor):
         out.x = self.x
         out.v = self.v
         if self.trans_type is not None:
-            out.def_trans(ind_trans=self.ind_trans,T_comp=self.T_comp,P_trans=self.P_trans,T_trans=self.T_trans)
+            out.def_trans(ind_trans=self.ind_trans,T_comp=self.T_comp,
+                          P_trans=self.P_trans,T_trans=self.T_trans,
+                          permute_inds=self.permute_inds)
         if self.G is not None:
             out.def_metric(self.G)
         return out
@@ -866,6 +879,7 @@ class Tensor(GenericTensor):
             out['T_comp'] = self.T_comp
             out['P_trans'] = self.P_trans
             out['T_trans'] = self.T_trans
+            out['permute_inds'] = self.permute_inds
         if fname is not None:
             with open(fname,'w') as f:
                 json.dump(out,f)
@@ -889,7 +903,8 @@ class Tensor(GenericTensor):
             out.def_trans(ind_trans=inp['ind_trans'],
                           T_comp=inp['T_comp'],
                           P_trans=inp['P_trans'],
-                          T_trans=inp['T_trans'])
+                          T_trans=inp['T_trans'],
+                          permute_inds=inp['permute_inds'])
         for ind in inp['X']:
             ind_tuple = tuple(int(x) for x in ind)
             out[ind_tuple] = sympy.sympify(inp['X'][ind])
@@ -1064,7 +1079,9 @@ class NumTensor(GenericTensor):
         "returns a zero tensor with the same shape and transformation rules"
         out = NumTensor(0, self.dim1, self.dim2, ind_types=self.ind_types)
         if self.trans_type is not None:
-            out.def_trans(ind_trans=self.ind_trans,T_comp=self.T_comp,P_trans=self.P_trans,T_trans=self.T_trans)
+            out.def_trans(ind_trans=self.ind_trans,T_comp=self.T_comp,
+                          P_trans=self.P_trans,T_trans=self.T_trans,
+                          permute_inds=self.permute_inds)
         if self.G is not None:
             out.def_metric(self.G)
         return out
@@ -1085,7 +1102,9 @@ class NumTensor(GenericTensor):
         out = Tensor('s',self.dim1,self.dim2,self.name,self.ind_types)
 
         if self.trans_type is not None:
-            out.def_trans(ind_trans=self.ind_trans,T_comp=self.T_comp,P_trans=self.P_trans,T_trans=self.T_trans)
+            out.def_trans(ind_trans=self.ind_trans,T_comp=self.T_comp,
+                          P_trans=self.P_trans,T_trans=self.T_trans,
+                          permute_inds=self.permute_inds)
         if self.G is not None:
             out.def_metric(self.G)
 

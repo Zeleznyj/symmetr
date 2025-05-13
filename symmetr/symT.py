@@ -453,6 +453,23 @@ def get_syms_noso(opt):
     for sym in syms_noso:
         sym.convert(Tm.inv()*Ti.inv(),in_place=True)
 
+    if opt['syms_sel_noso'] != -1:
+        syms_sel_noso = opt['syms_sel_noso'].split(',')
+        syms_sel_noso2 = []
+        for i in range(len(syms_sel_noso)):
+            if '-' in syms_sel_noso[i]:
+                s = syms_sel_noso[i].split('-')
+                syms_sel_noso2 += list(range(int(s[0]),int(s[1])+1))
+            else:
+                syms_sel_noso2.append(int(syms_sel_noso[i]))
+
+        syms_noso_new = []
+        for i in range(len(syms_noso)):
+            if i+1 in syms_sel_noso2:
+                syms_noso_new.append(syms_noso[i])
+
+        syms_noso = syms_noso_new
+
     return syms_noso
 
 def get_syms_noso_old(opt):
@@ -637,36 +654,51 @@ def get_metric(opt,debug=False,nonmag=False):
     return G
 
 
-def get_generators(syms):
+def get_generators(syms,depth=3,debug=False,prec=None):
+    if not isinstance(depth,int) or depth < 1 or depth > 3:
+        raise Exception('Depth must be integer between 1 and 3')
     gens = [syms[1]]
     gens_i = [1]
+
+    def equal_function(sym1,sym2):
+        if prec is None:
+            return sym1 == sym2
+        else:
+            return sym1.eq_numeric(sym2,prec=prec)
     for i, sym in enumerate(syms):
         is_generated = False
         for gen1 in gens:
-            if sym == gen1:
+            if equal_function(sym, gen1):
                 is_generated = True
                 break
-            if sym == gen1.inv():
+            if equal_function(sym, gen1.inv()):
                 is_generated = True
                 break
-            for gen2 in gens:
-                if gen1 * gen2 == sym:
-                    is_generated = True
-                    break
-                if gen1 * gen2.inv() == sym:
-                    is_generated = True
-                    break
+            if depth > 1:
+                for gen2 in gens:
+                    if equal_function(gen1 * gen2, sym):
+                        is_generated = True
+                        break
+                    if equal_function(gen1 * gen2.inv(), sym):
+                        is_generated = True
+                        break
             if is_generated:
                 break
-        if not is_generated:
-            for gen1 in gens:
-                for gen2 in gens:
-                    for gen3 in gens:
-                        if gen1 * gen2 * gen3 == sym:
-                            is_generated = True
+        if depth > 2:
+            if not is_generated:
+                for gen1 in gens:
+                    for gen2 in gens:
+                        for gen3 in gens:
+                            if equal_function(gen1 * gen2 * gen3, sym):
+                                is_generated = True
         if not is_generated:
             gens.append(sym)
             gens_i.append(i)
+            if debug:
+                print('Adding symmetry: {}, {} to generators'.format(i,sym))
+        else:
+            if debug:
+                print('Symmetry {} {} is generated.'.format(i,sym))
 
     return gens_i, gens
 

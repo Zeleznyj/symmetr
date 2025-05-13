@@ -428,6 +428,7 @@ def even_odd(Xs):
     elif not Xs[0].is_even() and Xs[1].is_even():
         return('odd','even')
     else:
+        print(Xs[0].is_even(),Xs[1].is_even())
         raise Exception('Wrong transformation under time-reversal')
 
 
