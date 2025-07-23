@@ -254,8 +254,6 @@ Symmetry without spin-orbit coupling is higher since the spin is then not couple
 
 This is implemented for the response mode using the --noso switch.
 
-However, this feature is very experimental!!! The alghorithm used is not guaranteed to obtain all of the symmetry operations and the feature is not tested very much so there may be bugs.
-
 Tests
 ^^^^^^
 
