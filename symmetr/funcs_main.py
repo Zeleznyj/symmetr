@@ -9,6 +9,8 @@ import re
 import sys
 import os
 import time
+from collections import defaultdict
+from itertools import combinations
 
 from . import symmetrize
 from . import symmetrize_exp as st
@@ -57,6 +59,52 @@ def reorder_configuration(C,C2):
                 C2_new.add(C.confs[conf],C2.Xs[conf2])
     return C2_new
 
+def find_equivalent_pairs(ops,index_shift=0):
+
+    # Group indices by string value
+    groups = defaultdict(list)
+    for i, s in enumerate(ops):
+        groups[s].append(i)
+
+    # Create all index pairs inside each group
+    result = []
+    for indices in groups.values():
+        if len(indices) > 1:
+            # Take all 2-combinations of indices
+            for i, j in combinations(indices, 2):
+                result.append((i+index_shift,j+index_shift))
+
+    # Join with ":" for final string
+    return result
+
+def determine_sym_inds(opt):
+    if any(x is not None for x in [opt['sym_inds'], opt['asym_inds'], opt['T_sym_inds'], opt['T_asym_inds']]):
+        symmetrize_sym_inds = True
+        sym_inds = opt['sym_inds']
+        asym_inds = opt['asym_inds']
+        T_sym_inds = opt['T_sym_inds']
+        T_asym_inds = opt['T_asym_inds']
+    else:
+
+        asym_inds = None
+        T_sym_inds = None
+        T_asym_inds = None
+
+        ops1 = opt['op_types'][:opt['op_lengths'][0]]
+        ops2 = opt['op_types'][-opt['op_lengths'][1]:]
+        sym_inds1 = find_equivalent_pairs(ops1)
+        sym_inds2 = find_equivalent_pairs(ops2,index_shift=len(ops1))
+
+        if len(sym_inds1) > 0 or len(sym_inds2) > 0:
+            symmetrize_sym_inds = True
+            sym_inds = sym_inds1 + sym_inds2
+            sym_inds_out = [(x[0]+1,x[1]+1) for x in sym_inds]
+            print('Symmetrizing indices: {}.'.format(sym_inds_out))
+        else:
+            symmetrize_sym_inds = False
+            sym_inds = None
+    return symmetrize_sym_inds, sym_inds, asym_inds, T_sym_inds, T_asym_inds
+
 def sym_res_nonexp(opt,printit=False):
 
     #the symmetry operations given in the basis used by findsym
@@ -89,12 +137,11 @@ def sym_res_nonexp(opt,printit=False):
             permutation[inds[1]] = inds[0]
     else:
         permutation = None
-    print(permutation)
 
-    X1.def_trans(ind_trans=op_types, T_comp=1, permute_inds = permutation)
+    X1.def_trans(ind_trans=op_types, T_comp=-1, permute_inds = permutation)
 
     X2 = TensorClass('s', 3, len(op_types), ind_types=op_contravar)
-    X2.def_trans(ind_trans=op_types, T_comp=-1 ,permute_inds = permutation)
+    X2.def_trans(ind_trans=op_types, T_comp=1 ,permute_inds = permutation)
 
     if permutation is not None:
         permutation
@@ -102,12 +149,10 @@ def sym_res_nonexp(opt,printit=False):
 
     same_op_sym = False
     if opt['same_op_sym']:
-        if len(set(op_types)) == 1:
-            same_op_sym = True
-    if (opt['sym_inds'] is not None) or (opt['asym_inds'] is not None):
-        symmetrize_sym_inds = True
-    else:
-        symmetrize_sym_inds = False
+        same_op_sym = determine_onsager(opt['op_types'], opt['op_lengths'])
+        if same_op_sym:
+            print('Applying Onsager relations.')
+    symmetrize_sym_inds, sym_inds, asym_inds, T_sym_inds, T_asym_inds = determine_sym_inds(opt)
 
     if same_op_sym or symmetrize_sym_inds:
         #the metric is for the findsym basis
@@ -132,7 +177,7 @@ def sym_res_nonexp(opt,printit=False):
     
     if symmetrize_sym_inds:
         for i in range(2):
-            Xs[i] = symmetrize.symmetrize_sym_inds(Xs[i],opt['sym_inds'],opt['asym_inds'],s_opt)
+            Xs[i] = symmetrize.symmetrize_sym_inds(Xs[i],sym_inds,asym_inds,T_sym_inds,T_asym_inds,s_opt)
 
     if opt['atom2'] != -1:
         Xs_2 = symmetrize.symmetr_AB(syms,Xs,opt['atom'],opt['atom2'],round_prec=opt['round_prec'])
@@ -249,25 +294,23 @@ def sym_res_exp(opt,printit=False):
     syms_L = st.def_syms_L(mags,syms_nm,debug=False)
 
     op_contravar = (1,)*opt['op_lengths'][0] + (-1,)*opt['op_lengths'][1] + (-1,) * opt['exp']
-    op_types = opt['op_types'] + ['L'] * opt['exp']
+    op_types = opt['op_types'] + ['N'] * opt['exp']
     TensorClass = get_tensor_class(opt)
     X = TensorClass('s', 3, len(op_types), ind_types=op_contravar)
     X.def_trans(ind_trans=op_types,T_comp=1)
     T_inv = symmetry.create_T()
-    T_inv.def_custom_R('L',T_inv.Rs)
+    T_inv.def_custom_R('N',T_inv.Rs)
     if not X.is_even(T_inv):
         X.def_trans(ind_trans=op_types,T_comp=-1)
     s_opt = def_symmetr_opt(opt)
 
-    if (opt['sym_inds'] is not None) or (opt['asym_inds'] is not None):
-        symmetrize_sym_inds = True
-    else:
-        symmetrize_sym_inds = False
+    symmetrize_sym_inds, sym_inds, asym_inds, T_sym_inds, T_asym_inds = determine_sym_inds(opt)
 
     same_op_sym = False
     if opt['same_op_sym']:
-        if len(set(opt['op_types'])) == 1:
-            same_op_sym = True
+        same_op_sym = determine_onsager(opt['op_types'], opt['op_lengths'])
+        if same_op_sym:
+            print('Applying Onsager relations.')
 
     if same_op_sym or symmetrize_sym_inds:
         #the metric is for the findsym basis
@@ -282,7 +325,7 @@ def sym_res_exp(opt,printit=False):
     X = symmetrize.symmetrize_res(syms_L,X,opt['atom'],s_opt)
 
     if symmetrize_sym_inds:
-        X = symmetrize.symmetrize_sym_inds(X,opt['sym_inds'],opt['asym_inds'],s_opt)
+        X = symmetrize.symmetrize_sym_inds(X,sym_inds,asym_inds,T_sym_inds,T_asym_inds,s_opt)
 
     if same_op_sym:
         X = symmetrize.symmetrize_same_op(X,s_opt)
@@ -355,4 +398,17 @@ def sym_mham(opt,printit=False):
         return H
     else:
         return H,H_E
+
+def determine_onsager(op_types,op_lengths):
+    if op_lengths[0] == 1 and op_lengths[1] == 1:
+        if op_types[0] == 'j' and (op_types[1] in ['E','V']):
+            return True
+        if op_types[1] == 'j' and (op_types[0] in ['E','V']):
+            return True
+        if op_types[0] == 'jq' and op_types[1] == 'gT':
+            return True
+        if op_types[1] == 'jq' and op_types[0] == 'gT':
+            return True
+    return False
+
 

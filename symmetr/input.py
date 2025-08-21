@@ -92,6 +92,8 @@ class options(object):
             if self['equiv'] and ( self['exp'] != -1 ):
                 raise InputError('You cannot use --equiv and --exp together. Equivalent configurations not supported\
                         for expansions.')
+            if self['exp'] != -1 and (self['T_sym_inds'] is not None or self['T_asym_inds'] is not None):
+                raise InputError('--T-sym-inds and --T-asym-inds cannot be used with expansions.')
         if self['mode'] == 'mham':
             if self['group'] is not None:
                 raise InputError('group input is not allowed for mham')
@@ -191,11 +193,17 @@ def parse(clargs=None):
     parser_res.add_argument('--syms-noso',default=-1,help='Like --syms, but fot noso symmetry operations',dest='syms_sel_noso')
     parser_res.add_argument('--noso',action='store_const',const=True,default=False,help=
             'Symmetry without spin-orbit coupling. Very experimental.')
-    parser_res.add_argument('--same-op-sym',dest='same_op_sym',action='store_true',default=None)
-    parser_res.add_argument('--ignore-same-op-sym',dest='same_op_sym',action='store_false',default=None)
-    parser_res.add_argument('--sym-inds',default=None,help='')
-    parser_res.add_argument('--asym-inds',default=None,help='')
-    parser_res.add_argument('--T-permute-inds',default=None,help='')
+    parser_res.add_argument('--ignore-onsager', '--ignore-same-op-sym',dest='same_op_sym',action='store_false',default=True,
+                            help='Turns off automatic application of Onsager relations.')
+    parser_res.add_argument('--sym-inds',default=None,
+                            help='Specifies symmetric indices. Multiple pairs can be specified, for example: 0,1:2,3.')
+    parser_res.add_argument('--asym-inds',default=None,
+                            help='Specifies anti-symmetric indices.')
+    parser_res.add_argument('--T-sym-inds',default=None,
+                            help='Specifies indices that are symmetric for the T-even component and anti-symmetric for the T-odd component')
+    parser_res.add_argument('--T-asym-inds',default=None,
+                            help='Specifies indices that are anti-symmetric for the T-even component and symmetric for the T-odd component')
+    parser_res.add_argument('--T-permute-inds',default=None)
 
 
 
@@ -266,24 +274,17 @@ def parse(clargs=None):
 
     if args_dict['mode'] == 'res':
         op_types1 = args_dict['op1'].split('.')
-        for i,op in enumerate(op_types1):
-            op_types1[i] = convert_op1(op)
+        #for i,op in enumerate(op_types1):
+        #    op_types1[i] = convert_op1(op)
         if args_dict['op2'] == '0':
             op_types2 = []
         else:
             op_types2 = args_dict['op2'].split('.')
-            for i,op in enumerate(op_types2):
-                op_types2[i] = convert_op2(op)
+        #    for i,op in enumerate(op_types2):
+        #        op_types2[i] = convert_op2(op)
         args_dict['op_types'] = op_types1 + op_types2
         args_dict['op_lengths'] = (len(op_types1),len(op_types2))
         args_dict['op3'] = None
-
-    if args_dict['mode'] == 'res':
-        if args_dict['same_op_sym'] is None:
-            if len(args_dict['op_types']) == 2:
-                args_dict['same_op_sym'] = True
-            else:
-                args_dict['same_op_sym'] = False
 
     if args_dict['symbolic']:
         args_dict['num_prec'] = None
@@ -309,15 +310,19 @@ def parse(clargs=None):
             for ind in sym_inds_c:
                 if ind != '':
                     (j,Pj) = ind.split(',')
-                    sym_inds.append((int(j),int(Pj)))
+                    sym_inds.append((int(j)-1,int(Pj)-1))
 
         return sym_inds
 
     if args_dict['mode'] == 'res':
         sym_inds = parse_sym_inds(args_dict['sym_inds'])
         asym_inds = parse_sym_inds(args_dict['asym_inds'])
+        T_sym_inds = parse_sym_inds(args_dict['T_sym_inds'])
+        T_asym_inds = parse_sym_inds(args_dict['T_asym_inds'])
         args_dict['sym_inds'] = sym_inds
         args_dict['asym_inds'] = asym_inds
+        args_dict['T_sym_inds'] = T_sym_inds
+        args_dict['T_asym_inds'] = T_asym_inds
         args_dict['T_permute_inds'] = parse_sym_inds(args_dict['T_permute_inds'])
 
     if args_dict['generators'] or args_dict['remove_P'] or args_dict['remove_T']:

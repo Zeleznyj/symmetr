@@ -481,7 +481,7 @@ def symmetrize_same_op(X,s_opt=None):
             for i in range(len(ind)):
                 ind_T[i] = ind[perm[i]]
             ind_T = tuple(ind_T)
-            X_T[ind_T] = X.T_comp * X[ind]
+            X_T[ind_T] = -X.T_comp * X[ind]
 
         ind_types = [0] * X.dim2
         for i in range(X.dim2):
@@ -498,9 +498,11 @@ def symmetrize_same_op(X,s_opt=None):
         
     return X
 
-def symmetrize_sym_inds(X,sym_inds,asym_inds,s_opt=None):
+def symmetrize_sym_inds(X,sym_inds,asym_inds,T_sym_inds,T_asym_inds,s_opt=None):
 
-    def trans_func(X,perm,sign):
+    def trans_func(X,perm,params):
+        sign = params[0]
+        T_trans = params[1]
 
         X_T = X.copy0()
 
@@ -509,7 +511,10 @@ def symmetrize_sym_inds(X,sym_inds,asym_inds,s_opt=None):
             for i in range(len(ind)):
                 ind_T[i] = ind[perm[i]]
             ind_T = tuple(ind_T)
-            X_T[ind_T] = sign * X[ind]
+            factor = sign
+            if T_trans:
+                factor *= X.T_comp
+            X_T[ind_T] = factor * X[ind]
 
         ind_types = [0] * X.dim2
         for i in range(X.dim2):
@@ -522,26 +527,30 @@ def symmetrize_sym_inds(X,sym_inds,asym_inds,s_opt=None):
 
         return X_T
 
-    if sym_inds is not None:
-
-        perms_sym = []
+    def get_perms(sym_inds):
+        perms = []
         for si in sym_inds:
             perm = list(range(X.dim2))
             perm[si[0]] = si[1]
             perm[si[1]] = si[0]
-            perms_sym.append(perm)
-        X = symmetr(perms_sym,X,trans_func,1,s_opt)
+            perms.append(perm)
+        return perms
+
+    if sym_inds is not None:
+        perms_sym = get_perms(sym_inds)
+        X = symmetr(perms_sym,X,trans_func,(1,False),s_opt)
 
     if asym_inds is not None:
+        perms_asym = get_perms(asym_inds)
+        X = symmetr(perms_asym,X,trans_func,(-1,False),s_opt)
 
-        perms_asym = []
-        for si in asym_inds:
-            perm = list(range(X.dim2))
-            perm[si[0]] = si[1]
-            perm[si[1]] = si[0]
-            perms_asym.append(perm)
+    if T_sym_inds is not None:
+        perms_Tsym = get_perms(T_sym_inds)
+        X = symmetr(perms_Tsym,X,trans_func,(-1,True),s_opt)
 
-        X = symmetr(perms_asym,X,trans_func,-1,s_opt)
+    if T_asym_inds is not None:
+        perms_Tasym = get_perms(T_asym_inds)
+        X = symmetr(perms_Tasym,X,trans_func,(1,True),s_opt)
 
     return X
 

@@ -288,7 +288,7 @@ def def_syms_L(mags,syms,prec=1e-5,debug=False):
     if len(mags_dict) == 0:
         print("!!!Warning!!!: no magnetic moments defined in the input. Assuming a ferromagnetic system.")
         for sym in syms:
-            sym.def_custom_R('L',sym.get_R('s'))
+            sym.def_custom_R('N',sym.get_R('s'))
         syms_L = syms
 
     else:
@@ -309,7 +309,7 @@ def def_syms_L(mags,syms,prec=1e-5,debug=False):
                 print('L_trans:')
                 print(L_trans)
             if L_trans is not None:
-                sym.def_custom_R('L',L_trans)
+                sym.def_custom_R('N',L_trans)
                 syms_L.append(sym)
 
     return syms_L

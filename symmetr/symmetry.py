@@ -28,6 +28,7 @@ class Symmetry(object):
 
     def get_R(self,op=None):
         R_op = None
+        op = optype_to_basic(op)
         if op is None or op == 'x':
             R_op = self.R
         elif op == 's':
@@ -38,6 +39,8 @@ class Symmetry(object):
             else:
                 R_op = -self.R
         elif op == 't':
+            R_op = self.R.det() * self.R
+        elif op == 'L':
             if not self.has_T:
                 R_op = self.R.det() * self.R
             else:
@@ -446,3 +449,16 @@ def convert_op(sym,op_type):
 
         return out
 
+def optype_to_basic(op):
+    if op in ['t','T']:
+        return 't'
+    elif op in ['B','L','l']:
+        return 'L'
+    elif op in ['v','j','jq']:
+        return 'v'
+    elif op in ['x','E','gT','r','V']:
+        return 'x'
+    elif op in ['s']:
+        return 's'
+    else:
+        return op
