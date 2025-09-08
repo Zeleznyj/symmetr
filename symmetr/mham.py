@@ -237,14 +237,26 @@ def sym_mag_ham(sites,syms,T=None,s_opt=None):
     ind_types = (-1,)*len(sites)
     H = Tensor('s', 3, order, ind_types=ind_types)
 
-    params = params_trans_ham(sites,debug=s_opt.debug,T=T,check_sym=True)
+    sites_clean = clean_sites(sites)
+
+    params = params_trans_ham(sites_clean,debug=s_opt.debug,T=T,check_sym=True)
     # first symmetrize with normal symmetry operation
     Hs = symmetr(syms,H,trans_mag_ham,params,s_opt)
     # The Hamiltonian must also be symmetric under any permutation of identical atoms
     perms = find_perms(sites)
+    print(perms)
     Hs = symmetr(perms,Hs,trans_mag_Ham_perms,params,s_opt)
 
     return Hs
+
+def clean_sites(sites):
+    """
+    Removes the ' from sites.
+    """
+
+    sites_out = [int(s.replace("'","")) for s in sites]
+
+    return sites_out
 
 def print_Ham(H,sites,latex=False,ret=False):
     """Prints the magnetic Hamiltonian in a nice format.

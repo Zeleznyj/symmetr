@@ -254,7 +254,7 @@ def parse(clargs=None):
     if args_dict['mode'] == 'mham':
         args_dict['sites'] = args_dict['sites'].split(',')
         for i,x in enumerate(args_dict['sites']):
-            args_dict['sites'][i] = int(x)
+            args_dict['sites'][i] = x
 
     #this sets the op variables
     def convert_op1(op1):
