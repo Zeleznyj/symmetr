@@ -379,6 +379,9 @@ def sym_mham(opt,printit=False):
         H.convert(T)
 
     if opt['equiv']:
+        print("WARNING!!! The equivalent sites feature is not fully implemented. When determining the equivalent sites"
+              "the program does not take into account the unit cell of the atom. This means the result can be incomplete"
+              "or even wrong.\n")
         H_E = mham.equiv(H,opt['sites'],syms,T)
 
     if printit:

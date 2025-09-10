@@ -208,6 +208,8 @@ def equiv(H,sites,syms,T=None,debug=False):
             transformed Hamiltonian for the sites.
     """
 
+    sites = clean_sites(sites)
+
     Asites = {}
     Asites[tuple(sorted(sites))] = H
 
@@ -244,7 +246,6 @@ def sym_mag_ham(sites,syms,T=None,s_opt=None):
     Hs = symmetr(syms,H,trans_mag_ham,params,s_opt)
     # The Hamiltonian must also be symmetric under any permutation of identical atoms
     perms = find_perms(sites)
-    print(perms)
     Hs = symmetr(perms,Hs,trans_mag_Ham_perms,params,s_opt)
 
     return Hs
