@@ -21,6 +21,8 @@ import subprocess
 
 import sympy
 
+__all__ = ['convert_mag_ham', 'params_trans_ham', 'trans_mag_ham', 'find_perms', 'trans_mag_Ham_perms', 'equiv', 'sym_mag_ham', 'print_Ham']
+
 def convert_mag_ham(H,T):
     """Converts the tensor representing the magnetic Hamiltonian to a different basis.
 

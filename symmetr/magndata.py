@@ -9,8 +9,10 @@ import pandas as pd
 import re
 from pymatgen.core import Structure, Lattice, Element
 
+__all__ = ['download_id', 'get_magndata_structure']
+
 def download_html(id):
-    page = urllib.request.urlopen('http://webbdcrista1.ehu.es/magndata/index.php?index='+id)
+    page = urllib.request.urlopen('https://www.cryst.ehu.es/magndata/index.php?index='+id)
     mybytes = page.read()
     page_txt = mybytes.decode("utf-8", errors='ignore')
     page.close()

@@ -9,6 +9,8 @@ from builtins import object
 from collections import OrderedDict
 import sympy
 
+__all__ = ['confs', 'find_equiv']
+
 class confs(object):
     """
     Class to store equivalent magnetic configurations and their response tensors.

@@ -17,6 +17,8 @@ from .magndata import get_magndata_structure
 import sys
 import numpy as np
 
+__all__ = ['options', 'parse', 'create_symmetr_input']
+
 class InputError(Exception):
     pass
 

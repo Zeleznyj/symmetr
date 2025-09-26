@@ -21,6 +21,8 @@ import subprocess
 from fractions import Fraction
 import sympy
 
+__all__ = ['read_fs_inp', 'run_fs', 'run_fs_fin']
+
 def get_newfilename(path,filename):
     if not os.path.exists(path+'/'+filename):
         return filename

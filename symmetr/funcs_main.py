@@ -25,6 +25,8 @@ from . import symmetry
 import sympy
 from sympy import sympify as spf
 
+__all__ = ['def_symmetr_opt', 'sym_res_nonexp', 'sym_res_exp', 'sym_res', 'sym_mham']
+
 #this finds the location of the main.py file and ads this location to the path where modules are searched
 #this way the modules have to be present only in the install directory and not in the run directory
 dirname, filename = os.path.split(os.path.abspath(__file__))

@@ -23,6 +23,9 @@ from .tensors import matrix, mat2ten, tensor2Y
 from .fslib import transform_position
 from .conv_index import *
 
+__all__ = ['params_trans', 'symmetr_opt', 'symmetr', 'even_odd', 'symetrize_res', 'symmetrize_same_op',
+           'symmetrize_sym_inds', 'symmetr_AB']
+
 def num_rref(Y,prec=15):
 
     Y = np.matrix(Y)

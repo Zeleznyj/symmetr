@@ -7,6 +7,8 @@ import re
 import sys
 import os
 
+__all__ = ['find_group', 'group_sym']
+
 def find_group(name):
 
     dirname, filename = os.path.split(os.path.abspath(__file__))

@@ -7,6 +7,9 @@ from builtins import object
 import sympy
 import re
 
+__all__ = ['Symmetry', 'findsym2sym', 'matsym2sym', 'sym2R', 'sym2Rs', 'sym2trans', 'create_T', 'create_I', 'create_P',
+           'convert_op', 'optype_to_basic']
+
 class Symmetry(object):
 
     def __init__(self,R,has_T,Rs=None,permutations=None):

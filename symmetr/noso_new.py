@@ -4,6 +4,8 @@ from scipy.spatial.transform import Rotation as R
 from symmetr.symmetry import Symmetry
 import sympy
 
+__all__ = ['RotationType', 'NosoSymFinder']
+
 def merge_lists(lists):
     if lists is None:
         return None

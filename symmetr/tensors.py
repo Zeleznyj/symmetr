@@ -28,6 +28,8 @@ from .symmetry import create_T
 import prettytable
 from prettytable import PrettyTable
 
+__all__ = ['tensor2Y', 'GenericTensor', 'Tensor', 'NumTensor', 'matrix','makeinds', 'var_name_xyz', 'var_name']
+
 def get_float_vals():
     vals = [sympy.sqrt(2),sympy.sqrt(3),]
     s1 = sympy.core.Integer(1)
