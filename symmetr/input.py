@@ -16,6 +16,7 @@ from .version import __version__
 from .magndata import get_magndata_structure
 import sys
 import numpy as np
+from sympy import init_printing
 
 __all__ = ['options', 'parse', 'create_symmetr_input']
 
@@ -164,6 +165,8 @@ def parse(clargs=None):
     parser_parent.add_argument('--noso-prec',dest='noso_prec',default=1e-3,type=float)
     parser_parent.add_argument('--noso-moment-zero',dest='noso_moment_zero',default=1e-3,type=float)
     parser_parent.add_argument('--noso-debug',dest='noso_debug',default=0,type=int)
+    parser_parent.add_argument('--ascii',action='store_const',const=True,default=False,
+                               help='Disables Unicode and uses ASCII only.')
 
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,\
@@ -331,6 +334,9 @@ def parse(clargs=None):
         args_dict['simplify_syms'] = True
     else:
         args_dict['simplify_syms'] = False
+
+    if args_dict['ascii']:
+        init_printing(use_unicode=False)
 
     opt = options(args_dict)
 
