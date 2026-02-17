@@ -10,3 +10,4 @@ This takes as an input:
 - "trans_func": function that transforms the tensor X by symmetry. It must work like this:
    X_trans = trans_func(X,sym,params)
 - "params": parameters to be sent to the trans_func.
+

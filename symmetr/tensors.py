@@ -902,11 +902,16 @@ class Tensor(GenericTensor):
         if 'G' in inp:
             out.G = sympy.sympify(inp['G'])
         if 'ind_trans' in inp:
+            #This is added for compatibility with old tensor files where the permute_inds was not saved
+            if 'permute_inds' in inp:
+                permute_inds = inp['permute_inds']
+            else:
+                permute_inds = None
             out.def_trans(ind_trans=inp['ind_trans'],
                           T_comp=inp['T_comp'],
                           P_trans=inp['P_trans'],
                           T_trans=inp['T_trans'],
-                          permute_inds=inp['permute_inds'])
+                          permute_inds=permute_inds)
         for ind in inp['X']:
             ind_tuple = tuple(int(x) for x in ind)
             out[ind_tuple] = sympy.sympify(inp['X'][ind])
