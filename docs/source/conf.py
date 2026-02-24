@@ -9,7 +9,11 @@
 project = 'Symmetr'
 copyright = '2025, Jakub Zelezny'
 author = 'Jakub Zelezny'
-release = '0.9.10'
+
+import symmetr
+
+version = symmetr.__version__
+release = symmetr.__version__
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

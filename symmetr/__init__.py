@@ -4,3 +4,4 @@
 
 from symmetr.input import parse
 from symmetr.funcs_main import sym_res,sym_mham
+from symmetr.version import __version__
