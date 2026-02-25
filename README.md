@@ -35,7 +35,7 @@ from the repository directory.
 > You should also cite the findsym package as that is included with the
 > code. Use the following references:
 >
->H. T. Stokes, D. M. Hatch, and B. J. Campbell, FINDSYM, ISOTROPY Software Suite, iso.byu.edu. H. T. Stokes
+>H. T. Stokes, D. M. Hatch, and B. J. Campbell, FINDSYM, ISOTROPY Software Suite, iso.byu.edu. and H. T. Stokes
 > D. M. Hatch, “Program for Identifying the Space Group Symmetry of a Crystal”, J. Appl. Cryst. 38, 237-238 (2005).
 >
 > If you are using MAGNDATA you should also cite it: \[J. Appl. Cryst.
