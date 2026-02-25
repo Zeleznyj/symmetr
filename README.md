@@ -14,28 +14,29 @@ The code only works on Linux and requires Python3.
 
 To install the code use pip
 
-> pip install symmetr
+```bash
+  pip install symmetr
+```
 
 or download the repository and then run
 
-> pip install .
+```bash
+pip install .
+```
 
 from the repository directory.
 
 > [!NOTE]
 > When using the code in scientific publications please cite it as:
 >
-> 10. Železný, Symmetr: a Python package for determining symmetry
+> J. Železný, Symmetr: a Python package for determining symmetry
 >     properties of crystals, arXiv:2602.21034
 >
 > You should also cite the findsym package as that is included with the
 > code. Use the following references:
 >
-> 8.  20. Stokes, D. M. Hatch, and B. J. Campbell, FINDSYM, ISOTROPY
->         Software Suite, iso.byu.edu.
-> 9.  20. Stokes and D. M. Hatch, "Program for Identifying the Space
->         Group Symmetry of a Crystal", J. Appl. Cryst. 38, 237-238
->         (2005).
+>H. T. Stokes, D. M. Hatch, and B. J. Campbell, FINDSYM, ISOTROPY Software Suite, iso.byu.edu. H. T. Stokes
+> D. M. Hatch, “Program for Identifying the Space Group Symmetry of a Crystal”, J. Appl. Cryst. 38, 237-238 (2005).
 >
 > If you are using MAGNDATA you should also cite it: \[J. Appl. Cryst.
 > (2016). 49, 1750-1776\], \[J. Appl. Cryst. (2016). 49, 1941-1956\].
