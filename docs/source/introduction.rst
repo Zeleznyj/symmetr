@@ -18,7 +18,7 @@ The capabilities include:
 
    When using the code in scientific publications please cite it as:
 
-   J. Železný, Symmetr, bitbucket.org/zeleznyj/linear-response-symmetry/
+   J. Železný, Symmetr: a Python package for determining symmetry properties of crystals, arXiv:2602.21034
 
    You should also cite the findsym package as that is included with the code. Use the following references:
 
