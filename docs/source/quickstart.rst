@@ -54,3 +54,8 @@ If we are instead interested in the current due to a thermal gradient, we specif
 The output in this case is the same.
 
 The observable types are described in detail :doc:`here <observables>`.
+
+Examples
+---------
+
+Examples of using the code can be found in the `examples directory <https://github.com/Zeleznyj/symmetr/tree/master/examples>`_ within the GitHub repository.
