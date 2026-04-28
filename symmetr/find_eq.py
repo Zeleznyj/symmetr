@@ -48,17 +48,21 @@ class confs(object):
         
     def is_in(self,conf):
         #tests if a configuration is in
-            
+
         out = False
         for i in range(self.nconfs):
-            out_t = True
+            out = True
             for j in self.confs[i]:
                 c = self.confs[i][j] - conf[j]
                 for l in range(3):
-                    if c[l].round(4)!= 0:
-                        out_t = False
-            if out_t:
-                out = True
+                    val = complex(c[l].evalf())
+                    if abs(val) > 1e-4:
+                        out = False
+                        break
+                if not out:
+                    break
+            if out:
+                return True
 
         return out
 
