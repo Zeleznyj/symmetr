@@ -22,7 +22,6 @@ setuptools.setup(
     url="https://github.com/zeleznyj/symmetr",
     packages=setuptools.find_packages(),
     package_data={'symmetr': ['findsym/*']},
-    data_files=[('',['README_pypi.md'])],
     scripts = ['exec/symmetr'],
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -33,8 +32,6 @@ setuptools.setup(
         'future',
         'six',
         'numpy',
-        'numpy; python_version>="3"',
-        'numpy==1.16.4; python_version<"3"',
         'sympy',
         'prettytable',
         'scipy',
