@@ -121,6 +121,36 @@ def get_rref(U,num_prec=1e-10):
     
     return U_o,pivots
 
+
+import numpy as np
+import scipy.linalg as la
+
+
+def get_rref_qrcp(V2):
+    """
+    Computes the RREF of a wide matrix V2 using highly stable
+    QR decomposition with column pivoting.
+    """
+    # 1. Perform QR with column pivoting
+    Q, R, P = la.qr(V2, pivoting=True)
+
+    k = V2.shape[0]  # Number of equations/rows
+
+    # 2. Extract the square, upper-triangular R1 block
+    R1 = R[:, :k]
+
+    # 3. We want M = R1^{-1} * Q^T * V2.
+    # We set this up as a linear system: R1 * M = Q^T * V2
+    B = Q.T @ V2
+
+    # 4. Solve the triangular system safely
+    V2_rref = la.solve_triangular(R1, B, lower=False)
+
+    # 5. The pivots are the first k variables chosen by the permutation array
+    pivs = P[:k].tolist()
+
+    return V2_rref, pivs
+
 class params_trans(object):
     def __init__(self,op1,op2,op3,l,T=None,sym_format='findsym'):
         self.op1 = op1
@@ -163,8 +193,8 @@ def symmetr(syms,X,trans_func,params,opt=None):
     debug = opt.debug
     debug_time = opt.debug_time
     debug_Y = opt.debug_Y
-    if opt.numX and num_prec is None:
-        raise Exception('In the numX mode, num_prec must be specified!')
+    #if opt.numX and num_prec is None:
+    #    raise Exception('In the numX mode, num_prec must be specified!')
 
     if debug_time:
         print('Symmetrize starting')
@@ -290,6 +320,7 @@ def symmetr(syms,X,trans_func,params,opt=None):
                 tmp = 0
                 #now we just make use of the linear equation that holds for this pivot
                 #keep in mind that the rows are in reversed order
+                rev_inds = list(reversed(X.inds))
                 for ll in range(j+1,X.dim1**X.dim2):
                     tmp = tmp - rref[i,ll]*X.x[rev_inds[ll]]
                 X = X.subs(X.x[rev_inds[j]],tmp)
@@ -362,6 +393,16 @@ def symmetr(syms,X,trans_func,params,opt=None):
 
                     sympy.pprint(V2)
                     sympy.pprint(V2_rref)
+                    raise Warning('Issue with rref of V2, results are likely to be wrong!!!')
+
+                #This is another consistency check. Even after the rref, the rows of V2_rref must be
+                #solutions of Yx = 0.
+                if opt.numX:
+                    residual = np.max(np.abs(Y @ V2_rref.T))
+                else:
+                    Yf = np.array(np.flip(Y, axis=1), dtype=float)
+                    residual = np.max(np.abs(Yf @ V2_rref.T))
+                if residual > num_prec:
                     raise Warning('Issue with rref of V2, results are likely to be wrong!!!')
 
                 if not opt.numX:

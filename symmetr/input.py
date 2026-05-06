@@ -364,6 +364,8 @@ The input file is saved in "{}". You should check that it is correct. You can us
     opt['numX'] = not opt['no_numX']
     if opt['mode'] == 'mham':
         opt['numX'] = False
+    if opt['symbolic']:
+        opt['numX'] = False
 
     if opt['syms_sel'] != -1:
         syms_sel = opt['syms_sel'].split(',')
