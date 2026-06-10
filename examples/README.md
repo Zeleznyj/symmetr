@@ -6,6 +6,8 @@ Run all examples using the script run_examples.sh. This runs the script for each
 These examples are described in detail in the manuscript [ arXiv:2602.21034].
 
 Included examples:
+
 1. Conductivity and anomalous Hall effect of Fe
-2. Spin-orbit torque in CuMnAs
-3. Spin-polarized current in Mn3Sn
+2. Hall effect of Si
+3. Spin-orbit torque in CuMnAs
+4. Spin-polarized current in Mn3Sn
