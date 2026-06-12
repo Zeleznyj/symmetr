@@ -143,7 +143,7 @@ def transform_position(pos,sym,prec):
      for i in range(3): #loop over components of position
          op = re.sub('-','+-',sym[1][i])
          transd.append(0)
-         op = re.split('\+',op) #op contains a list of all operations we have to do with component
+         op = re.split(r'\+',op) #op contains a list of all operations we have to do with component
          op = [_f for _f in op if _f] #remove empty strings from the list  
          for j in range(len(op)):
              if re.match('x',op[j]):
@@ -178,7 +178,7 @@ def transform_position(pos,sym,prec):
      for i in range(3): #loop over components of magnetic moment
          op = re.sub('-','+-',sym[2][i])
          transd_m.append(0)
-         op = re.split('\+',op) #op contains a list of all operations we have to do with component
+         op = re.split(r'\+',op) #op contains a list of all operations we have to do with component
          op = [_f for _f in op if _f] #remove empty strings from the list  
          for j in range(len(op)):
              if re.match('mx',op[j]):
@@ -252,7 +252,7 @@ def  r_pos(lines, fix_m=[]):
     i = 0
     while cont == 1:
         i = i+1
-        if re.match('\A +[0-9]+ ',lines[pos_pos + i]):
+        if re.match(r'\A +[0-9]+ ',lines[pos_pos + i]):
             positions.append(lines[pos_pos + i])
         elif re.match('-------',lines[pos_pos + i]):
             cont = 0
@@ -290,7 +290,7 @@ def r_sym(lines,debug=False,syms_only=False,num_prec=None):
      i = 0
      while cont == 1:
          i = i+1
-         if re.match('\A[0-9]+ ',lines[pos_syms + i]):
+         if re.match(r'\A[0-9]+ ',lines[pos_syms + i]):
              syms.append(lines[pos_syms + i])
          else:
              cont = 0
@@ -311,7 +311,7 @@ def r_sym(lines,debug=False,syms_only=False,num_prec=None):
          #read space group number
          for i in range(len(lines)):
              if "Space Group " in lines[i]:
-                 group = re.findall('[0-9]+\.[0-9]+',lines[i])
+                 group = re.findall(r'[0-9]+\.[0-9]+',lines[i])
 
          positions = r_pos(lines)
          check_pos_prec(positions,num_prec)
@@ -343,7 +343,7 @@ def r_sym(lines,debug=False,syms_only=False,num_prec=None):
              if found and not end:
                  if 'Wyckoff positions' in line:
                      end = True
-                     shifts = re.findall('\([0-9./]+,[0-9./]+,[0-9./]+\)\+',line)
+                     shifts = re.findall(r'\([0-9./]+,[0-9./]+,[0-9./]+\)\+',line)
                      if debug:
                          print(line)
 
