@@ -1124,4 +1124,23 @@ def get_full_permutations_old(lines, prec=3, debug=False):
 
     return out
 
+def get_space_group(opt):
+    """
+    Reads the magnetic space group from the findsym output.
+
+    Args:
+        opt (Input class): returned by the parse function.
+    Returns:
+        group number
+        group name
+
+    """
+    if not opt['inp']:
+        raise Exception("only implemented for the inp mode")
+    # runs findsym and reads the output
+    lines = fslib.run_fs(opt['inp'])
+    group_number, group_name = fslib.r_space_group(lines)
+    return group_number, group_name
+
+
 

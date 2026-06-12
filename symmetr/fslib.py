@@ -463,4 +463,9 @@ def check_pos_prec(positions,num_prec):
                     raise Exception(
                             'Atoms {0} and {1} too close together try lower --pos-prec'.format(pos[6],pos2[6]))
 
-
+def r_space_group(lines):
+    for line in lines:
+        if "Space Group" in line:
+            _,_, group_number, group_name = line.split()
+            return group_number, group_name
+    return None
